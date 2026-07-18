@@ -30,6 +30,10 @@ describe('AppModule', () => {
     process.env['AUTH_CLIENT_SECRET'] = 'test-client-secret';
     process.env['AUTH_WEBHOOK_SECRET'] = 'test-webhook-secret';
     process.env['DATABASE_PATH'] = ':memory:';
+    process.env['MINIO_ENDPOINT'] = 'http://localhost:9000';
+    process.env['MINIO_BUCKET'] = 'test-bucket';
+    process.env['MINIO_ACCESS_KEY_ID'] = 'minioadmin';
+    process.env['MINIO_SECRET_ACCESS_KEY'] = 'minioadmin';
     ensureDistFixture();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -129,5 +133,19 @@ describe('AppModule', () => {
   it('should return 204 on POST /api/auth/logout', async () => {
     const res = await request(app.getHttpServer()).post('/api/auth/logout');
     expect(res.status).toBe(204);
+  });
+
+  // Test 40 — POST /api/qr without auth → 401
+  it('should return 401 on POST /api/qr without auth cookies', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/qr')
+      .send({ contentType: 'text', content: 'Hello' });
+    expect(res.status).toBe(401);
+  });
+
+  // Test 41 — GET /api/qr/:id/png unknown id → 404 (public route)
+  it('should return 404 on GET /api/qr/nonexistent/png (public route, missing QR)', async () => {
+    const res = await request(app.getHttpServer()).get('/api/qr/nonexistent/png');
+    expect(res.status).toBe(404);
   });
 });

@@ -61,3 +61,44 @@
 
 ### Verdict
 **Pass.** All commands green. Two test-coverage gaps (issues #1 and #2) are pre-existing findings from `/review auth` — implementation is correct, gaps are TDD discipline misses. Recommend `auth-cookies.spec.ts` before next major auth change. Ready for `/ship auth`.
+
+---
+
+## 2026-07-19 — qr-generate QA
+
+### Commands run
+- `npx eslint src --ext .ts` (backend) → PASS (0 errors, 0 warnings)
+- `npx tsc --noEmit` (backend) → PASS
+- `npm test` → PASS (85 backend tests / 18 suites; 0 frontend — passWithNoTests)
+- `npm run build` → PASS (frontend vite 422ms, backend nest build OK)
+
+### Cross-feature checks
+
+**Duplication**: `auth` + `qr-generate` implemented. No logic duplication detected.
+- `QrRepository` pattern mirrors `UserRepository` — consistent. No shared use-case candidates.
+- `@CurrentUser` decorator reused in `QrController` ✅
+- `@Public` decorator reused for proxy routes ✅
+
+**Architectural consistency**:
+- `domain/qr/` — zero infra imports (uses `NodeJS.ReadableStream` from `@types/node`, stdlib, not infra). Clean.
+- `application/qr/` — depends on domain ports only; `frontendUrl` passed via command (no ConfigService leak). Clean.
+- `infrastructure/qr/`, `infrastructure/minio/` — implements ports. Clean.
+- `MinioModule` is `@Global()` — consistent with `TypeOrmModule` global pattern. Acceptable.
+- `QrModule` mirrors `AuthModule` feature-slice pattern. Clean.
+
+**Roadmap**:
+- `repo-setup` → `shipped` ✅
+- `auth` → `shipped` ✅
+- `qr-generate` → `in-progress`, review.md `ready for /qa`. Active.
+- No stalled features.
+
+### Issues found
+
+| # | Severity | File | Description |
+|---|---|---|---|
+| 1 | LOW | `interfaces/http/controllers/qr.controller.ts:62` | `streamSvg` calls `storage.exists()` which checks only `qr.png` key — a partial upload (png OK, svg missing) would not be caught. Low risk (uploads are sync and atomic per file) but observable edge case. Not a regression; no test covers this gap intentionally. |
+| 2 | INFO | `frontend/` | Still no frontend tests. Expected — UI for qr-generate not yet built. |
+| 3 | INFO | `docker-compose.dev.yml` | MinIO bucket not auto-created at startup — developer must manually create `qrcode` bucket (or run mc mb). Worth a README note when docs are written. |
+
+### Verdict
+**Pass.** 85/85 tests green, lint clean, strict TS clean, build clean. Issue #1 is low-severity edge case with no current test — not a blocker. Issue #3 is a DX note. Ready for `/ship qr-generate`.
