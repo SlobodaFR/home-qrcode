@@ -6,7 +6,7 @@ Features ordered by hard dependencies first, then value/risk.
 
 | # | Slug | Description | Depends on | Status |
 |---|---|---|---|---|
-| 1 | `repo-setup` | Monorepo scaffold (npm workspaces, .nvmrc, Dockerfile, Litestream, GitHub Actions CI) | — | in-progress |
+| 1 | `repo-setup` | Monorepo scaffold (npm workspaces, .nvmrc, Dockerfile, Litestream, GitHub Actions CI) | — | shipped |
 | 2 | `auth` | OAuth2 Authorization Code flow via auth.sloboda.fr, JwtAuthGuard (JWKS), httpOnly cookies, logout, disconnect webhook, user upsert | `repo-setup` | pending |
 | 3 | `qr-generate` | Server-side QR generation (PNG ≥ 1024px + SVG), MinIO upload, proxy routes `/api/qr/{id}/png` and `/api/qr/{id}/svg`, params stored in SQLite | `auth` | pending |
 | 4 | `url-redirect` | `GET /r/{id}` unauthenticated 302 redirect, scan counter increment, edit target URL from history | `qr-generate` | pending |
