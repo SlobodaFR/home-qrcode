@@ -30,7 +30,7 @@ jobs:
           VPS_USER: op://TECH/thomassloboda_home_secrets/VPS_USER
           VPS_SSH_KEY: op://TECH/thomassloboda_home_secrets/VPS_PRIVATE_KEY
           GHCR_PAT: op://TECH/thomassloboda_home_secrets/GITHUB_PAT_FULL_ACCESS
-          AUTH_BASE_URL: op://TECH/thomassloboda_home_secrets/AUTH_BASE_URL
+          AUTH_SERVICE_URL: op://TECH/thomassloboda_home_secrets/AUTH_BASE_URL
           AUTH_CLIENT_ID: op://TECH/thomassloboda_home_secrets/QRCODE_AUTH_CLIENT_ID
           AUTH_CLIENT_SECRET: op://TECH/thomassloboda_home_secrets/QRCODE_AUTH_SECRET
           AUTH_WEBHOOK_SECRET: op://TECH/thomassloboda_home_secrets/QRCODE_AUTH_WEBHOOK_SECRET
@@ -58,19 +58,31 @@ jobs:
             echo "EOF_SSH_KEY"
           } >> "$GITHUB_ENV"
 
+          {
+            printf '%s' "$VPS_SSH_KEY" | tr -d ' '
+          } > /tmp/key_body
+          {
+            echo "-----BEGIN OPENSSH PRIVATE KEY-----"
+            cat /tmp/key_body
+            echo
+            echo "-----END OPENSSH PRIVATE KEY-----"
+          } > /tmp/key
+          echo "::add-mask::$(cat /tmp/key_body)"
+          rm -f /tmp/key_body /tmp/key
+
       - name: Write remote .env
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ env.VPS_HOST }}
           username: ${{ env.VPS_USER }}
           key: ${{ env.VPS_SSH_KEY }}
-          envs: AUTH_BASE_URL,AUTH_CLIENT_ID,AUTH_CLIENT_SECRET,AUTH_WEBHOOK_SECRET,FRONTEND_URL,DATABASE_PATH,MINIO_ENDPOINT,MINIO_BUCKET,MINIO_REGION,MINIO_ACCESS_KEY_ID,MINIO_SECRET_ACCESS_KEY,MINIO_REPLICA_PATH,MINIO_ASSETS_PATH
+          envs: AUTH_SERVICE_URL,AUTH_CLIENT_ID,AUTH_CLIENT_SECRET,AUTH_WEBHOOK_SECRET,FRONTEND_URL,DATABASE_PATH,MINIO_ENDPOINT,MINIO_BUCKET,MINIO_REGION,MINIO_ACCESS_KEY_ID,MINIO_SECRET_ACCESS_KEY,MINIO_REPLICA_PATH,MINIO_ASSETS_PATH
           script: |
             mkdir -p /opt/qrcode/deploy
             cat > /opt/qrcode/deploy/.env <<EOF
             NODE_ENV=production
             PORT=3000
-            AUTH_BASE_URL=$AUTH_BASE_URL
+            AUTH_SERVICE_URL=$AUTH_SERVICE_URL
             AUTH_CLIENT_ID=$AUTH_CLIENT_ID
             AUTH_CLIENT_SECRET=$AUTH_CLIENT_SECRET
             AUTH_WEBHOOK_SECRET=$AUTH_WEBHOOK_SECRET
@@ -101,14 +113,14 @@ jobs:
           host: ${{ env.VPS_HOST }}
           username: ${{ env.VPS_USER }}
           key: ${{ env.VPS_SSH_KEY }}
-          envs: IMAGE,IMAGE_TAG,DEPLOY_DIR
-          # GHA evaluates ${{ }} before sending to SSH — bypasses envs: masking issue
-          # with 1password/load-secrets-action values.
+          envs: IMAGE,IMAGE_TAG,DEPLOY_DIR,GHCR_PAT,GHCR_USER
           script: |
-            echo '${{ env.GHCR_PAT }}' | docker login ghcr.io -u '${{ github.repository_owner }}' --password-stdin
+            echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             chmod +x /opt/qrcode/deploy/scripts/update-vps.sh
             sh /opt/qrcode/deploy/scripts/update-vps.sh
         env:
           IMAGE: ${{ steps.tag.outputs.image }}
           IMAGE_TAG: ${{ steps.tag.outputs.value }}
           DEPLOY_DIR: /opt/qrcode
+          GHCR_PAT: ${{ env.GHCR_PAT }}
+          GHCR_USER: ${{ github.repository_owner }}
