@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
@@ -58,7 +59,7 @@ describe('AppModule', () => {
 
   // Task 18 — ConfigModule loaded
   it('should boot with ConfigModule loaded', () => {
-    expect(app.get).toBeDefined();
+    expect(app.get(ConfigService)).toBeDefined();
   });
 
   // Task 19 — global prefix /api applied
