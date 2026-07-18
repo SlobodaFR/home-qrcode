@@ -10,7 +10,8 @@ export IMAGE
 export IMAGE_TAG
 
 docker compose pull
-docker compose up -d --remove-orphans
+docker compose down --remove-orphans
+docker compose up -d
 docker image prune -f
 
 if ! command -v caddy >/dev/null 2>&1; then
