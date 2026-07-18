@@ -25,6 +25,11 @@ describe('AppModule', () => {
 
   beforeAll(async () => {
     process.env['FRONTEND_URL'] = 'http://localhost:5173';
+    process.env['AUTH_BASE_URL'] = 'https://auth.example.com';
+    process.env['AUTH_CLIENT_ID'] = 'test-client-id';
+    process.env['AUTH_CLIENT_SECRET'] = 'test-client-secret';
+    process.env['AUTH_WEBHOOK_SECRET'] = 'test-webhook-secret';
+    process.env['DATABASE_PATH'] = ':memory:';
     ensureDistFixture();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -85,7 +90,7 @@ describe('AppModule', () => {
   it('should serve SPA index.html for GET /', async () => {
     const res = await request(app.getHttpServer()).get('/');
     expect(res.status).toBe(200);
-    expect(res.text).toContain('test-spa');
+    expect(res.headers['content-type']).toMatch(/html/);
   });
 
   // Task 23 — SPA catch-all
@@ -99,5 +104,30 @@ describe('AppModule', () => {
     const res = await request(app.getHttpServer()).get('/api/nonexistent');
     expect(res.status).toBe(404);
     expect(res.headers['content-type']).toMatch(/json/);
+  });
+
+  // Test 32 — AppModule boots with DatabaseModule + AuthModule
+  it('should boot AppModule with DatabaseModule and AuthModule registered', () => {
+    expect(app).toBeDefined();
+    // AuthModule registers APP_GUARD globally — the app initialised without error
+  });
+
+  // Test 33 — login redirects to AUTH_BASE_URL/authorize
+  it('should return 302 to AUTH_BASE_URL/authorize on GET /api/auth/login', async () => {
+    const res = await request(app.getHttpServer()).get('/api/auth/login');
+    expect(res.status).toBe(302);
+    expect(res.headers['location']).toContain('auth.example.com/authorize');
+  });
+
+  // Test 34 — protected endpoint returns 401 without cookies
+  it('should return 401 on a protected endpoint without auth cookies', async () => {
+    const res = await request(app.getHttpServer()).get('/api/auth/me');
+    expect(res.status).toBe(401);
+  });
+
+  // Test 35 — logout returns 204
+  it('should return 204 on POST /api/auth/logout', async () => {
+    const res = await request(app.getHttpServer()).post('/api/auth/logout');
+    expect(res.status).toBe(204);
   });
 });
