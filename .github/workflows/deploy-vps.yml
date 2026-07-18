@@ -101,14 +101,14 @@ jobs:
           host: ${{ env.VPS_HOST }}
           username: ${{ env.VPS_USER }}
           key: ${{ env.VPS_SSH_KEY }}
-          envs: IMAGE,IMAGE_TAG,DEPLOY_DIR,GHCR_PAT,GHCR_USER
+          envs: IMAGE,IMAGE_TAG,DEPLOY_DIR
+          # GHA evaluates ${{ }} before sending to SSH — bypasses envs: masking issue
+          # with 1password/load-secrets-action values.
           script: |
-            echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            echo '${{ env.GHCR_PAT }}' | docker login ghcr.io -u '${{ github.repository_owner }}' --password-stdin
             chmod +x /opt/qrcode/deploy/scripts/update-vps.sh
             sh /opt/qrcode/deploy/scripts/update-vps.sh
         env:
           IMAGE: ${{ steps.tag.outputs.image }}
           IMAGE_TAG: ${{ steps.tag.outputs.value }}
           DEPLOY_DIR: /opt/qrcode
-          GHCR_PAT: ${{ env.GHCR_PAT }}
-          GHCR_USER: ${{ github.repository_owner }}
