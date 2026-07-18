@@ -1,0 +1,22 @@
+{
+  "name": "home-qrcode",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run start:dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "build": "npm run build:frontend && npm run build:backend",
+    "test:backend": "npm test --workspace=backend",
+    "test:frontend": "npm test --workspace=frontend",
+    "test": "npm run test:backend && npm run test:frontend",
+    "lint": "npm run lint --workspace=backend"
+  },
+  "engines": {
+    "node": ">=26.0.0"
+  }
+}

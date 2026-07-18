@@ -1,0 +1,14 @@
+name: qrcode
+
+services:
+  qrcode:
+    image: ${IMAGE}:${IMAGE_TAG}
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - '127.0.0.1:3002:3000'
+    volumes:
+      - qrcode-data:/app/backend/data
+
+volumes:
+  qrcode-data:

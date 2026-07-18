@@ -1,0 +1,3 @@
+qrcode.sloboda.fr {
+    reverse_proxy localhost:3002
+}
