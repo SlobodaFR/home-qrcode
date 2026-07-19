@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MinioClientService } from '../minio/minio-client.service';
 import { QrStoragePort } from '../../domain/qr/qr-storage.port';
 
 @Injectable()
 export class MinioQrStorage extends QrStoragePort {
+  private readonly logger = new Logger(MinioQrStorage.name);
+
   constructor(private readonly minio: MinioClientService) {
     super();
   }
@@ -39,6 +41,16 @@ export class MinioQrStorage extends QrStoragePort {
       const code = (err as { code?: string }).code;
       if (code === 'NotFound' || code === 'NoSuchKey') return false;
       throw err;
+    }
+  }
+
+  async delete(id: string): Promise<void> {
+    const results = await Promise.allSettled([
+      this.minio.client.removeObject(this.minio.bucket, `qr/${id}/qr.png`),
+      this.minio.client.removeObject(this.minio.bucket, `qr/${id}/qr.svg`),
+    ]);
+    for (const r of results) {
+      if (r.status === 'rejected') this.logger.warn(`MinIO delete failed for qr/${id}: ${String(r.reason)}`);
     }
   }
 }

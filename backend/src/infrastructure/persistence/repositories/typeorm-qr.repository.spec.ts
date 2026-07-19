@@ -105,4 +105,72 @@ describe('TypeOrmQrRepository', () => {
     const found = await repo.findById('qr-map');
     expect(found!.scanCount).toBe(4);
   });
+
+  const makeQrFull = (id: string, userId: string, createdAt: Date) =>
+    QrCode.create({ id, userId, contentType: 'url', content: 'https://x.com', size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M', createdAt });
+
+  // Test 3 — TPP: constant
+  it('findAllByUserId() should return empty result for user with no QRs', async () => {
+    const result = await repo.findAllByUserId('no-such-user', { page: 1, limit: 20 });
+    expect(result.items).toHaveLength(0);
+    expect(result.total).toBe(0);
+  });
+
+  // Test 4 — TPP: variable
+  it('findAllByUserId() should return items ordered by createdAt DESC', async () => {
+    await repo.save(makeQrFull('old', 'u-order', new Date('2026-01-01')));
+    await repo.save(makeQrFull('new', 'u-order', new Date('2026-06-01')));
+    const result = await repo.findAllByUserId('u-order', { page: 1, limit: 20 });
+    expect(result.items[0].id).toBe('new');
+    expect(result.items[1].id).toBe('old');
+  });
+
+  // Test 5 — TPP: conditional
+  it('findAllByUserId() should return only QRs belonging to given userId', async () => {
+    await repo.save(makeQrFull('u1-qr', 'user-a', new Date()));
+    await repo.save(makeQrFull('u2-qr', 'user-b', new Date()));
+    const result = await repo.findAllByUserId('user-a', { page: 1, limit: 20 });
+    expect(result.items.every(q => q.userId === 'user-a')).toBe(true);
+    expect(result.total).toBe(1);
+  });
+
+  // Test 6 — TPP: variable
+  it('findAllByUserId() should return correct total and paginated slice', async () => {
+    for (let i = 0; i < 5; i++) {
+      await repo.save(makeQrFull(`pg-${i}`, 'user-pg', new Date(2026, 0, i + 1)));
+    }
+    const result = await repo.findAllByUserId('user-pg', { page: 2, limit: 2 });
+    expect(result.items).toHaveLength(2);
+    expect(result.total).toBe(5);
+  });
+
+  // Test 7 — TPP: conditional
+  it('findAllByUserId() beyond last page should return empty items with correct total', async () => {
+    await repo.save(makeQrFull('single', 'user-one', new Date()));
+    const result = await repo.findAllByUserId('user-one', { page: 99, limit: 20 });
+    expect(result.items).toHaveLength(0);
+    expect(result.total).toBe(1);
+  });
+
+  // Test 8 — TPP: constant
+  it('deleteById() should return true and remove record when id+userId match', async () => {
+    await repo.save(makeQrFull('del-1', 'user-del', new Date()));
+    const deleted = await repo.deleteById('del-1', 'user-del');
+    expect(deleted).toBe(true);
+    expect(await repo.findById('del-1')).toBeNull();
+  });
+
+  // Test 9 — TPP: conditional
+  it('deleteById() should return false when id not found', async () => {
+    const deleted = await repo.deleteById('nonexistent', 'user-del');
+    expect(deleted).toBe(false);
+  });
+
+  // Test 10 — TPP: conditional
+  it('deleteById() should return false when userId does not match', async () => {
+    await repo.save(makeQrFull('del-2', 'owner', new Date()));
+    const deleted = await repo.deleteById('del-2', 'not-owner');
+    expect(deleted).toBe(false);
+    expect(await repo.findById('del-2')).not.toBeNull();
+  });
 });

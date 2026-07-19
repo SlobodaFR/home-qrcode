@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DeleteQrUseCase } from '../../../application/qr/delete-qr.use-case';
 import { EditTargetUrlUseCase } from '../../../application/qr/edit-target-url.use-case';
 import { GenerateQrUseCase } from '../../../application/qr/generate-qr.use-case';
+import { ListQrUseCase } from '../../../application/qr/list-qr.use-case';
 import { QrImageGenerator } from '../../../domain/qr/qr-image-generator';
 import { QrRepository } from '../../../domain/qr/qr.repository';
 import { QrStoragePort } from '../../../domain/qr/qr-storage.port';
@@ -20,6 +22,8 @@ import { QrController } from '../controllers/qr.controller';
     { provide: QrImageGenerator, useClass: QrcodeImageGenerator },
     GenerateQrUseCase,
     EditTargetUrlUseCase,
+    ListQrUseCase,
+    DeleteQrUseCase,
   ],
   exports: [QrRepository],
 })

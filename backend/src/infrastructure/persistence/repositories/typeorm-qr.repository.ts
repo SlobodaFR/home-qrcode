@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { QrCode } from '../../../domain/qr/qr-code';
-import { QrRepository } from '../../../domain/qr/qr.repository';
+import { FindAllOptions, FindAllResult, QrRepository } from '../../../domain/qr/qr.repository';
 import { QrCodeOrmEntity } from '../entities/qr-code.orm-entity';
 
 @Injectable()
@@ -37,6 +37,21 @@ export class TypeOrmQrRepository extends QrRepository {
       scanCount: qr.scanCount,
       createdAt: qr.createdAt,
     });
+  }
+
+  async findAllByUserId(userId: string, options: FindAllOptions): Promise<FindAllResult> {
+    const [rows, total] = await this.repository.findAndCount({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      skip: (options.page - 1) * options.limit,
+      take: options.limit,
+    });
+    return { items: rows.map(toDomain), total };
+  }
+
+  async deleteById(id: string, userId: string): Promise<boolean> {
+    const result = await this.repository.delete({ id, userId });
+    return (result.affected ?? 0) > 0;
   }
 
   async incrementScanCount(id: string): Promise<void> {

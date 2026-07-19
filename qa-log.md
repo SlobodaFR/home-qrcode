@@ -102,3 +102,42 @@
 
 ### Verdict
 **Pass.** 85/85 tests green, lint clean, strict TS clean, build clean. Issue #1 is low-severity edge case with no current test — not a blocker. Issue #3 is a DX note. Ready for `/ship qr-generate`.
+
+---
+
+## 2026-07-19 — qr-history QA
+
+### Commands run
+- `npx jest --no-coverage` (backend) → PASS (146/146 tests, 25 suites)
+- `npx tsc --noEmit` (backend) → PASS
+- `npx eslint src --max-warnings=0` (backend) → PASS (0 errors, 0 warnings)
+
+### Cross-feature checks
+
+**Duplication**: `auth` + `qr-generate` + `url-redirect` + `qr-history` all present. No cross-feature duplication.
+- `toListItemResponse()` kept separate from `toResponse()` — per grilled-plan decision. Intentional.
+- `@CurrentUser` decorator reused in `QrController.list()` and `.remove()` ✅
+- `QrRepository` extended with `findAllByUserId()` + `deleteById()` — consistent with existing abstract class pattern ✅
+- `QrStoragePort.delete()` encapsulates two-key MinIO structure — correct boundary ✅
+
+**Architectural consistency**:
+- `domain/qr/` — no infra imports; `findAllByUserId`/`deleteById` are abstract methods ✅
+- `application/qr/` — `DeleteQrUseCase` and `ListQrUseCase` depend on ports only ✅
+- `infrastructure/qr/MinioQrStorage.delete()` — `Promise.allSettled`, errors logged via `NestJS Logger`, never throws ✅
+- `infrastructure/persistence/TypeOrmQrRepository` — `findAndCount` with correct `skip`/`take` pagination ✅
+- `QrModule` — `ListQrUseCase` + `DeleteQrUseCase` added to providers ✅
+
+**Review finding fix**: AC15 logging gap resolved — `MinioQrStorage.delete()` now logs `WARN` for each rejected settlement before completing silently.
+
+**Roadmap**:
+- `repo-setup`, `auth`, `qr-generate`, `url-redirect` → `shipped` ✅
+- `qr-history` → `in-progress`, review.md `ready for /qa`. Active.
+
+### Issues found
+
+| # | Severity | File | Description |
+|---|---|---|---|
+| 1 | INFO | `frontend/` | Still no frontend tests. Expected — UI not yet built. |
+
+### Verdict
+**Pass.** 146/146 tests green, lint clean, strict TS clean. Review finding (AC15 logging) fixed pre-QA. Ready for `/ship qr-history`.

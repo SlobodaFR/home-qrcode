@@ -1,8 +1,10 @@
-import { Body, Controller, Get, HttpCode, NotFoundException, Param, Patch, Post, StreamableFile } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, NotFoundException, Param, Patch, Post, Query, StreamableFile } from '@nestjs/common';
 import { Readable } from 'stream';
 import { ConfigService } from '@nestjs/config';
+import { DeleteQrUseCase } from '../../../application/qr/delete-qr.use-case';
 import { EditTargetUrlUseCase } from '../../../application/qr/edit-target-url.use-case';
 import { GenerateQrUseCase } from '../../../application/qr/generate-qr.use-case';
+import { ListQrUseCase } from '../../../application/qr/list-qr.use-case';
 import { QrCode } from '../../../domain/qr/qr-code';
 import { QrRepository } from '../../../domain/qr/qr.repository';
 import { QrStoragePort } from '../../../domain/qr/qr-storage.port';
@@ -10,16 +12,36 @@ import { CurrentUser, CurrentUserPayload } from '../decorators/current-user.deco
 import { Public } from '../decorators/public.decorator';
 import { CreateQrDto } from '../dto/create-qr.dto';
 import { EditTargetUrlDto } from '../dto/edit-target-url.dto';
+import { ListQrDto } from '../dto/list-qr.dto';
 
 @Controller('qr')
 export class QrController {
   constructor(
     private readonly generateQr: GenerateQrUseCase,
     private readonly editTargetUrl: EditTargetUrlUseCase,
+    private readonly listQr: ListQrUseCase,
+    private readonly deleteQr: DeleteQrUseCase,
     private readonly qrRepository: QrRepository,
     private readonly storage: QrStoragePort,
     private readonly config: ConfigService,
   ) {}
+
+  @Get()
+  async list(@Query() dto: ListQrDto, @CurrentUser() user: CurrentUserPayload) {
+    const result = await this.listQr.execute({ userId: user.id, page: dto.page, limit: dto.limit });
+    return {
+      items: result.items.map(toListItemResponse),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+    };
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    await this.deleteQr.execute({ id, userId: user.id });
+  }
 
   @Post()
   @HttpCode(201)
@@ -75,6 +97,24 @@ export class QrController {
       disposition: `inline; filename="qr-${id}.svg"`,
     });
   }
+}
+
+function toListItemResponse(qr: QrCode) {
+  const content = qr.content.length > 80 ? qr.content.slice(0, 80) + '…' : qr.content;
+  return {
+    id: qr.id,
+    userId: qr.userId,
+    contentType: qr.contentType,
+    content,
+    size: qr.size,
+    fgColor: qr.fgColor,
+    bgColor: qr.bgColor,
+    errorCorrection: qr.errorCorrection,
+    scanCount: qr.scanCount,
+    createdAt: qr.createdAt,
+    pngUrl: qr.pngUrl,
+    svgUrl: qr.svgUrl,
+  };
 }
 
 function toResponse(qr: QrCode) {

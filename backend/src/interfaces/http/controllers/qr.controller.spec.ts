@@ -4,10 +4,13 @@ import { Test } from '@nestjs/testing';
 import { QrCode } from '../../../domain/qr/qr-code';
 import { QrRepository } from '../../../domain/qr/qr.repository';
 import { QrStoragePort } from '../../../domain/qr/qr-storage.port';
+import { DeleteQrUseCase } from '../../../application/qr/delete-qr.use-case';
 import { EditTargetUrlUseCase } from '../../../application/qr/edit-target-url.use-case';
 import { GenerateQrUseCase } from '../../../application/qr/generate-qr.use-case';
+import { ListQrUseCase } from '../../../application/qr/list-qr.use-case';
 import { CreateQrDto } from '../dto/create-qr.dto';
 import { EditTargetUrlDto } from '../dto/edit-target-url.dto';
+import { ListQrDto } from '../dto/list-qr.dto';
 import { QrController } from './qr.controller';
 import { Readable } from 'stream';
 
@@ -23,6 +26,8 @@ const makeController = async () => {
     providers: [
       { provide: GenerateQrUseCase, useValue: { execute: jest.fn().mockResolvedValue({ qr: mockQr }) } },
       { provide: EditTargetUrlUseCase, useValue: { execute: jest.fn().mockResolvedValue({ qr: mockQr }) } },
+      { provide: ListQrUseCase, useValue: { execute: jest.fn().mockResolvedValue({ items: [mockQr], total: 1, page: 1, limit: 20 }) } },
+      { provide: DeleteQrUseCase, useValue: { execute: jest.fn().mockResolvedValue(undefined) } },
       { provide: QrRepository, useValue: { findById: jest.fn().mockResolvedValue(mockQr), findByIdAndUserId: jest.fn().mockResolvedValue(mockQr) } },
       { provide: QrStoragePort, useValue: { streamPng: jest.fn().mockResolvedValue(Readable.from(['png'])), streamSvg: jest.fn().mockResolvedValue(Readable.from(['svg'])), exists: jest.fn().mockResolvedValue(true) } },
       { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('https://qrcode.example.com'), get: jest.fn() } },
@@ -32,6 +37,8 @@ const makeController = async () => {
     controller: module.get(QrController),
     useCase: module.get<jest.Mocked<GenerateQrUseCase>>(GenerateQrUseCase),
     editUseCase: module.get<jest.Mocked<EditTargetUrlUseCase>>(EditTargetUrlUseCase),
+    listUseCase: module.get<jest.Mocked<ListQrUseCase>>(ListQrUseCase),
+    deleteUseCase: module.get<jest.Mocked<DeleteQrUseCase>>(DeleteQrUseCase),
     repo: module.get<jest.Mocked<QrRepository>>(QrRepository),
     storage: module.get<jest.Mocked<QrStoragePort>>(QrStoragePort),
   };
@@ -128,5 +135,59 @@ describe('QrController', () => {
     (editUseCase.execute as jest.Mock).mockRejectedValue(new UnprocessableEntityException());
     const dto = Object.assign(new EditTargetUrlDto(), { content: 'https://x.com' });
     await expect(controller.update('qr-text', dto, mockUser)).rejects.toThrow(UnprocessableEntityException);
+  });
+
+  // Test 25 — TPP: constant
+  it('should return 200 with paginated response on GET /api/qr', async () => {
+    const { controller } = await makeController();
+    const dto = new ListQrDto();
+    const result = await controller.list(dto, mockUser);
+    expect(result).toMatchObject({ total: 1, page: 1, limit: 20 });
+    expect(result.items).toHaveLength(1);
+  });
+
+  // Test 26 — TPP: variable
+  it('toListItemResponse() should truncate content to 80 chars with ellipsis', async () => {
+    const longContent = 'https://example.com/' + 'a'.repeat(100);
+    const longQr = QrCode.create({
+      id: 'qr-long', userId: 'user-1', contentType: 'url', content: longContent,
+      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+    });
+    const { controller, listUseCase } = await makeController();
+    (listUseCase.execute as jest.Mock).mockResolvedValue({ items: [longQr], total: 1, page: 1, limit: 20 });
+    const dto = new ListQrDto();
+    const result = await controller.list(dto, mockUser);
+    expect(result.items[0].content).toHaveLength(81); // 80 chars + '…'
+    expect(result.items[0].content.endsWith('…')).toBe(true);
+  });
+
+  // Test 27 — TPP: conditional
+  it('toListItemResponse() should not truncate content ≤ 80 chars', async () => {
+    const { controller } = await makeController();
+    const dto = new ListQrDto();
+    const result = await controller.list(dto, mockUser);
+    expect(result.items[0].content).toBe('https://example.com');
+  });
+
+  // Test 28 — TPP: constant
+  it('should return 204 on DELETE /api/qr/:id for owner', async () => {
+    const { controller } = await makeController();
+    const result = await controller.remove('qr-1', mockUser);
+    expect(result).toBeUndefined();
+  });
+
+  // Test 29 — TPP: conditional
+  it('should propagate NotFoundException from DeleteQrUseCase as 404', async () => {
+    const { controller, deleteUseCase } = await makeController();
+    (deleteUseCase.execute as jest.Mock).mockRejectedValue(new NotFoundException());
+    await expect(controller.remove('qr-999', mockUser)).rejects.toThrow(NotFoundException);
+  });
+
+  // Test 30 — TPP: variable
+  it('GET /api/qr should pass userId from @CurrentUser() to ListQrUseCase', async () => {
+    const { controller, listUseCase } = await makeController();
+    const dto = new ListQrDto();
+    await controller.list(dto, mockUser);
+    expect(listUseCase.execute).toHaveBeenCalledWith(expect.objectContaining({ userId: 'user-1' }));
   });
 });

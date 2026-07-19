@@ -4,4 +4,5 @@ export abstract class QrStoragePort {
   abstract streamPng(id: string): Promise<NodeJS.ReadableStream>;
   abstract streamSvg(id: string): Promise<NodeJS.ReadableStream>;
   abstract exists(id: string): Promise<boolean>;
+  abstract delete(id: string): Promise<void>;
 }

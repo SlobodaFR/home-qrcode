@@ -193,4 +193,44 @@ describe('AppModule', () => {
       .send({ content: 'https://new.com' });
     expect(res.status).toBe(401);
   });
+
+  // Group 9 — Test 31 (tasks): GET /api/qr without auth → 401
+  it('should return 401 on GET /api/qr without auth cookies', async () => {
+    const res = await request(app.getHttpServer()).get('/api/qr');
+    expect(res.status).toBe(401);
+  });
+
+  // Group 9 — Test 32: DELETE /api/qr/:id without auth → 401
+  it('should return 401 on DELETE /api/qr/:id without auth cookies', async () => {
+    const res = await request(app.getHttpServer()).delete('/api/qr/some-id');
+    expect(res.status).toBe(401);
+  });
+
+  // Group 9 — Test 33: GET /r/{id} after DELETE → 404 (redirect route, unauthenticated)
+  it('should return 404 on GET /r/{id} after QR is deleted', async () => {
+    const qrRepo = app.get(QrRepository);
+    const qr = QrCode.create({
+      id: 'e2e-delete-redirect', userId: 'user-e2e', contentType: 'url',
+      content: 'https://delete-test.sloboda.fr', size: 1024, fgColor: '#000000',
+      bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+    });
+    await qrRepo.save(qr);
+    await qrRepo.deleteById('e2e-delete-redirect', 'user-e2e');
+    const res = await request(app.getHttpServer()).get('/r/e2e-delete-redirect');
+    expect(res.status).toBe(404);
+  });
+
+  // Group 9 — Test 34: GET /api/qr/:id/png after DELETE → 404 (public proxy, DB check first)
+  it('should return 404 on GET /api/qr/:id/png after QR is deleted', async () => {
+    const qrRepo = app.get(QrRepository);
+    const qr = QrCode.create({
+      id: 'e2e-delete-png', userId: 'user-e2e', contentType: 'url',
+      content: 'https://delete-png-test.sloboda.fr', size: 1024, fgColor: '#000000',
+      bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+    });
+    await qrRepo.save(qr);
+    await qrRepo.deleteById('e2e-delete-png', 'user-e2e');
+    const res = await request(app.getHttpServer()).get('/api/qr/e2e-delete-png/png');
+    expect(res.status).toBe(404);
+  });
 });

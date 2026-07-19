@@ -17,10 +17,11 @@ const makeStorage = (): jest.Mocked<QrStoragePort> =>
     streamPng: jest.fn(),
     streamSvg: jest.fn(),
     exists: jest.fn(),
+    delete: jest.fn().mockResolvedValue(undefined),
   });
 
 const makeRepo = (): jest.Mocked<QrRepository> =>
-  ({ findById: jest.fn(), findByIdAndUserId: jest.fn(), save: jest.fn().mockResolvedValue(undefined), incrementScanCount: jest.fn().mockResolvedValue(undefined) });
+  ({ findById: jest.fn(), findByIdAndUserId: jest.fn(), findAllByUserId: jest.fn(), save: jest.fn().mockResolvedValue(undefined), deleteById: jest.fn(), incrementScanCount: jest.fn().mockResolvedValue(undefined) });
 
 const baseCmd: GenerateQrCommand = {
   userId: 'user-1',

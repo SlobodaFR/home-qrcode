@@ -6,7 +6,9 @@ import { EditTargetUrlUseCase } from './edit-target-url.use-case';
 const makeRepo = (qr: QrCode | null = null): jest.Mocked<QrRepository> => ({
   findById: jest.fn(),
   findByIdAndUserId: jest.fn().mockResolvedValue(qr),
+  findAllByUserId: jest.fn(),
   save: jest.fn().mockResolvedValue(undefined),
+  deleteById: jest.fn(),
   incrementScanCount: jest.fn(),
 });
 
