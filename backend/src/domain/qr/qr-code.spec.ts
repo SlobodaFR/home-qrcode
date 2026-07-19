@@ -62,4 +62,22 @@ describe('QrCode', () => {
     const updated = qr.withContent('https://other.com');
     expect(updated.scanCount).toBe(5);
   });
+
+  // Test 19 — TPP: constant
+  it('should accept contentType wifi and return it via getter', () => {
+    const qr = QrCode.create({ ...validProps, contentType: 'wifi', content: 'HomeNet' });
+    expect(qr.contentType).toBe('wifi');
+  });
+
+  // Test 20 — TPP: variable
+  it('should accept contentType email and return it via getter', () => {
+    const qr = QrCode.create({ ...validProps, contentType: 'email', content: 'user@example.com' });
+    expect(qr.contentType).toBe('email');
+  });
+
+  // Test 21 — TPP: variable
+  it('should accept contentType vcard and return it via getter', () => {
+    const qr = QrCode.create({ ...validProps, contentType: 'vcard', content: 'Jane Doe' });
+    expect(qr.contentType).toBe('vcard');
+  });
 });

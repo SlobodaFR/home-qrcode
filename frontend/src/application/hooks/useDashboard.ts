@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { QrItem, createQrCode, deleteQrCode, listQrCodes } from '../../infrastructure/api/qr-auth.client';
+import { CreateQrPayload, QrItem, createQrCode, deleteQrCode, listQrCodes } from '../../infrastructure/api/qr-auth.client';
 
 type DashboardState = 'loading' | 'ready' | 'error';
 
@@ -7,7 +7,7 @@ interface DashboardHook {
   state: DashboardState;
   items: QrItem[];
   total: number;
-  create: (contentType: 'url' | 'text', content: string) => Promise<void>;
+  create: (payload: CreateQrPayload) => Promise<void>;
   remove: (id: string) => Promise<void>;
 }
 
@@ -31,8 +31,8 @@ export function useDashboard(): DashboardHook {
     void load();
   }, [load]);
 
-  const create = useCallback(async (contentType: 'url' | 'text', content: string) => {
-    const qr = await createQrCode(contentType, content);
+  const create = useCallback(async (payload: CreateQrPayload) => {
+    const qr = await createQrCode(payload);
     setItems((prev) => [qr, ...prev]);
     setTotal((t) => t + 1);
   }, []);

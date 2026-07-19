@@ -1,7 +1,7 @@
 export interface QrCodeProps {
   id: string;
   userId: string;
-  contentType: 'url' | 'text';
+  contentType: 'url' | 'text' | 'wifi' | 'email' | 'vcard';
   content: string;
   size: number;
   fgColor: string;
@@ -20,7 +20,7 @@ export class QrCode {
 
   get id(): string { return this.props.id; }
   get userId(): string { return this.props.userId; }
-  get contentType(): 'url' | 'text' { return this.props.contentType; }
+  get contentType(): 'url' | 'text' | 'wifi' | 'email' | 'vcard' { return this.props.contentType; }
   get content(): string { return this.props.content; }
   get size(): number { return this.props.size; }
   get fgColor(): string { return this.props.fgColor; }

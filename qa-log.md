@@ -175,3 +175,69 @@
 
 ### Verdict
 **Pass.** 171 total tests green (151 backend, 20 frontend), both TS clean, build clean. Ready for `/ship public-qr-page`.
+
+---
+
+## 2026-07-19 — extended-content-types QA
+
+### Commands run
+- `npx jest --no-coverage` (backend, from `backend/`) → PASS (196/196 tests, 26 suites)
+- `npx vitest run` (frontend) → PASS (34/34 tests, 8 suites)
+- `npx tsc --noEmit` (backend + frontend) → PASS (0 errors)
+- `npm run build` → PASS (frontend vite 552ms, backend nest build OK)
+
+### New files added
+- `backend/src/application/qr/qr-content.encoder.ts` — pure encoding functions (wifi/email/vcard)
+- `backend/src/application/qr/qr-content.encoder.spec.ts` — 18 unit tests
+- `backend/src/interfaces/http/dto/create-qr.dto.spec.ts` — extended (14 new DTO tests)
+- `frontend/src/infrastructure/api/qr-auth.client.spec.ts` — 3 new tests
+- `frontend/src/application/hooks/useDashboard.spec.ts` — 2 tests
+- `frontend/src/presentation/pages/DashboardPage.spec.tsx` — 7 tests
+
+### Files changed
+- `backend/src/domain/qr/qr-code.ts` — `contentType` union widened
+- `backend/src/infrastructure/persistence/entities/qr-code.orm-entity.ts` — same union widened (no DDL change)
+- `backend/src/application/qr/generate-qr.use-case.ts` — discriminated union command + new branches
+- `backend/src/interfaces/http/dto/create-qr.dto.ts` — new fields with `@ValidateIf` guards
+- `backend/src/interfaces/http/controllers/qr.controller.ts` — new create mapping
+- `frontend/src/infrastructure/api/qr-auth.client.ts` — `CreateQrPayload` union + updated signature
+- `frontend/src/application/hooks/useDashboard.ts` — updated `create` signature
+- `frontend/src/presentation/pages/DashboardPage.tsx` — expanded `CreateForm`
+
+### Review finding fixed pre-QA
+`vcardEmail`/`email` field name mismatch between frontend payload and backend DTO (whitelist: true would silently drop the vcard email). Fixed: `CreateQrPayload` vcard arm renamed `email` → `vcardEmail`; `DashboardPage.buildPayload()` updated; regression test added.
+
+### Cross-feature checks
+
+**Duplication**: No cross-feature duplication.
+- `encodeWifi`/`encodeEmail`/`encodeVcard` are new — no similar logic elsewhere.
+- `GenerateQrUseCase` is the single entry point for all QR creation. Consistent with existing pattern.
+- `editTargetUrl` guard (`!== 'url'`) already rejects new types — no code change needed, no duplication risk.
+
+**Architectural consistency**:
+- `qr-content.encoder.ts` in `application/qr/` — zero framework imports, pure functions. ✅ (non-negotiable: domain layer has zero infra deps — encoder not in domain) ✅
+- `GenerateQrCommand` discriminated union enforces fields at compile time — no runtime assertions needed ✅
+- Flat DTO with `@ValidateIf` — consistent with existing `content` guard pattern ✅
+- `contentType` widened only at TS annotation level; SQLite `TEXT` column unchanged — no migration ✅
+- `VcardFields.email` used internally; DTO and frontend payload use `vcardEmail` at the HTTP boundary ✅
+
+**Roadmap**:
+- `url-redirect`, `qr-history`, `public-qr-page` → `shipped` but no `review.md`. These features were shipped before the `/review` workflow was established. INFO-level, not blocking.
+- `extended-content-types` → `in-progress`, `review.md` shows `ready for /qa`. Active.
+
+**Pre-existing open findings (carried forward)**:
+- qr-generate QA #1 (streamSvg exists() checks only png key) — still open, low severity.
+- public-qr-page QA #1 (document.title not reset) — still open, INFO.
+- public-qr-page QA #2 (jsdom unused devDep) — still open, INFO.
+
+### Issues found
+
+| # | Severity | File | Description |
+|---|---|---|---|
+| 1 | LOW | `backend/src/app.module.spec.ts:39–67` | E2E tests for new content types (tests 39–42) only verify 401 (auth guard blocks before ValidationPipe). Cannot test 201/400 flows without injecting a valid JWT — acceptable given test setup, but the happy path (wifi QR actually created in DB) is only exercised at unit level. |
+| 2 | INFO | `backend/src/application/qr/edit-target-url.use-case.spec.ts` | AC9 (editTargetUrl rejects wifi/email/vcard) covered by the `!== 'url'` guard — existing `text` type test is sufficient to prove the branch, but adding explicit tests for new types would make intent clearer. Not blocking. |
+| 3 | INFO | `frontend/usePublicQr.spec.ts` | Pre-existing `act(...)` warning in test output (not wrapped). Not a failure; test passes. Carried from previous QA. |
+| 4 | INFO | `specs/` | `url-redirect`, `qr-history`, `public-qr-page` have `tasks.md` but no `review.md`. Shipped before workflow established. No code risk. |
+
+### Verdict
+**Pass.** 230 total tests green (196 backend, 34 frontend), both TS clean, build clean. One review-found bug (`vcardEmail` field mismatch) fixed and regression-tested before QA. Ready for `/ship extended-content-types`.

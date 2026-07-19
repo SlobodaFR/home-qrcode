@@ -3,17 +3,23 @@ import { QrCode } from '../../domain/qr/qr-code';
 import { QrImageGenerator } from '../../domain/qr/qr-image-generator';
 import { QrRepository } from '../../domain/qr/qr.repository';
 import { QrStoragePort } from '../../domain/qr/qr-storage.port';
+import { EmailFields, VcardFields, WifiFields, encodeEmail, encodeVcard, encodeWifi } from './qr-content.encoder';
 
-export interface GenerateQrCommand {
-  userId: string;
-  contentType: 'url' | 'text';
-  content: string;
+type DisplayOptions = {
   size: number;
   fgColor: string;
   bgColor: string;
   errorCorrection: 'L' | 'M' | 'Q' | 'H';
-  frontendUrl: string;
-}
+};
+
+type BaseCmd = { userId: string; frontendUrl: string } & DisplayOptions;
+
+export type GenerateQrCommand =
+  | (BaseCmd & { contentType: 'url'; content: string })
+  | (BaseCmd & { contentType: 'text'; content: string })
+  | (BaseCmd & { contentType: 'wifi'; wifi: WifiFields })
+  | (BaseCmd & { contentType: 'email'; emailFields: EmailFields })
+  | (BaseCmd & { contentType: 'vcard'; vcard: VcardFields });
 
 export interface GenerateQrResult {
   qr: QrCode;
@@ -29,8 +35,26 @@ export class GenerateQrUseCase {
 
   async execute(cmd: GenerateQrCommand): Promise<GenerateQrResult> {
     const id = crypto.randomUUID();
-    const encodedContent =
-      cmd.contentType === 'url' ? `${cmd.frontendUrl}/r/${id}` : cmd.content;
+
+    let encodedContent: string;
+    let storedContent: string;
+
+    if (cmd.contentType === 'url') {
+      encodedContent = `${cmd.frontendUrl}/r/${id}`;
+      storedContent = cmd.content;
+    } else if (cmd.contentType === 'text') {
+      encodedContent = cmd.content;
+      storedContent = cmd.content;
+    } else if (cmd.contentType === 'wifi') {
+      encodedContent = encodeWifi(cmd.wifi);
+      storedContent = cmd.wifi.ssid;
+    } else if (cmd.contentType === 'email') {
+      encodedContent = encodeEmail(cmd.emailFields);
+      storedContent = cmd.emailFields.to;
+    } else {
+      encodedContent = encodeVcard(cmd.vcard);
+      storedContent = cmd.vcard.name;
+    }
 
     const { png, svg } = await this.generator.generate(encodedContent, {
       size: cmd.size,
@@ -46,7 +70,7 @@ export class GenerateQrUseCase {
       id,
       userId: cmd.userId,
       contentType: cmd.contentType,
-      content: cmd.content,
+      content: storedContent,
       size: cmd.size,
       fgColor: cmd.fgColor,
       bgColor: cmd.bgColor,

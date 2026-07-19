@@ -191,6 +191,48 @@ describe('QrController', () => {
     expect(listUseCase.execute).toHaveBeenCalledWith(expect.objectContaining({ userId: 'user-1' }));
   });
 
+  // Test 36 (extended-content-types) — TPP: conditional
+  it('should pass wifi fields through to GenerateQrUseCase command', async () => {
+    const { controller, useCase } = await makeController();
+    const dto = Object.assign(new CreateQrDto(), {
+      contentType: 'wifi' as const, ssid: 'HomeNet', security: 'WPA' as const, password: 'pass',
+      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const,
+    });
+    await controller.create(dto, mockUser);
+    expect(useCase.execute).toHaveBeenCalledWith(expect.objectContaining({
+      contentType: 'wifi',
+      wifi: { ssid: 'HomeNet', security: 'WPA', password: 'pass' },
+    }));
+  });
+
+  // Test 37 — TPP: variable
+  it('should pass email fields through to GenerateQrUseCase command', async () => {
+    const { controller, useCase } = await makeController();
+    const dto = Object.assign(new CreateQrDto(), {
+      contentType: 'email' as const, to: 'user@example.com', subject: 'Hi',
+      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const,
+    });
+    await controller.create(dto, mockUser);
+    expect(useCase.execute).toHaveBeenCalledWith(expect.objectContaining({
+      contentType: 'email',
+      emailFields: { to: 'user@example.com', subject: 'Hi', body: undefined },
+    }));
+  });
+
+  // Test 38 — TPP: variable
+  it('should pass vcard fields through to GenerateQrUseCase command', async () => {
+    const { controller, useCase } = await makeController();
+    const dto = Object.assign(new CreateQrDto(), {
+      contentType: 'vcard' as const, name: 'Jane Doe', phone: '+33612345678',
+      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const,
+    });
+    await controller.create(dto, mockUser);
+    expect(useCase.execute).toHaveBeenCalledWith(expect.objectContaining({
+      contentType: 'vcard',
+      vcard: { name: 'Jane Doe', phone: '+33612345678', email: undefined, org: undefined },
+    }));
+  });
+
   // Test 1 (public-qr-page) — TPP: constant
   it('should return {} when findById returns a QR on GET /api/qr/:id/meta', async () => {
     const { controller } = await makeController();
