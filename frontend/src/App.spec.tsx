@@ -16,13 +16,24 @@ Object.defineProperty(window, 'location', {
 });
 
 describe('AppRoutes', () => {
-  it('should call window.location.replace for / path', () => {
+  it('should redirect to /api/auth/login when unauthenticated', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401 });
     render(
       <MemoryRouter initialEntries={['/']}>
         <AppRoutes />
       </MemoryRouter>,
     );
-    expect(replaceMock).toHaveBeenCalledWith('/api/auth/login');
+    await vi.waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/api/auth/login'));
+  });
+
+  it('should show placeholder when authenticated', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true });
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    await vi.waitFor(() => expect(screen.getByText('Dashboard en cours de construction.')).toBeTruthy());
   });
 
   // Test 24 — TPP: constant

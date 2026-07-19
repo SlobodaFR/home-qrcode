@@ -1,19 +1,43 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { NotFoundPage } from './presentation/pages/NotFoundPage';
 import { PublicQrPage } from './presentation/pages/PublicQrPage';
 
-function LoginRedirect() {
+function HomePage() {
+  const [checked, setChecked] = useState(false);
+  const [authed, setAuthed] = useState(false);
+
   useEffect(() => {
-    window.location.replace('/api/auth/login');
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((res) => {
+        if (res.ok) {
+          setAuthed(true);
+          setChecked(true);
+        } else {
+          window.location.replace('/api/auth/login');
+        }
+      })
+      .catch(() => {
+        window.location.replace('/api/auth/login');
+      });
   }, []);
-  return null;
+
+  if (!checked || !authed) return null;
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+      <p className="text-gray-500">Dashboard en cours de construction.</p>
+      <a href="/api/auth/logout" className="text-sm text-gray-400 hover:underline">
+        Se déconnecter
+      </a>
+    </div>
+  );
 }
 
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<LoginRedirect />} />
+      <Route path="/" element={<HomePage />} />
       <Route path="/q/:id" element={<PublicQrPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
