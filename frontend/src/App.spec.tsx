@@ -2,6 +2,9 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './App';
 
+vi.mock('./presentation/pages/DashboardPage', () => ({
+  DashboardPage: () => <div>DashboardPage</div>,
+}));
 vi.mock('./presentation/pages/PublicQrPage', () => ({
   PublicQrPage: () => <div>PublicQrPage</div>,
 }));
@@ -16,7 +19,7 @@ Object.defineProperty(window, 'location', {
 });
 
 describe('AppRoutes', () => {
-  it('should redirect to /api/auth/login when unauthenticated', async () => {
+  it('should redirect to /api/auth/login when unauthenticated at /', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401 });
     render(
       <MemoryRouter initialEntries={['/']}>
@@ -26,14 +29,14 @@ describe('AppRoutes', () => {
     await vi.waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/api/auth/login'));
   });
 
-  it('should show placeholder when authenticated', async () => {
+  it('should render DashboardPage when authenticated at /', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: true });
     render(
       <MemoryRouter initialEntries={['/']}>
         <AppRoutes />
       </MemoryRouter>,
     );
-    await vi.waitFor(() => expect(screen.getByText('Dashboard en cours de construction.')).toBeTruthy());
+    await vi.waitFor(() => expect(screen.getByText('DashboardPage')).toBeTruthy());
   });
 
   // Test 24 — TPP: constant
