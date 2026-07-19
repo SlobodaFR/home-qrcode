@@ -30,7 +30,7 @@ function makeQr(overrides: Partial<Parameters<typeof QrCode.create>[0]> = {}): Q
 const makeGenerator = (): jest.Mocked<QrImageGenerator> =>
   ({ generate: jest.fn().mockResolvedValue({ png: mockPng, svg: mockSvg }) });
 
-const makeStorage = (): jest.Mocked<QrStoragePort> => ({
+const makeStorage = (): jest.Mocked<QrStoragePort> => (({
   uploadPng: jest.fn().mockResolvedValue(undefined),
   uploadSvg: jest.fn().mockResolvedValue(undefined),
   uploadLogo: jest.fn().mockResolvedValue(undefined),
@@ -39,16 +39,16 @@ const makeStorage = (): jest.Mocked<QrStoragePort> => ({
   streamLogo: jest.fn(),
   exists: jest.fn(),
   delete: jest.fn().mockResolvedValue(undefined),
-} as unknown as jest.Mocked<QrStoragePort>);
+}));
 
-const makeRepo = (): jest.Mocked<QrRepository> => ({
+const makeRepo = (): jest.Mocked<QrRepository> => (({
   findById: jest.fn(),
   findByIdAndUserId: jest.fn(),
   findAllByUserId: jest.fn(),
   save: jest.fn().mockResolvedValue(undefined),
   deleteById: jest.fn(),
   incrementScanCount: jest.fn(),
-} as unknown as jest.Mocked<QrRepository>);
+}));
 
 const makeCompositor = (): jest.Mocked<LogoCompositorPort> =>
   ({ composite: jest.fn().mockResolvedValue(Buffer.from('composited-png')) });
