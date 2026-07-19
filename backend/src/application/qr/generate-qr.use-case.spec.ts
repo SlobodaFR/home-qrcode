@@ -3,6 +3,7 @@ import { QrImageGenerator, QrOptions } from '../../domain/qr/qr-image-generator'
 import { QrRepository } from '../../domain/qr/qr.repository';
 import { QrStoragePort } from '../../domain/qr/qr-storage.port';
 import { GenerateQrCommand, GenerateQrUseCase } from './generate-qr.use-case';
+import { encodeEmail, encodeVcard, encodeWifi } from './qr-content.encoder';
 
 const mockPng = Buffer.from('png');
 const mockSvg = '<svg/>';
@@ -101,5 +102,59 @@ describe('GenerateQrUseCase', () => {
     const uc = new GenerateQrUseCase(makeGenerator(), storage, repo);
     await expect(uc.execute(baseCmd)).rejects.toThrow('svg upload error');
     expect(repo.save).not.toHaveBeenCalled();
+  });
+
+  // Test 33 — TPP: conditional
+  it('should call encodeWifi and store ssid as content when contentType is wifi', async () => {
+    const generator = makeGenerator();
+    const repo = makeRepo();
+    const wifiCmd: GenerateQrCommand = {
+      userId: 'user-1', contentType: 'wifi',
+      wifi: { ssid: 'HomeNet', security: 'WPA', password: 'pass123' },
+      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+      frontendUrl: 'https://qrcode.example.com',
+    };
+    const uc = new GenerateQrUseCase(generator, makeStorage(), repo);
+    const result = await uc.execute(wifiCmd);
+    const expectedEncoded = encodeWifi({ ssid: 'HomeNet', security: 'WPA', password: 'pass123' });
+    expect(generator.generate).toHaveBeenCalledWith(expectedEncoded, expect.any(Object));
+    expect(result.qr.content).toBe('HomeNet');
+    expect(result.qr.contentType).toBe('wifi');
+  });
+
+  // Test 34 — TPP: conditional
+  it('should call encodeEmail and store to as content when contentType is email', async () => {
+    const generator = makeGenerator();
+    const repo = makeRepo();
+    const emailCmd: GenerateQrCommand = {
+      userId: 'user-1', contentType: 'email',
+      emailFields: { to: 'user@example.com', subject: 'Hello' },
+      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+      frontendUrl: 'https://qrcode.example.com',
+    };
+    const uc = new GenerateQrUseCase(generator, makeStorage(), repo);
+    const result = await uc.execute(emailCmd);
+    const expectedEncoded = encodeEmail({ to: 'user@example.com', subject: 'Hello' });
+    expect(generator.generate).toHaveBeenCalledWith(expectedEncoded, expect.any(Object));
+    expect(result.qr.content).toBe('user@example.com');
+    expect(result.qr.contentType).toBe('email');
+  });
+
+  // Test 35 — TPP: conditional
+  it('should call encodeVcard and store name as content when contentType is vcard', async () => {
+    const generator = makeGenerator();
+    const repo = makeRepo();
+    const vcardCmd: GenerateQrCommand = {
+      userId: 'user-1', contentType: 'vcard',
+      vcard: { name: 'Jane Doe', phone: '+33612345678' },
+      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+      frontendUrl: 'https://qrcode.example.com',
+    };
+    const uc = new GenerateQrUseCase(generator, makeStorage(), repo);
+    const result = await uc.execute(vcardCmd);
+    const expectedEncoded = encodeVcard({ name: 'Jane Doe', phone: '+33612345678' });
+    expect(generator.generate).toHaveBeenCalledWith(expectedEncoded, expect.any(Object));
+    expect(result.qr.content).toBe('Jane Doe');
+    expect(result.qr.contentType).toBe('vcard');
   });
 });

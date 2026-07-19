@@ -54,16 +54,23 @@ export class QrController {
   @Post()
   @HttpCode(201)
   async create(@Body() dto: CreateQrDto, @CurrentUser() user: CurrentUserPayload) {
-    const { qr } = await this.generateQr.execute({
+    const base = {
       userId: user.id,
-      contentType: dto.contentType,
-      content: dto.content,
       size: dto.size,
       fgColor: dto.fgColor,
       bgColor: dto.bgColor,
       errorCorrection: dto.errorCorrection,
       frontendUrl: this.config.getOrThrow<string>('FRONTEND_URL'),
-    });
+    };
+    const { qr } = await this.generateQr.execute(
+      dto.contentType === 'wifi'
+        ? { ...base, contentType: 'wifi', wifi: { ssid: dto.ssid!, security: dto.security!, password: dto.password } }
+        : dto.contentType === 'email'
+          ? { ...base, contentType: 'email', emailFields: { to: dto.to!, subject: dto.subject, body: dto.body } }
+          : dto.contentType === 'vcard'
+            ? { ...base, contentType: 'vcard', vcard: { name: dto.name!, phone: dto.phone, email: dto.vcardEmail, org: dto.org } }
+            : { ...base, contentType: dto.contentType, content: dto.content! },
+    );
     return toResponse(qr);
   }
 

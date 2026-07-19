@@ -1,6 +1,8 @@
 import { FormEvent, useState } from 'react';
 import { useDashboard } from '../../application/hooks/useDashboard';
-import { QrItem } from '../../infrastructure/api/qr-auth.client';
+import { CreateQrPayload, QrItem } from '../../infrastructure/api/qr-auth.client';
+
+type ContentType = 'url' | 'text' | 'wifi' | 'email' | 'vcard';
 
 function QrCard({ qr, onDelete }: { qr: QrItem; onDelete: (id: string) => void }) {
   const [deleting, setDeleting] = useState(false);
@@ -25,28 +27,9 @@ function QrCard({ qr, onDelete }: { qr: QrItem; onDelete: (id: string) => void }
           {new Date(qr.createdAt).toLocaleDateString('fr-FR')} · {qr.scanCount} scan{qr.scanCount !== 1 ? 's' : ''}
         </p>
         <div className="flex gap-3 mt-auto pt-1">
-          <a
-            href={qr.pngUrl}
-            download={`qr-${qr.id}.png`}
-            className="text-xs text-gray-500 hover:text-gray-900"
-          >
-            PNG
-          </a>
-          <a
-            href={qr.svgUrl}
-            download={`qr-${qr.id}.svg`}
-            className="text-xs text-gray-500 hover:text-gray-900"
-          >
-            SVG
-          </a>
-          <a
-            href={`/q/${qr.id}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-gray-500 hover:text-gray-900"
-          >
-            Page publique
-          </a>
+          <a href={qr.pngUrl} download={`qr-${qr.id}.png`} className="text-xs text-gray-500 hover:text-gray-900">PNG</a>
+          <a href={qr.svgUrl} download={`qr-${qr.id}.svg`} className="text-xs text-gray-500 hover:text-gray-900">SVG</a>
+          <a href={`/q/${qr.id}`} target="_blank" rel="noreferrer" className="text-xs text-gray-500 hover:text-gray-900">Page publique</a>
         </div>
       </div>
       <button
@@ -61,20 +44,70 @@ function QrCard({ qr, onDelete }: { qr: QrItem; onDelete: (id: string) => void }
   );
 }
 
-function CreateForm({ onCreate }: { onCreate: (contentType: 'url' | 'text', content: string) => Promise<void> }) {
-  const [contentType, setContentType] = useState<'url' | 'text'>('url');
-  const [content, setContent] = useState('');
+function TypeButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Promise<void> }) {
+  const [contentType, setContentType] = useState<ContentType>('url');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // url / text
+  const [content, setContent] = useState('');
+
+  // wifi
+  const [ssid, setSsid] = useState('');
+  const [security, setSecurity] = useState<'WPA' | 'WEP' | 'nopass'>('WPA');
+  const [password, setPassword] = useState('');
+
+  // email
+  const [to, setTo] = useState('');
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+
+  // vcard
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [vcardEmail, setVcardEmail] = useState('');
+  const [org, setOrg] = useState('');
+
+  function buildPayload(): CreateQrPayload | null {
+    if (contentType === 'url' || contentType === 'text') {
+      if (!content.trim()) return null;
+      return { contentType, content: content.trim() };
+    }
+    if (contentType === 'wifi') {
+      if (!ssid.trim()) return null;
+      if (security !== 'nopass' && !password.trim()) return null;
+      return { contentType: 'wifi', ssid: ssid.trim(), security, password: security !== 'nopass' ? password : undefined };
+    }
+    if (contentType === 'email') {
+      if (!to.trim()) return null;
+      return { contentType: 'email', to: to.trim(), subject: subject || undefined, body: body || undefined };
+    }
+    // vcard
+    if (!name.trim()) return null;
+    return { contentType: 'vcard', name: name.trim(), phone: phone || undefined, vcardEmail: vcardEmail || undefined, org: org || undefined };
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!content.trim()) return;
+    const payload = buildPayload();
+    if (!payload) return;
     setSubmitting(true);
     setError(null);
     try {
-      await onCreate(contentType, content.trim());
-      setContent('');
+      await onCreate(payload);
+      setContent(''); setSsid(''); setPassword(''); setTo(''); setSubject(''); setBody(''); setName(''); setPhone(''); setVcardEmail(''); setOrg('');
     } catch {
       setError('Erreur lors de la création.');
     } finally {
@@ -82,36 +115,67 @@ function CreateForm({ onCreate }: { onCreate: (contentType: 'url' | 'text', cont
     }
   }
 
+  const inputCls = 'flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors';
+  const fullInputCls = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors';
+
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-3 rounded-xl border border-gray-200 p-4 bg-white">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setContentType('url')}
-          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${contentType === 'url' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-        >
-          URL
-        </button>
-        <button
-          type="button"
-          onClick={() => setContentType('text')}
-          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${contentType === 'text' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-        >
-          Texte
-        </button>
+      <div className="flex gap-2 flex-wrap">
+        <TypeButton label="URL" active={contentType === 'url'} onClick={() => setContentType('url')} />
+        <TypeButton label="Texte" active={contentType === 'text'} onClick={() => setContentType('text')} />
+        <TypeButton label="Wi-Fi" active={contentType === 'wifi'} onClick={() => setContentType('wifi')} />
+        <TypeButton label="Email" active={contentType === 'email'} onClick={() => setContentType('email')} />
+        <TypeButton label="vCard" active={contentType === 'vcard'} onClick={() => setContentType('vcard')} />
       </div>
-      <div className="flex gap-2">
-        <input
-          type={contentType === 'url' ? 'url' : 'text'}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder={contentType === 'url' ? 'https://...' : 'Votre texte...'}
-          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors"
-          required
-        />
+
+      {(contentType === 'url' || contentType === 'text') && (
+        <div className="flex gap-2">
+          <input
+            type={contentType === 'url' ? 'url' : 'text'}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={contentType === 'url' ? 'https://...' : 'Votre texte...'}
+            className={inputCls}
+            required
+          />
+        </div>
+      )}
+
+      {contentType === 'wifi' && (
+        <div className="flex flex-col gap-2">
+          <input type="text" value={ssid} onChange={(e) => setSsid(e.target.value)} placeholder="SSID (nom du réseau)" className={fullInputCls} required />
+          <select value={security} onChange={(e) => setSecurity(e.target.value as typeof security)} className={fullInputCls}>
+            <option value="WPA">WPA/WPA2</option>
+            <option value="WEP">WEP</option>
+            <option value="nopass">Aucun (ouvert)</option>
+          </select>
+          {security !== 'nopass' && (
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className={fullInputCls} required />
+          )}
+        </div>
+      )}
+
+      {contentType === 'email' && (
+        <div className="flex flex-col gap-2">
+          <input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="Destinataire (to)" className={fullInputCls} required />
+          <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Sujet (subject)" className={fullInputCls} />
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Message (body)" className={fullInputCls} rows={3} />
+        </div>
+      )}
+
+      {contentType === 'vcard' && (
+        <div className="flex flex-col gap-2">
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nom complet (name)" className={fullInputCls} required />
+          <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Téléphone (phone)" className={fullInputCls} />
+          <input type="email" value={vcardEmail} onChange={(e) => setVcardEmail(e.target.value)} placeholder="Email" className={fullInputCls} />
+          <input type="text" value={org} onChange={(e) => setOrg(e.target.value)} placeholder="Organisation (org)" className={fullInputCls} />
+        </div>
+      )}
+
+      <div className="flex justify-end">
         <button
           type="submit"
-          disabled={submitting || !content.trim()}
+          disabled={submitting}
           className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
         >
           {submitting ? '…' : 'Générer'}
@@ -146,15 +210,12 @@ export function DashboardPage() {
         {state === 'loading' && (
           <p className="text-center text-sm text-gray-400 py-8">Chargement…</p>
         )}
-
         {state === 'error' && (
           <p className="text-center text-sm text-red-500 py-8">Erreur lors du chargement.</p>
         )}
-
         {state === 'ready' && items.length === 0 && (
           <p className="text-center text-sm text-gray-400 py-8">Aucun QR code. Générez-en un ci-dessus.</p>
         )}
-
         {state === 'ready' && items.length > 0 && (
           <>
             <p className="text-xs text-gray-400">{total} QR code{total !== 1 ? 's' : ''}</p>

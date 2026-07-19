@@ -10,7 +10,7 @@ export class QrCodeOrmEntity {
   userId!: string;
 
   @Column({ type: 'text', name: 'content_type' })
-  contentType!: 'url' | 'text';
+  contentType!: 'url' | 'text' | 'wifi' | 'email' | 'vcard';
 
   @Column('text')
   content!: string;
