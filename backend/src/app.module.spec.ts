@@ -1,4 +1,6 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { QrCode } from './domain/qr/qr-code';
+import { QrRepository } from './domain/qr/qr.repository';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as cookieParser from 'cookie-parser';
@@ -30,6 +32,10 @@ describe('AppModule', () => {
     process.env['AUTH_CLIENT_SECRET'] = 'test-client-secret';
     process.env['AUTH_WEBHOOK_SECRET'] = 'test-webhook-secret';
     process.env['DATABASE_PATH'] = ':memory:';
+    process.env['MINIO_ENDPOINT'] = 'http://localhost:9000';
+    process.env['MINIO_BUCKET'] = 'test-bucket';
+    process.env['MINIO_ACCESS_KEY_ID'] = 'minioadmin';
+    process.env['MINIO_SECRET_ACCESS_KEY'] = 'minioadmin';
     ensureDistFixture();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -47,6 +53,7 @@ describe('AppModule', () => {
     app.use(express.static(DIST_PATH));
     app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
       if (req.path.startsWith('/api')) return next();
+      if (req.path.startsWith('/r/')) return next();
       res.sendFile(path.join(DIST_PATH, 'index.html'));
     });
 
@@ -74,10 +81,10 @@ describe('AppModule', () => {
     expect(res.headers['content-type']).toMatch(/json/);
   });
 
-  // Task 20 — /r/:id excluded from prefix (served by SPA fallback, not /api/r/:id)
-  it('should serve SPA for GET /r/test-id (excluded from /api prefix)', async () => {
-    const res = await request(app.getHttpServer()).get('/r/test-id');
-    expect(res.status).toBe(200);
+  // Task 20 — /r/:id excluded from prefix (handled by RedirectController, not /api/r/:id)
+  it('should return 404 on GET /r/nonexistent (RedirectController owns the route, not SPA)', async () => {
+    const res = await request(app.getHttpServer()).get('/r/nonexistent');
+    expect(res.status).toBe(404);
   });
 
   // Task 21 — /q/:id excluded from prefix
@@ -129,5 +136,61 @@ describe('AppModule', () => {
   it('should return 204 on POST /api/auth/logout', async () => {
     const res = await request(app.getHttpServer()).post('/api/auth/logout');
     expect(res.status).toBe(204);
+  });
+
+  // Test 40 — POST /api/qr without auth → 401
+  it('should return 401 on POST /api/qr without auth cookies', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/qr')
+      .send({ contentType: 'text', content: 'Hello' });
+    expect(res.status).toBe(401);
+  });
+
+  // Test 41 — GET /api/qr/:id/png unknown id → 404 (public route)
+  it('should return 404 on GET /api/qr/nonexistent/png (public route, missing QR)', async () => {
+    const res = await request(app.getHttpServer()).get('/api/qr/nonexistent/png');
+    expect(res.status).toBe(404);
+  });
+
+  // Test 28 — GET /r/{id} url-type QR → 302 with Location header
+  it('should return 302 with Location header on GET /r/{id} for a url-type QR', async () => {
+    const qrRepo = app.get(QrRepository);
+    const qr = QrCode.create({
+      id: 'e2e-redirect-1', userId: 'user-e2e', contentType: 'url',
+      content: 'https://target.sloboda.fr', size: 1024, fgColor: '#000000',
+      bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+    });
+    await qrRepo.save(qr);
+    const res = await request(app.getHttpServer()).get('/r/e2e-redirect-1');
+    expect(res.status).toBe(302);
+    expect(res.headers['location']).toBe('https://target.sloboda.fr');
+  });
+
+  // Test 29 — GET /r/{id} unknown id → 404
+  it('should return 404 on GET /r/unknown (no matching QR)', async () => {
+    const res = await request(app.getHttpServer()).get('/r/unknown-e2e');
+    expect(res.status).toBe(404);
+  });
+
+  // Test 30 — GET /r/{id} public, no auth needed
+  it('should return 302 without auth cookies on GET /r/{id} (public route)', async () => {
+    const qrRepo = app.get(QrRepository);
+    const qr = QrCode.create({
+      id: 'e2e-redirect-2', userId: 'user-e2e', contentType: 'url',
+      content: 'https://public.sloboda.fr', size: 1024, fgColor: '#000000',
+      bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+    });
+    await qrRepo.save(qr);
+    const res = await request(app.getHttpServer())
+      .get('/r/e2e-redirect-2');
+    expect(res.status).toBe(302);
+  });
+
+  // Test 31 — PATCH /api/qr/:id without auth → 401
+  it('should return 401 on PATCH /api/qr/:id without auth cookies', async () => {
+    const res = await request(app.getHttpServer())
+      .patch('/api/qr/some-id')
+      .send({ content: 'https://new.com' });
+    expect(res.status).toBe(401);
   });
 });
