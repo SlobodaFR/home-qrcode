@@ -9,7 +9,22 @@ vi.mock('./presentation/pages/NotFoundPage', () => ({
   NotFoundPage: () => <div>NotFoundPage</div>,
 }));
 
+const replaceMock = vi.fn();
+Object.defineProperty(window, 'location', {
+  value: { replace: replaceMock },
+  writable: true,
+});
+
 describe('AppRoutes', () => {
+  it('should call window.location.replace for / path', () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(replaceMock).toHaveBeenCalledWith('/api/auth/login');
+  });
+
   // Test 24 — TPP: constant
   it('should render PublicQrPage for /q/:id path', () => {
     render(
