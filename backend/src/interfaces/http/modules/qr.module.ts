@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { EditTargetUrlUseCase } from '../../../application/qr/edit-target-url.use-case';
 import { GenerateQrUseCase } from '../../../application/qr/generate-qr.use-case';
 import { QrImageGenerator } from '../../../domain/qr/qr-image-generator';
 import { QrRepository } from '../../../domain/qr/qr.repository';
@@ -18,6 +19,7 @@ import { QrController } from '../controllers/qr.controller';
     { provide: QrStoragePort, useClass: MinioQrStorage },
     { provide: QrImageGenerator, useClass: QrcodeImageGenerator },
     GenerateQrUseCase,
+    EditTargetUrlUseCase,
   ],
   exports: [QrRepository],
 })

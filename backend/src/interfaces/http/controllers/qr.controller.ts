@@ -1,6 +1,7 @@
-import { Body, Controller, Get, HttpCode, NotFoundException, Param, Post, StreamableFile } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, NotFoundException, Param, Patch, Post, StreamableFile } from '@nestjs/common';
 import { Readable } from 'stream';
 import { ConfigService } from '@nestjs/config';
+import { EditTargetUrlUseCase } from '../../../application/qr/edit-target-url.use-case';
 import { GenerateQrUseCase } from '../../../application/qr/generate-qr.use-case';
 import { QrCode } from '../../../domain/qr/qr-code';
 import { QrRepository } from '../../../domain/qr/qr.repository';
@@ -8,11 +9,13 @@ import { QrStoragePort } from '../../../domain/qr/qr-storage.port';
 import { CurrentUser, CurrentUserPayload } from '../decorators/current-user.decorator';
 import { Public } from '../decorators/public.decorator';
 import { CreateQrDto } from '../dto/create-qr.dto';
+import { EditTargetUrlDto } from '../dto/edit-target-url.dto';
 
 @Controller('qr')
 export class QrController {
   constructor(
     private readonly generateQr: GenerateQrUseCase,
+    private readonly editTargetUrl: EditTargetUrlUseCase,
     private readonly qrRepository: QrRepository,
     private readonly storage: QrStoragePort,
     private readonly config: ConfigService,
@@ -31,6 +34,12 @@ export class QrController {
       errorCorrection: dto.errorCorrection,
       frontendUrl: this.config.getOrThrow<string>('FRONTEND_URL'),
     });
+    return toResponse(qr);
+  }
+
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() dto: EditTargetUrlDto, @CurrentUser() user: CurrentUserPayload) {
+    const { qr } = await this.editTargetUrl.execute({ id, userId: user.id, content: dto.content });
     return toResponse(qr);
   }
 
@@ -78,6 +87,7 @@ function toResponse(qr: QrCode) {
     fgColor: qr.fgColor,
     bgColor: qr.bgColor,
     errorCorrection: qr.errorCorrection,
+    scanCount: qr.scanCount,
     createdAt: qr.createdAt,
     pngUrl: qr.pngUrl,
     svgUrl: qr.svgUrl,

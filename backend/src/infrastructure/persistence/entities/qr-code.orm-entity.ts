@@ -27,6 +27,9 @@ export class QrCodeOrmEntity {
   @Column({ type: 'text', name: 'error_correction' })
   errorCorrection!: 'L' | 'M' | 'Q' | 'H';
 
+  @Column({ type: 'integer', name: 'scan_count', default: 0 })
+  scanCount!: number;
+
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 }

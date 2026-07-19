@@ -68,4 +68,41 @@ describe('TypeOrmQrRepository', () => {
     expect(found).not.toBeNull();
     expect(found!.id).toBe('qr-1');
   });
+
+  // Test 6 — TPP: constant
+  it('incrementScanCount() should increment scan_count column by 1 atomically', async () => {
+    await repo.save(makeQr());
+    await repo.incrementScanCount('qr-1');
+    const found = await repo.findById('qr-1');
+    expect(found!.scanCount).toBe(1);
+  });
+
+  // Test 7 — TPP: conditional
+  it('incrementScanCount() on unknown id should not throw', async () => {
+    await expect(repo.incrementScanCount('nonexistent')).resolves.toBeUndefined();
+  });
+
+  // Test 8 — TPP: variable
+  it('save() should persist scanCount', async () => {
+    const qrWithCount = QrCode.create({
+      id: 'qr-scan', userId: 'user-1', contentType: 'url', content: 'https://x.com',
+      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+      createdAt: new Date('2026-01-01'), scanCount: 42,
+    });
+    await repo.save(qrWithCount);
+    const found = await repo.findById('qr-scan');
+    expect(found!.scanCount).toBe(42);
+  });
+
+  // Test 9 — TPP: variable
+  it('toDomain() should map scan_count column to scanCount', async () => {
+    await repo.save(QrCode.create({
+      id: 'qr-map', userId: 'user-1', contentType: 'url', content: 'https://x.com',
+      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+      createdAt: new Date('2026-01-01'), scanCount: 3,
+    }));
+    await repo.incrementScanCount('qr-map');
+    const found = await repo.findById('qr-map');
+    expect(found!.scanCount).toBe(4);
+  });
 });

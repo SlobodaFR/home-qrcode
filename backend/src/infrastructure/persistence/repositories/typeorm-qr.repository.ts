@@ -34,8 +34,13 @@ export class TypeOrmQrRepository extends QrRepository {
       fgColor: qr.fgColor,
       bgColor: qr.bgColor,
       errorCorrection: qr.errorCorrection,
+      scanCount: qr.scanCount,
       createdAt: qr.createdAt,
     });
+  }
+
+  async incrementScanCount(id: string): Promise<void> {
+    await this.repository.increment({ id }, 'scanCount', 1);
   }
 }
 
@@ -49,6 +54,7 @@ function toDomain(row: QrCodeOrmEntity): QrCode {
     fgColor: row.fgColor,
     bgColor: row.bgColor,
     errorCorrection: row.errorCorrection,
+    scanCount: row.scanCount,
     createdAt: row.createdAt,
   });
 }

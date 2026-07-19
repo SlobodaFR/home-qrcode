@@ -1,18 +1,20 @@
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { QrCode } from '../../../domain/qr/qr-code';
 import { QrRepository } from '../../../domain/qr/qr.repository';
 import { QrStoragePort } from '../../../domain/qr/qr-storage.port';
+import { EditTargetUrlUseCase } from '../../../application/qr/edit-target-url.use-case';
 import { GenerateQrUseCase } from '../../../application/qr/generate-qr.use-case';
 import { CreateQrDto } from '../dto/create-qr.dto';
+import { EditTargetUrlDto } from '../dto/edit-target-url.dto';
 import { QrController } from './qr.controller';
 import { Readable } from 'stream';
 
 const mockQr = QrCode.create({
   id: 'qr-1', userId: 'user-1', contentType: 'url', content: 'https://example.com',
   size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
-  createdAt: new Date('2026-01-01'),
+  createdAt: new Date('2026-01-01'), scanCount: 3,
 });
 
 const makeController = async () => {
@@ -20,6 +22,7 @@ const makeController = async () => {
     controllers: [QrController],
     providers: [
       { provide: GenerateQrUseCase, useValue: { execute: jest.fn().mockResolvedValue({ qr: mockQr }) } },
+      { provide: EditTargetUrlUseCase, useValue: { execute: jest.fn().mockResolvedValue({ qr: mockQr }) } },
       { provide: QrRepository, useValue: { findById: jest.fn().mockResolvedValue(mockQr), findByIdAndUserId: jest.fn().mockResolvedValue(mockQr) } },
       { provide: QrStoragePort, useValue: { streamPng: jest.fn().mockResolvedValue(Readable.from(['png'])), streamSvg: jest.fn().mockResolvedValue(Readable.from(['svg'])), exists: jest.fn().mockResolvedValue(true) } },
       { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('https://qrcode.example.com'), get: jest.fn() } },
@@ -28,6 +31,7 @@ const makeController = async () => {
   return {
     controller: module.get(QrController),
     useCase: module.get<jest.Mocked<GenerateQrUseCase>>(GenerateQrUseCase),
+    editUseCase: module.get<jest.Mocked<EditTargetUrlUseCase>>(EditTargetUrlUseCase),
     repo: module.get<jest.Mocked<QrRepository>>(QrRepository),
     storage: module.get<jest.Mocked<QrStoragePort>>(QrStoragePort),
   };
@@ -91,5 +95,38 @@ describe('QrController', () => {
     const { controller, repo } = await makeController();
     (repo.findById as jest.Mock).mockResolvedValue(null);
     await expect(controller.streamPng('nonexistent')).rejects.toThrow(NotFoundException);
+  });
+
+  // Test 21 — TPP: constant
+  it('should return 200 with updated QrCode response including scanCount on PATCH /api/qr/:id', async () => {
+    const { controller } = await makeController();
+    const dto = Object.assign(new EditTargetUrlDto(), { content: 'https://new.com' });
+    const result = await controller.update('qr-1', dto, mockUser);
+    expect(result).toMatchObject({ id: 'qr-1', scanCount: 3 });
+  });
+
+  // Test 22 — TPP: variable
+  it('toResponse() should include scanCount field', async () => {
+    const { controller } = await makeController();
+    const dto = Object.assign(new CreateQrDto(), { contentType: 'url' as const, content: 'https://example.com', size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const });
+    const result = await controller.create(dto, mockUser);
+    expect(result).toHaveProperty('scanCount');
+    expect(result.scanCount).toBe(3);
+  });
+
+  // Test 23 — TPP: conditional
+  it('should propagate NotFoundException from EditTargetUrlUseCase as 404 on PATCH', async () => {
+    const { controller, editUseCase } = await makeController();
+    (editUseCase.execute as jest.Mock).mockRejectedValue(new NotFoundException());
+    const dto = Object.assign(new EditTargetUrlDto(), { content: 'https://x.com' });
+    await expect(controller.update('missing', dto, mockUser)).rejects.toThrow(NotFoundException);
+  });
+
+  // Test 24 — TPP: conditional
+  it('should propagate UnprocessableEntityException from EditTargetUrlUseCase as 422 on PATCH', async () => {
+    const { controller, editUseCase } = await makeController();
+    (editUseCase.execute as jest.Mock).mockRejectedValue(new UnprocessableEntityException());
+    const dto = Object.assign(new EditTargetUrlDto(), { content: 'https://x.com' });
+    await expect(controller.update('qr-text', dto, mockUser)).rejects.toThrow(UnprocessableEntityException);
   });
 });

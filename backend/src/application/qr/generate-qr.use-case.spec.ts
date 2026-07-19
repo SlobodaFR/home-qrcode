@@ -20,7 +20,7 @@ const makeStorage = (): jest.Mocked<QrStoragePort> =>
   });
 
 const makeRepo = (): jest.Mocked<QrRepository> =>
-  ({ findById: jest.fn(), findByIdAndUserId: jest.fn(), save: jest.fn().mockResolvedValue(undefined) });
+  ({ findById: jest.fn(), findByIdAndUserId: jest.fn(), save: jest.fn().mockResolvedValue(undefined), incrementScanCount: jest.fn().mockResolvedValue(undefined) });
 
 const baseCmd: GenerateQrCommand = {
   userId: 'user-1',

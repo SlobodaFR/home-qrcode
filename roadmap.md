@@ -9,7 +9,7 @@ Features ordered by hard dependencies first, then value/risk.
 | 1 | `repo-setup` | Monorepo scaffold (npm workspaces, .nvmrc, Dockerfile, Litestream, GitHub Actions CI) | — | shipped |
 | 2 | `auth` | OAuth2 Authorization Code flow via auth.sloboda.fr, JwtAuthGuard (JWKS), httpOnly cookies, logout, disconnect webhook, user upsert | `repo-setup` | shipped |
 | 3 | `qr-generate` | Server-side QR generation (PNG ≥ 1024px + SVG), MinIO upload, proxy routes `/api/qr/{id}/png` and `/api/qr/{id}/svg`, params stored in SQLite | `auth` | shipped |
-| 4 | `url-redirect` | `GET /r/{id}` unauthenticated 302 redirect, scan counter increment, edit target URL from history | `qr-generate` | pending |
+| 4 | `url-redirect` | `GET /r/{id}` unauthenticated 302 redirect, scan counter increment, edit target URL from history | `qr-generate` | in-progress |
 | 5 | `qr-history` | Auto-save on generation, paginated list (aperçu + date + scan count), delete (DB + MinIO cleanup) | `qr-generate`, `url-redirect` | pending |
 | 6 | `public-qr-page` | `GET /q/{id}` unauthenticated page: display QR, download PNG/SVG buttons; 404 if deleted | `qr-generate` | pending |
 
