@@ -1,6 +1,8 @@
-import { Body, Controller, Delete, Get, HttpCode, NotFoundException, Param, Patch, Post, Query, StreamableFile } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, NotFoundException, Param, Patch, Post, Query, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Readable } from 'stream';
 import { ConfigService } from '@nestjs/config';
+import { AttachLogoUseCase } from '../../../application/qr/attach-logo.use-case';
 import { DeleteQrUseCase } from '../../../application/qr/delete-qr.use-case';
 import { EditTargetUrlUseCase } from '../../../application/qr/edit-target-url.use-case';
 import { GenerateQrUseCase } from '../../../application/qr/generate-qr.use-case';
@@ -13,11 +15,13 @@ import { Public } from '../decorators/public.decorator';
 import { CreateQrDto } from '../dto/create-qr.dto';
 import { EditTargetUrlDto } from '../dto/edit-target-url.dto';
 import { ListQrDto } from '../dto/list-qr.dto';
+import { FileTypeValidator, ParseFilePipe } from '@nestjs/common';
 
 @Controller('qr')
 export class QrController {
   constructor(
     private readonly generateQr: GenerateQrUseCase,
+    private readonly attachLogo: AttachLogoUseCase,
     private readonly editTargetUrl: EditTargetUrlUseCase,
     private readonly listQr: ListQrUseCase,
     private readonly deleteQr: DeleteQrUseCase,
@@ -87,6 +91,40 @@ export class QrController {
     return toResponse(qr);
   }
 
+  @Post(':id/logo')
+  @HttpCode(200)
+  @UseInterceptors(FileInterceptor('logo', { limits: { fileSize: 2_097_152 } }))
+  async attachLogoEndpoint(
+    @Param('id') id: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new FileTypeValidator({ fileType: /^image\/(png|jpeg|webp)$/ })],
+      }),
+    ) logo: Express.Multer.File,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    const { qr } = await this.attachLogo.execute({
+      id,
+      userId: user.id,
+      logoBuffer: logo.buffer,
+      logoMimeType: logo.mimetype,
+      frontendUrl: this.config.getOrThrow<string>('FRONTEND_URL'),
+    });
+    return toResponse(qr);
+  }
+
+  @Public()
+  @Get(':id/logo')
+  async streamLogo(@Param('id') id: string): Promise<StreamableFile> {
+    const qr = await this.qrRepository.findById(id);
+    if (!qr || !qr.hasLogo) throw new NotFoundException();
+    const stream = await this.storage.streamLogo(id);
+    return new StreamableFile(stream as unknown as Readable, {
+      type: qr.logoMimeType ?? 'application/octet-stream',
+      disposition: `inline; filename="logo-${id}"`,
+    });
+  }
+
   @Public()
   @Get(':id/png')
   async streamPng(@Param('id') id: string): Promise<StreamableFile> {
@@ -126,6 +164,8 @@ function toListItemResponse(qr: QrCode) {
     bgColor: qr.bgColor,
     errorCorrection: qr.errorCorrection,
     scanCount: qr.scanCount,
+    hasLogo: qr.hasLogo,
+    logoMimeType: qr.logoMimeType,
     createdAt: qr.createdAt,
     pngUrl: qr.pngUrl,
     svgUrl: qr.svgUrl,
@@ -143,6 +183,8 @@ function toResponse(qr: QrCode) {
     bgColor: qr.bgColor,
     errorCorrection: qr.errorCorrection,
     scanCount: qr.scanCount,
+    hasLogo: qr.hasLogo,
+    logoMimeType: qr.logoMimeType,
     createdAt: qr.createdAt,
     pngUrl: qr.pngUrl,
     svgUrl: qr.svgUrl,

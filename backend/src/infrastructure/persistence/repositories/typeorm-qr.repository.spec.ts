@@ -173,4 +173,35 @@ describe('TypeOrmQrRepository', () => {
     expect(deleted).toBe(false);
     expect(await repo.findById('del-2')).not.toBeNull();
   });
+
+  // Logo-overlay: Test 23 — TPP: variable
+  it('toDomain() should map encodedContent, hasLogo, and logoMimeType from ORM row', async () => {
+    const qr = QrCode.create({
+      id: 'logo-qr', userId: 'user-1', contentType: 'wifi', content: 'HomeNet',
+      encodedContent: 'WIFI:T:WPA;S:HomeNet;P:pass;;',
+      hasLogo: true, logoMimeType: 'image/png',
+      size: 200, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'Q',
+      createdAt: new Date('2026-01-01'),
+    });
+    await repo.save(qr);
+    const found = await repo.findById('logo-qr');
+    expect(found!.encodedContent).toBe('WIFI:T:WPA;S:HomeNet;P:pass;;');
+    expect(found!.hasLogo).toBe(true);
+    expect(found!.logoMimeType).toBe('image/png');
+  });
+
+  // Logo-overlay: Test 24 — TPP: variable
+  it('save() should persist encodedContent, hasLogo, and logoMimeType', async () => {
+    const qr = QrCode.create({
+      id: 'save-logo', userId: 'user-1', contentType: 'text', content: 'Hello',
+      encodedContent: 'Hello', hasLogo: false, logoMimeType: null,
+      size: 200, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+      createdAt: new Date('2026-01-01'),
+    });
+    await repo.save(qr);
+    const found = await repo.findById('save-logo');
+    expect(found!.encodedContent).toBe('Hello');
+    expect(found!.hasLogo).toBe(false);
+    expect(found!.logoMimeType).toBeNull();
+  });
 });

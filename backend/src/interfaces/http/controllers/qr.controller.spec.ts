@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import { QrCode } from '../../../domain/qr/qr-code';
 import { QrRepository } from '../../../domain/qr/qr.repository';
 import { QrStoragePort } from '../../../domain/qr/qr-storage.port';
+import { AttachLogoUseCase } from '../../../application/qr/attach-logo.use-case';
 import { DeleteQrUseCase } from '../../../application/qr/delete-qr.use-case';
 import { EditTargetUrlUseCase } from '../../../application/qr/edit-target-url.use-case';
 import { GenerateQrUseCase } from '../../../application/qr/generate-qr.use-case';
@@ -25,11 +26,12 @@ const makeController = async () => {
     controllers: [QrController],
     providers: [
       { provide: GenerateQrUseCase, useValue: { execute: jest.fn().mockResolvedValue({ qr: mockQr }) } },
+      { provide: AttachLogoUseCase, useValue: { execute: jest.fn().mockResolvedValue({ qr: mockQr }) } },
       { provide: EditTargetUrlUseCase, useValue: { execute: jest.fn().mockResolvedValue({ qr: mockQr }) } },
       { provide: ListQrUseCase, useValue: { execute: jest.fn().mockResolvedValue({ items: [mockQr], total: 1, page: 1, limit: 20 }) } },
       { provide: DeleteQrUseCase, useValue: { execute: jest.fn().mockResolvedValue(undefined) } },
       { provide: QrRepository, useValue: { findById: jest.fn().mockResolvedValue(mockQr), findByIdAndUserId: jest.fn().mockResolvedValue(mockQr) } },
-      { provide: QrStoragePort, useValue: { streamPng: jest.fn().mockResolvedValue(Readable.from(['png'])), streamSvg: jest.fn().mockResolvedValue(Readable.from(['svg'])), exists: jest.fn().mockResolvedValue(true) } },
+      { provide: QrStoragePort, useValue: { streamPng: jest.fn().mockResolvedValue(Readable.from(['png'])), streamSvg: jest.fn().mockResolvedValue(Readable.from(['svg'])), streamLogo: jest.fn().mockResolvedValue(Readable.from(['logo'])), exists: jest.fn().mockResolvedValue(true) } },
       { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('https://qrcode.example.com'), get: jest.fn() } },
     ],
   }).compile();

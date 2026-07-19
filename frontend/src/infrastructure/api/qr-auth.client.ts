@@ -2,10 +2,13 @@ export interface QrItem {
   id: string;
   contentType: 'url' | 'text' | 'wifi' | 'email' | 'vcard';
   content: string;
+  errorCorrection: 'L' | 'M' | 'Q' | 'H';
   scanCount: number;
   createdAt: string;
   pngUrl: string;
   svgUrl: string;
+  hasLogo: boolean;
+  logoMimeType: string | null;
 }
 
 export interface QrListResponse {
@@ -42,4 +45,12 @@ export async function createQrCode(payload: CreateQrPayload): Promise<QrItem> {
 export async function deleteQrCode(id: string): Promise<void> {
   const res = await fetch(`/api/qr/${id}`, { method: 'DELETE', credentials: 'include' });
   if (!res.ok && res.status !== 204) throw new Error(`deleteQrCode failed: ${res.status}`);
+}
+
+export async function attachLogo(id: string, file: File): Promise<QrItem> {
+  const form = new FormData();
+  form.append('logo', file);
+  const res = await fetch(`/api/qr/${id}/logo`, { method: 'POST', credentials: 'include', body: form });
+  if (!res.ok) throw new Error(`attachLogo failed: ${res.status}`);
+  return res.json() as Promise<QrItem>;
 }

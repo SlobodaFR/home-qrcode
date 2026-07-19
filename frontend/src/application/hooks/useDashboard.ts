@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CreateQrPayload, QrItem, createQrCode, deleteQrCode, listQrCodes } from '../../infrastructure/api/qr-auth.client';
+import { CreateQrPayload, QrItem, attachLogo as attachLogoClient, createQrCode, deleteQrCode, listQrCodes } from '../../infrastructure/api/qr-auth.client';
 
 type DashboardState = 'loading' | 'ready' | 'error';
 
@@ -9,6 +9,7 @@ interface DashboardHook {
   total: number;
   create: (payload: CreateQrPayload) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  attachLogo: (id: string, file: File) => Promise<void>;
 }
 
 export function useDashboard(): DashboardHook {
@@ -43,5 +44,10 @@ export function useDashboard(): DashboardHook {
     setTotal((t) => t - 1);
   }, []);
 
-  return { state, items, total, create, remove };
+  const attachLogo = useCallback(async (id: string, file: File) => {
+    const updated = await attachLogoClient(id, file);
+    setItems((prev) => prev.map((q) => (q.id === id ? updated : q)));
+  }, []);
+
+  return { state, items, total, create, remove, attachLogo };
 }

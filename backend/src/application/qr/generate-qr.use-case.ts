@@ -71,6 +71,8 @@ export class GenerateQrUseCase {
       userId: cmd.userId,
       contentType: cmd.contentType,
       content: storedContent,
+      encodedContent,
+      hasLogo: false,
       size: cmd.size,
       fgColor: cmd.fgColor,
       bgColor: cmd.bgColor,

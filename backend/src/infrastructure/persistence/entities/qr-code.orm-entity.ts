@@ -30,6 +30,15 @@ export class QrCodeOrmEntity {
   @Column({ type: 'integer', name: 'scan_count', default: 0 })
   scanCount!: number;
 
+  @Column({ type: 'text', name: 'encoded_content', nullable: true })
+  encodedContent!: string | null;
+
+  @Column({ type: 'boolean', name: 'has_logo', default: false })
+  hasLogo!: boolean;
+
+  @Column({ type: 'text', name: 'logo_mime_type', nullable: true })
+  logoMimeType!: string | null;
+
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 }
