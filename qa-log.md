@@ -141,3 +141,37 @@
 
 ### Verdict
 **Pass.** 146/146 tests green, lint clean, strict TS clean. Review finding (AC15 logging) fixed pre-QA. Ready for `/ship qr-history`.
+
+---
+
+## 2026-07-19 — public-qr-page QA
+
+### Commands run
+- `npx jest --no-coverage` (backend) → PASS (151/151 tests, 25 suites)
+- `npx vitest run` (frontend) → PASS (20/20 tests, 5 suites)
+- `npx tsc --noEmit` (backend + frontend) → PASS
+- `npx eslint src --max-warnings=0` (backend) → PASS
+- `npm run build` → PASS (frontend 534ms, backend nest build OK)
+
+### New dependencies added
+- `react-router-dom ^7` (runtime)
+- `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`, `happy-dom` (devDependencies)
+- vitest config updated: `environment: 'happy-dom'`, `globals: true`, `setupFiles`
+
+### Cross-feature checks
+
+**Architectural consistency**:
+- `infrastructure/api/qr.client.ts` → `application/hooks/usePublicQr.ts` → `presentation/pages/PublicQrPage.tsx` — strict layer order ✅
+- Backend `getMeta` in `QrController`: uses `findById` (already injected), no new use case (trivial existence check) ✅
+- `@Public()` decorator consistent with existing proxy routes pattern ✅
+- `AppRoutes` exported separately for testability; `App` wraps with `BrowserRouter` ✅
+
+**Issues found**:
+
+| # | Severity | File | Description |
+|---|---|---|---|
+| 1 | INFO | `PublicQrPage.tsx` | `document.title` set on mount, not reset on unmount. No impact now (only page); worth fixing when authenticated pages are added. |
+| 2 | INFO | `frontend/` | `jsdom` installed but unused (switched to `happy-dom`). Can be removed from devDependencies. |
+
+### Verdict
+**Pass.** 171 total tests green (151 backend, 20 frontend), both TS clean, build clean. Ready for `/ship public-qr-page`.

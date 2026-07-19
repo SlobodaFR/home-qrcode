@@ -1,7 +1,20 @@
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { NotFoundPage } from './presentation/pages/NotFoundPage';
+import { PublicQrPage } from './presentation/pages/PublicQrPage';
+
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/q/:id" element={<PublicQrPage />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  );
+}
+
 export default function App() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <h1 className="text-2xl font-bold">home-qrcode</h1>
-    </div>
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }

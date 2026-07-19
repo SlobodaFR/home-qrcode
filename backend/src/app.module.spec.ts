@@ -233,4 +233,30 @@ describe('AppModule', () => {
     const res = await request(app.getHttpServer()).get('/api/qr/e2e-delete-png/png');
     expect(res.status).toBe(404);
   });
+
+  // Test 3 (public-qr-page) — GET /api/qr/:id/meta without auth for existing QR → 200
+  it('should return 200 on GET /api/qr/:id/meta without auth for existing QR', async () => {
+    const qrRepo = app.get(QrRepository);
+    const qr = QrCode.create({
+      id: 'e2e-meta-1', userId: 'user-e2e', contentType: 'url',
+      content: 'https://meta-test.sloboda.fr', size: 1024, fgColor: '#000000',
+      bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+    });
+    await qrRepo.save(qr);
+    const res = await request(app.getHttpServer()).get('/api/qr/e2e-meta-1/meta');
+    expect(res.status).toBe(200);
+  });
+
+  // Test 4 (public-qr-page) — GET /api/qr/:id/meta for unknown id → 404
+  it('should return 404 on GET /api/qr/unknown/meta', async () => {
+    const res = await request(app.getHttpServer()).get('/api/qr/nonexistent-meta/meta');
+    expect(res.status).toBe(404);
+  });
+
+  // Test 5 (public-qr-page) — GET /api/qr/:id/meta body is {}
+  it('should return body {} on GET /api/qr/:id/meta for existing QR', async () => {
+    const res = await request(app.getHttpServer()).get('/api/qr/e2e-meta-1/meta');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({});
+  });
 });

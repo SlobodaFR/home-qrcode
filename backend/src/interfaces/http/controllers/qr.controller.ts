@@ -26,6 +26,14 @@ export class QrController {
     private readonly config: ConfigService,
   ) {}
 
+  @Public()
+  @Get(':id/meta')
+  async getMeta(@Param('id') id: string): Promise<Record<string, never>> {
+    const qr = await this.qrRepository.findById(id);
+    if (!qr) throw new NotFoundException();
+    return {};
+  }
+
   @Get()
   async list(@Query() dto: ListQrDto, @CurrentUser() user: CurrentUserPayload) {
     const result = await this.listQr.execute({ userId: user.id, page: dto.page, limit: dto.limit });

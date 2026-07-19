@@ -190,4 +190,18 @@ describe('QrController', () => {
     await controller.list(dto, mockUser);
     expect(listUseCase.execute).toHaveBeenCalledWith(expect.objectContaining({ userId: 'user-1' }));
   });
+
+  // Test 1 (public-qr-page) — TPP: constant
+  it('should return {} when findById returns a QR on GET /api/qr/:id/meta', async () => {
+    const { controller } = await makeController();
+    const result = await controller.getMeta('qr-1');
+    expect(result).toEqual({});
+  });
+
+  // Test 2 (public-qr-page) — TPP: conditional
+  it('should throw NotFoundException on GET /api/qr/:id/meta when QR not found', async () => {
+    const { controller, repo } = await makeController();
+    (repo.findById as jest.Mock).mockResolvedValue(null);
+    await expect(controller.getMeta('unknown')).rejects.toThrow(NotFoundException);
+  });
 });
