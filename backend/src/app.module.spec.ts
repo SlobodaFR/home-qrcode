@@ -36,6 +36,7 @@ describe('AppModule', () => {
     process.env['MINIO_BUCKET'] = 'test-bucket';
     process.env['MINIO_ACCESS_KEY_ID'] = 'minioadmin';
     process.env['MINIO_SECRET_ACCESS_KEY'] = 'minioadmin';
+    process.env['MINIO_ASSETS_PATH'] = 'qr-test';
     ensureDistFixture();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
