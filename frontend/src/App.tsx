@@ -27,9 +27,16 @@ function HomePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4">
       <p className="text-gray-500">Dashboard en cours de construction.</p>
-      <a href="/api/auth/logout" className="text-sm text-gray-400 hover:underline">
+      <button
+        className="text-sm text-gray-400 hover:underline"
+        onClick={() => {
+          void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(() => {
+            window.location.replace('/api/auth/login');
+          });
+        }}
+      >
         Se déconnecter
-      </a>
+      </button>
     </div>
   );
 }
