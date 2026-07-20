@@ -294,4 +294,18 @@ describe('AppModule', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({});
   });
+
+  // Logo-overlay: Test 25 — POST /api/qr/:id/logo without auth → 401
+  it('should return 401 on POST /api/qr/:id/logo without auth cookies', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/qr/some-id/logo')
+      .attach('logo', Buffer.from('fake'), { filename: 'logo.png', contentType: 'image/png' });
+    expect(res.status).toBe(401);
+  });
+
+  // Logo-overlay: Test 26 — GET /api/qr/:id/logo unknown id → 404 (public route)
+  it('should return 404 on GET /api/qr/nonexistent/logo (public route, no logo)', async () => {
+    const res = await request(app.getHttpServer()).get('/api/qr/nonexistent/logo');
+    expect(res.status).toBe(404);
+  });
 });

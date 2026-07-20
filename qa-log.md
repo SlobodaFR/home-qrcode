@@ -241,3 +241,34 @@
 
 ### Verdict
 **Pass.** 230 total tests green (196 backend, 34 frontend), both TS clean, build clean. One review-found bug (`vcardEmail` field mismatch) fixed and regression-tested before QA. Ready for `/ship extended-content-types`.
+
+---
+
+## QA — 2026-07-20 — logo-overlay
+
+### Commands run
+
+```
+npm test                    → 265 tests (222 backend, 43 frontend) — all GREEN
+npm run build               → FAIL (TS compile error in frontend)
+```
+
+### Results
+
+| # | Severity | Location | Issue |
+|---|---|---|---|
+| 1 | **BLOCKER** | `frontend/src/infrastructure/api/qr-auth.client.ts:QrItem` | `errorCorrection` field absent from `QrItem` interface. Backend `toResponse`/`toListItemResponse` both include it; `DashboardPage.tsx:38` reads `qr.errorCorrection` for correction-level notice. TypeScript strict mode fails: `TS2339: Property 'errorCorrection' does not exist on type 'QrItem'`. Tests pass (mocks include field) but `tsc -b` fails → `npm run build` fails. |
+| 2 | INFO | `specs/` | `url-redirect`, `qr-history`, `public-qr-page` — shipped features with no `review.md`. Pre-dates review workflow. No code risk. Carried from previous QA. |
+| 3 | INFO | Architecture | Domain layer zero-framework audit: clean. No NestJS/TypeORM/MinIO/sharp in `domain/`. |
+| 4 | INFO | Constitution | No hardcoded `sloboda.fr` URLs in src. No raw MinIO URLs in responses. `/r/:id` redirect route is `@Public()`. All clear. |
+| 5 | INFO | Duplication | `qr.controller.ts` calls `findById`/`findByIdAndUserId` directly for proxy routes (PNG, SVG, logo, meta). This is intentional thin-controller pattern for public proxy endpoints — not a use-case candidate at this scale. |
+| 6 | INFO | Roadmap | `url-shortener`, `link-expiration`, `internal-sharing` pending with unmet deps. Expected state. |
+
+### Fix applied (blocker #1)
+
+Added `errorCorrection: 'L' | 'M' | 'Q' | 'H'` to `QrItem` interface in `qr-auth.client.ts`.  
+Post-fix: `npm run build` passes, all 265 tests still GREEN.
+
+### Verdict
+
+**Pass (after blocker fix).** 265 tests green. Build clean post-fix. Architecture clean. Ready for `/ship logo-overlay`.

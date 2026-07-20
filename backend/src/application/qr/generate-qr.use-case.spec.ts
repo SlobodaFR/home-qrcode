@@ -15,8 +15,10 @@ const makeStorage = (): jest.Mocked<QrStoragePort> =>
   ({
     uploadPng: jest.fn().mockResolvedValue(undefined),
     uploadSvg: jest.fn().mockResolvedValue(undefined),
+    uploadLogo: jest.fn().mockResolvedValue(undefined),
     streamPng: jest.fn(),
     streamSvg: jest.fn(),
+    streamLogo: jest.fn(),
     exists: jest.fn(),
     delete: jest.fn().mockResolvedValue(undefined),
   });
@@ -156,5 +158,29 @@ describe('GenerateQrUseCase', () => {
     expect(generator.generate).toHaveBeenCalledWith(expectedEncoded, expect.any(Object));
     expect(result.qr.content).toBe('Jane Doe');
     expect(result.qr.contentType).toBe('vcard');
+  });
+
+  // Logo-overlay: Test 7 — TPP: variable
+  it('URL type: saved qr.encodedContent should equal {frontendUrl}/r/{id}', async () => {
+    const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), makeRepo());
+    const result = await uc.execute({ ...baseCmd, contentType: 'url', content: 'https://target.com' });
+    expect(result.qr.encodedContent).toMatch(/^https:\/\/qrcode\.example\.com\/r\/.+$/);
+  });
+
+  // Logo-overlay: Test 8 — TPP: variable
+  it('Wifi type: saved qr.encodedContent should equal the encoded wifi string', async () => {
+    const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), makeRepo());
+    const result = await uc.execute({
+      ...baseCmd, contentType: 'wifi',
+      wifi: { ssid: 'HomeNet', security: 'WPA', password: 'pass123' },
+    });
+    expect(result.qr.encodedContent).toBe('WIFI:T:WPA;S:HomeNet;P:pass123;;');
+  });
+
+  // Logo-overlay: Test 9 — TPP: constant
+  it('Any type: saved qr.hasLogo should be false', async () => {
+    const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), makeRepo());
+    const result = await uc.execute(baseCmd);
+    expect(result.qr.hasLogo).toBe(false);
   });
 });

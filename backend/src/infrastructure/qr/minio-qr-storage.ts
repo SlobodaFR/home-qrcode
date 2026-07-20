@@ -17,6 +17,10 @@ export class MinioQrStorage extends QrStoragePort {
     return `${this.assetsPath}/${id}/qr.${ext}`;
   }
 
+  private logoKey(id: string): string {
+    return `${this.assetsPath}/${id}/logo`;
+  }
+
   async uploadPng(id: string, buffer: Buffer): Promise<void> {
     await this.minio.client.putObject(
       this.minio.bucket, this.key(id, 'png'), buffer, buffer.length,
@@ -32,12 +36,23 @@ export class MinioQrStorage extends QrStoragePort {
     );
   }
 
+  async uploadLogo(id: string, buffer: Buffer, mimeType: string): Promise<void> {
+    await this.minio.client.putObject(
+      this.minio.bucket, this.logoKey(id), buffer, buffer.length,
+      { 'Content-Type': mimeType },
+    );
+  }
+
   async streamPng(id: string): Promise<NodeJS.ReadableStream> {
     return this.minio.client.getObject(this.minio.bucket, this.key(id, 'png'));
   }
 
   async streamSvg(id: string): Promise<NodeJS.ReadableStream> {
     return this.minio.client.getObject(this.minio.bucket, this.key(id, 'svg'));
+  }
+
+  async streamLogo(id: string): Promise<NodeJS.ReadableStream> {
+    return this.minio.client.getObject(this.minio.bucket, this.logoKey(id));
   }
 
   async exists(id: string): Promise<boolean> {
@@ -55,6 +70,7 @@ export class MinioQrStorage extends QrStoragePort {
     const results = await Promise.allSettled([
       this.minio.client.removeObject(this.minio.bucket, this.key(id, 'png')),
       this.minio.client.removeObject(this.minio.bucket, this.key(id, 'svg')),
+      this.minio.client.removeObject(this.minio.bucket, this.logoKey(id)),
     ]);
     for (const r of results) {
       if (r.status === 'rejected') this.logger.warn(`MinIO delete failed for ${this.key(id, 'png')}: ${String(r.reason)}`);

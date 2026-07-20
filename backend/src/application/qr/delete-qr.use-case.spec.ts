@@ -19,8 +19,8 @@ const makeRepo = (qr: QrCode | null, deleteResult = true): jest.Mocked<QrReposit
 });
 
 const makeStorage = (): jest.Mocked<QrStoragePort> => ({
-  uploadPng: jest.fn(), uploadSvg: jest.fn(),
-  streamPng: jest.fn(), streamSvg: jest.fn(),
+  uploadPng: jest.fn(), uploadSvg: jest.fn(), uploadLogo: jest.fn(),
+  streamPng: jest.fn(), streamSvg: jest.fn(), streamLogo: jest.fn(),
   exists: jest.fn(),
   delete: jest.fn().mockResolvedValue(undefined),
 });

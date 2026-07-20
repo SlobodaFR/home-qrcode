@@ -1,45 +1,105 @@
-import { FormEvent, useState } from 'react';
+import { ChangeEvent, FormEvent, useRef, useState } from 'react';
 import { useDashboard } from '../../application/hooks/useDashboard';
 import { CreateQrPayload, QrItem } from '../../infrastructure/api/qr-auth.client';
 
 type ContentType = 'url' | 'text' | 'wifi' | 'email' | 'vcard';
 
-function QrCard({ qr, onDelete }: { qr: QrItem; onDelete: (id: string) => void }) {
+function QrCard({ qr, onDelete, onAttachLogo }: { qr: QrItem; onDelete: (id: string) => void; onAttachLogo: (id: string, file: File) => Promise<void> }) {
   const [deleting, setDeleting] = useState(false);
+  const [showLogoPanel, setShowLogoPanel] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleDelete() {
     setDeleting(true);
+    try { onDelete(qr.id); } finally { setDeleting(false); }
+  }
+
+  async function handleLogoChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2_097_152) {
+      setLogoError('Fichier trop volumineux (max 2 MB).');
+      return;
+    }
+    setUploading(true);
+    setLogoError(null);
     try {
-      onDelete(qr.id);
+      await onAttachLogo(qr.id, file);
+      setShowLogoPanel(false);
+    } catch {
+      setLogoError('Erreur lors de l\'upload.');
     } finally {
-      setDeleting(false);
+      setUploading(false);
     }
   }
 
+  const needsCorrectionUpgrade = qr.errorCorrection === 'L' || qr.errorCorrection === 'M';
+
   return (
-    <div className="flex gap-4 rounded-xl border border-gray-200 p-4 bg-white">
-      <a href={`/q/${qr.id}`} target="_blank" rel="noreferrer" className="shrink-0">
-        <img src={qr.pngUrl} alt="QR Code" className="w-20 h-20 object-contain rounded" />
-      </a>
-      <div className="flex flex-col flex-1 min-w-0 gap-1">
-        <p className="text-sm font-medium text-gray-900 truncate">{qr.content}</p>
-        <p className="text-xs text-gray-400">
-          {new Date(qr.createdAt).toLocaleDateString('fr-FR')} · {qr.scanCount} scan{qr.scanCount !== 1 ? 's' : ''}
-        </p>
-        <div className="flex gap-3 mt-auto pt-1">
-          <a href={qr.pngUrl} download={`qr-${qr.id}.png`} className="text-xs text-gray-500 hover:text-gray-900">PNG</a>
-          <a href={qr.svgUrl} download={`qr-${qr.id}.svg`} className="text-xs text-gray-500 hover:text-gray-900">SVG</a>
-          <a href={`/q/${qr.id}`} target="_blank" rel="noreferrer" className="text-xs text-gray-500 hover:text-gray-900">Page publique</a>
+    <div className="flex flex-col rounded-xl border border-gray-200 p-4 bg-white gap-3">
+      <div className="flex gap-4">
+        <div className="shrink-0 flex flex-col gap-1 items-center">
+          <a href={`/q/${qr.id}`} target="_blank" rel="noreferrer">
+            <img src={qr.pngUrl} alt="QR Code" className="w-20 h-20 object-contain rounded" />
+          </a>
+          {qr.hasLogo && (
+            <img src={`/api/qr/${qr.id}/logo`} alt="Logo" className="w-8 h-8 object-contain rounded" />
+          )}
+        </div>
+        <div className="flex flex-col flex-1 min-w-0 gap-1">
+          <p className="text-sm font-medium text-gray-900 truncate">{qr.content}</p>
+          <p className="text-xs text-gray-400">
+            {new Date(qr.createdAt).toLocaleDateString('fr-FR')} · {qr.scanCount} scan{qr.scanCount !== 1 ? 's' : ''}
+          </p>
+          <div className="flex gap-3 mt-auto pt-1">
+            <a href={qr.pngUrl} download={`qr-${qr.id}.png`} className="text-xs text-gray-500 hover:text-gray-900">PNG</a>
+            <a href={qr.svgUrl} download={`qr-${qr.id}.svg`} className="text-xs text-gray-500 hover:text-gray-900">
+              {qr.hasLogo ? 'SVG (sans logo)' : 'SVG'}
+            </a>
+            <a href={`/q/${qr.id}`} target="_blank" rel="noreferrer" className="text-xs text-gray-500 hover:text-gray-900">Page publique</a>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          {!qr.hasLogo && (
+            <button
+              type="button"
+              onClick={() => setShowLogoPanel((v) => !v)}
+              className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              Ajouter un logo
+            </button>
+          )}
+          <button
+            onClick={() => void handleDelete()}
+            disabled={deleting}
+            aria-label="Supprimer"
+            className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-40"
+          >
+            ✕
+          </button>
         </div>
       </div>
-      <button
-        onClick={() => void handleDelete()}
-        disabled={deleting}
-        aria-label="Supprimer"
-        className="shrink-0 self-start text-gray-300 hover:text-red-500 transition-colors disabled:opacity-40"
-      >
-        ✕
-      </button>
+      {showLogoPanel && !qr.hasLogo && (
+        <div className="flex flex-col gap-2 border-t border-gray-100 pt-3">
+          {needsCorrectionUpgrade && (
+            <p className="text-xs text-amber-600">
+              Le niveau de correction sera automatiquement passé à Q pour garantir la lisibilité avec le logo.
+            </p>
+          )}
+          <input
+            ref={fileRef}
+            data-testid="logo-file-input"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(e) => void handleLogoChange(e)}
+            disabled={uploading}
+            className="text-xs text-gray-600"
+          />
+          {logoError && <p className="text-xs text-red-500">{logoError}</p>}
+        </div>
+      )}
     </div>
   );
 }
@@ -187,7 +247,7 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
 }
 
 export function DashboardPage() {
-  const { state, items, total, create, remove } = useDashboard();
+  const { state, items, total, create, remove, attachLogo } = useDashboard();
 
   function handleLogout() {
     void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(() => {
@@ -221,7 +281,7 @@ export function DashboardPage() {
             <p className="text-xs text-gray-400">{total} QR code{total !== 1 ? 's' : ''}</p>
             <div className="flex flex-col gap-3">
               {items.map((qr) => (
-                <QrCard key={qr.id} qr={qr} onDelete={remove} />
+                <QrCard key={qr.id} qr={qr} onDelete={remove} onAttachLogo={attachLogo} />
               ))}
             </div>
           </>

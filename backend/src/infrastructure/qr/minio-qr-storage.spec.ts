@@ -98,4 +98,33 @@ describe('MinioQrStorage', () => {
     const storage = makeStorage({ removeObject: jest.fn().mockRejectedValue(new Error('gone')) });
     await expect(storage.delete('abc-123')).resolves.toBeUndefined();
   });
+
+  // Logo-overlay: Test 20 — TPP: constant
+  it('uploadLogo() should call putObject with {assetsPath}/{id}/logo key and provided content-type', async () => {
+    const svc = makeMinioService();
+    const storage = new MinioQrStorage(svc, makeConfig());
+    const buf = Buffer.from('logo-data');
+    await storage.uploadLogo('abc-123', buf, 'image/png');
+    expect(svc.client.putObject).toHaveBeenCalledWith(
+      'test-bucket', `${ASSETS_PATH}/abc-123/logo`, buf, buf.length,
+      { 'Content-Type': 'image/png' },
+    );
+  });
+
+  // Logo-overlay: Test 21 — TPP: constant
+  it('streamLogo() should call getObject with {assetsPath}/{id}/logo key', async () => {
+    const svc = makeMinioService();
+    const storage = new MinioQrStorage(svc, makeConfig());
+    await storage.streamLogo('abc-123');
+    expect(svc.client.getObject).toHaveBeenCalledWith('test-bucket', `${ASSETS_PATH}/abc-123/logo`);
+  });
+
+  // Logo-overlay: Test 22 — TPP: variable
+  it('delete() should include the logo key alongside png and svg in removeObject calls', async () => {
+    const svc = makeMinioService();
+    const storage = new MinioQrStorage(svc, makeConfig());
+    await storage.delete('abc-123');
+    expect(svc.client.removeObject).toHaveBeenCalledWith('test-bucket', `${ASSETS_PATH}/abc-123/logo`);
+    expect(svc.client.removeObject).toHaveBeenCalledTimes(3);
+  });
 });
