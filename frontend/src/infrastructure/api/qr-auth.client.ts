@@ -1,3 +1,9 @@
+export interface ShareItem {
+  shareId: string;
+  recipientId: string;
+  recipientName: string;
+}
+
 export interface QrItem {
   id: string;
   contentType: 'url' | 'text' | 'wifi' | 'email' | 'vcard';
@@ -10,6 +16,7 @@ export interface QrItem {
   svgUrl: string;
   hasLogo: boolean;
   logoMimeType: string | null;
+  shares: ShareItem[];
 }
 
 export interface QrListResponse {

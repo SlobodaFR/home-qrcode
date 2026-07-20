@@ -8,6 +8,7 @@ import { AuthModule } from './interfaces/http/modules/auth.module';
 import { LinksModule } from './interfaces/http/modules/links.module';
 import { QrModule } from './interfaces/http/modules/qr.module';
 import { RedirectModule } from './interfaces/http/modules/redirect.module';
+import { UsersModule } from './interfaces/http/modules/users.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { RedirectModule } from './interfaces/http/modules/redirect.module';
     QrModule,
     LinksModule,
     RedirectModule,
+    UsersModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'frontend', 'dist'),
       exclude: ['/api{*any}'],

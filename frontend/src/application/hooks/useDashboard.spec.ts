@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { useDashboard } from './useDashboard';
 import * as client from '../../infrastructure/api/qr-auth.client';
+import * as sharingClient from '../../infrastructure/api/sharing.client';
 import type { CreateQrPayload } from '../../infrastructure/api/qr-auth.client';
 
 
@@ -10,6 +11,7 @@ const makeItem = (overrides = {}) => ({
   scanCount: 0, expiresAt: null as string | null, createdAt: '2026-01-01T00:00:00.000Z',
   pngUrl: '/api/qr/qr-1/png', svgUrl: '/api/qr/qr-1/svg',
   hasLogo: false, logoMimeType: null as string | null,
+  shares: [] as Array<{ shareId: string; recipientId: string; recipientName: string }>,
   ...overrides,
 });
 
@@ -88,5 +90,38 @@ describe('useDashboard', () => {
 
     expect(client.setQrExpiration).toHaveBeenCalledWith('qr-1', null);
     expect(result.current.items.find((q) => q.id === 'qr-1')?.expiresAt).toBeNull();
+  });
+
+  // T48 — TPP: variable
+  it('share(qrId, recipientId) should call shareQr client and append share to matching item', async () => {
+    const item = makeItem({ id: 'qr-1', shares: [] });
+    vi.spyOn(client, 'listQrCodes').mockResolvedValue({ items: [item], total: 1, page: 1, limit: 20 });
+    const newShare = { shareId: 'share-1', recipientId: 'user-2', createdAt: '2026-01-01T00:00:00.000Z' };
+    vi.spyOn(sharingClient, 'shareQr').mockResolvedValue(newShare);
+
+    const { result } = renderHook(() => useDashboard());
+    await act(async () => {});
+    await act(async () => { await result.current.share('qr-1', 'user-2'); });
+
+    expect(sharingClient.shareQr).toHaveBeenCalledWith('qr-1', 'user-2');
+    const found = result.current.items.find((q) => q.id === 'qr-1');
+    expect(found?.shares).toHaveLength(1);
+    expect(found?.shares[0].shareId).toBe('share-1');
+  });
+
+  // T49 — TPP: variable
+  it('unshare(qrId, shareId) should call unshareQr client and remove share from matching item', async () => {
+    const share = { shareId: 'share-1', recipientId: 'user-2', recipientName: 'Bob' };
+    const item = makeItem({ id: 'qr-1', shares: [share] });
+    vi.spyOn(client, 'listQrCodes').mockResolvedValue({ items: [item], total: 1, page: 1, limit: 20 });
+    vi.spyOn(sharingClient, 'unshareQr').mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useDashboard());
+    await act(async () => {});
+    await act(async () => { await result.current.unshare('qr-1', 'share-1'); });
+
+    expect(sharingClient.unshareQr).toHaveBeenCalledWith('qr-1', 'share-1');
+    const found = result.current.items.find((q) => q.id === 'qr-1');
+    expect(found?.shares).toHaveLength(0);
   });
 });

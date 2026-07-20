@@ -390,6 +390,32 @@ describe('AppModule', () => {
     expect(res.status).toBe(410);
   });
 
+  // internal-sharing: T36 — POST /api/qr/:id/shares without auth → 401
+  it('should return 401 on POST /api/qr/:id/shares without auth cookies', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/qr/some-id/shares')
+      .send({ recipientId: 'user-2' });
+    expect(res.status).toBe(401);
+  });
+
+  // internal-sharing: T37 — DELETE /api/qr/:id/shares/:shareId without auth → 401
+  it('should return 401 on DELETE /api/qr/:id/shares/:shareId without auth cookies', async () => {
+    const res = await request(app.getHttpServer()).delete('/api/qr/some-id/shares/share-1');
+    expect(res.status).toBe(401);
+  });
+
+  // internal-sharing: T38 — GET /api/qr/shared-with-me without auth → 401
+  it('should return 401 on GET /api/qr/shared-with-me without auth cookies', async () => {
+    const res = await request(app.getHttpServer()).get('/api/qr/shared-with-me');
+    expect(res.status).toBe(401);
+  });
+
+  // internal-sharing: T39 — GET /api/users without auth → 401
+  it('should return 401 on GET /api/users without auth cookies', async () => {
+    const res = await request(app.getHttpServer()).get('/api/users');
+    expect(res.status).toBe(401);
+  });
+
   // link-expiration: Test 40 — GET /r/:id → 302 when expiresAt in the future
   it('should return 302 on GET /r/:id when record has expiresAt in the future', async () => {
     const qrRepo = app.get(QrRepository);

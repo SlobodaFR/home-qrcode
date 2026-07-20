@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CreateQrPayload, QrItem, attachLogo as attachLogoClient, createQrCode, deleteQrCode, listQrCodes, setQrExpiration } from '../../infrastructure/api/qr-auth.client';
+import { shareQr as shareQrClient, unshareQr as unshareQrClient } from '../../infrastructure/api/sharing.client';
 
 type DashboardState = 'loading' | 'ready' | 'error';
 
@@ -11,6 +12,8 @@ interface DashboardHook {
   remove: (id: string) => Promise<void>;
   attachLogo: (id: string, file: File) => Promise<void>;
   setExpiration: (id: string, expiresAt: string | null) => Promise<void>;
+  share: (qrId: string, recipientId: string) => Promise<void>;
+  unshare: (qrId: string, shareId: string) => Promise<void>;
 }
 
 export function useDashboard(): DashboardHook {
@@ -55,5 +58,19 @@ export function useDashboard(): DashboardHook {
     setItems((prev) => prev.map((q) => (q.id === id ? updated : q)));
   }, []);
 
-  return { state, items, total, create, remove, attachLogo, setExpiration };
+  const share = useCallback(async (qrId: string, recipientId: string) => {
+    const newShare = await shareQrClient(qrId, recipientId);
+    setItems((prev) => prev.map((q) =>
+      q.id === qrId ? { ...q, shares: [...q.shares, { ...newShare, recipientName: '' }] } : q,
+    ));
+  }, []);
+
+  const unshare = useCallback(async (qrId: string, shareId: string) => {
+    await unshareQrClient(qrId, shareId);
+    setItems((prev) => prev.map((q) =>
+      q.id === qrId ? { ...q, shares: q.shares.filter((s) => s.shareId !== shareId) } : q,
+    ));
+  }, []);
+
+  return { state, items, total, create, remove, attachLogo, setExpiration, share, unshare };
 }

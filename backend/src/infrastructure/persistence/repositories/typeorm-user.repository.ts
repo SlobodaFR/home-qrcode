@@ -24,6 +24,11 @@ export class TypeOrmUserRepository extends UserRepository {
     return row ? toDomain(row) : null;
   }
 
+  async findAll(): Promise<User[]> {
+    const rows = await this.repository.find();
+    return rows.map(toDomain);
+  }
+
   async save(user: User): Promise<void> {
     await this.repository.save({ id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl, createdAt: user.createdAt });
   }

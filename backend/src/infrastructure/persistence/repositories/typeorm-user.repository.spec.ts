@@ -57,6 +57,15 @@ describe('TypeOrmUserRepository', () => {
     expect(found!.id).toBe('sub-1');
   });
 
+  // T24 — TPP: constant (internal-sharing)
+  it('findAll() should return all persisted users', async () => {
+    await repo.save(makeUser({ id: 'u-1', email: 'a@x.com' }));
+    await repo.save(makeUser({ id: 'u-2', email: 'b@x.com' }));
+    const all = await repo.findAll();
+    expect(all).toHaveLength(2);
+    expect(all.map((u) => u.id)).toEqual(expect.arrayContaining(['u-1', 'u-2']));
+  });
+
   // Test 16 — TPP: variable
   it('should overwrite name/email/avatarUrl when saving a user with an existing id', async () => {
     await repo.save(makeUser({ name: 'Alice' }));

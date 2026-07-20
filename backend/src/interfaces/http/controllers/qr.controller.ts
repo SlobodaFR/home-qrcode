@@ -8,12 +8,19 @@ import { DeleteQrUseCase } from '../../../application/qr/delete-qr.use-case';
 import { EditTargetUrlUseCase } from '../../../application/qr/edit-target-url.use-case';
 import { GenerateQrUseCase } from '../../../application/qr/generate-qr.use-case';
 import { ListQrUseCase } from '../../../application/qr/list-qr.use-case';
+import { ShareQrUseCase } from '../../../application/sharing/share-qr.use-case';
+import { UnshareQrUseCase } from '../../../application/sharing/unshare-qr.use-case';
+import { ListSharedWithMeUseCase } from '../../../application/sharing/list-shared-with-me.use-case';
 import { QrCode } from '../../../domain/qr/qr-code';
+import { QrShare } from '../../../domain/qr/qr-share';
 import { QrRepository } from '../../../domain/qr/qr.repository';
+import { QrShareRepository } from '../../../domain/qr/qr-share.repository';
 import { QrStoragePort } from '../../../domain/qr/qr-storage.port';
+import { UserRepository } from '../../../domain/user/user.repository';
 import { CurrentUser, CurrentUserPayload } from '../decorators/current-user.decorator';
 import { Public } from '../decorators/public.decorator';
 import { CreateQrDto } from '../dto/create-qr.dto';
+import { CreateShareDto } from '../dto/create-share.dto';
 import { EditTargetUrlDto } from '../dto/edit-target-url.dto';
 import { ListQrDto } from '../dto/list-qr.dto';
 import { SetExpirationDto } from '../dto/set-expiration.dto';
@@ -32,6 +39,11 @@ export class QrController {
     private readonly storage: QrStoragePort,
     private readonly config: ConfigService,
     @Inject('SetExpirationUseCase') private readonly setExpirationUseCase: SetExpirationUseCase,
+    private readonly shareQr: ShareQrUseCase,
+    private readonly unshareQr: UnshareQrUseCase,
+    private readonly listSharedWithMe: ListSharedWithMeUseCase,
+    private readonly qrShareRepository: QrShareRepository,
+    private readonly userRepository: UserRepository,
   ) {}
 
   @Public()
@@ -42,11 +54,24 @@ export class QrController {
     return {};
   }
 
+  @Get('shared-with-me')
+  async sharedWithMe(@CurrentUser() user: CurrentUserPayload) {
+    const { items } = await this.listSharedWithMe.execute({ userId: user.id });
+    return items.map(({ qrCode, sharedBy }) => ({ ...toListItemResponse(qrCode), shares: [], sharedBy }));
+  }
+
   @Get()
   async list(@Query() dto: ListQrDto, @CurrentUser() user: CurrentUserPayload) {
     const result = await this.listQr.execute({ userId: user.id, page: dto.page, limit: dto.limit });
+    const qrIds = result.items.map((q) => q.id);
+    const shares = qrIds.length > 0 ? await this.qrShareRepository.findByQrIds(qrIds) : [];
+    const sharesByQrId = groupSharesByQrId(shares);
+    const users = shares.length > 0 ? await this.userRepository.findAll() : [];
+    const userMap = new Map(users.map((u) => [u.id, u.name]));
     return {
-      items: result.items.map(toListItemResponse),
+      items: result.items.map((qr) =>
+        toListItemResponse(qr, (sharesByQrId.get(qr.id) ?? []).map((s) => toShareItem(s, userMap))),
+      ),
       total: result.total,
       page: result.page,
       limit: result.limit,
@@ -96,11 +121,27 @@ export class QrController {
     return toResponse(qr);
   }
 
+  @Post(':id/shares')
+  @HttpCode(201)
+  async createShare(@Param('id') id: string, @Body() dto: CreateShareDto, @CurrentUser() user: CurrentUserPayload) {
+    const { share } = await this.shareQr.execute({ qrId: id, ownerId: user.id, recipientId: dto.recipientId });
+    return { shareId: share.id, recipientId: share.recipientId, createdAt: share.createdAt };
+  }
+
+  @Delete(':id/shares/:shareId')
+  @HttpCode(204)
+  async removeShare(@Param('id') id: string, @Param('shareId') shareId: string, @CurrentUser() user: CurrentUserPayload) {
+    await this.unshareQr.execute({ shareId, qrId: id, ownerId: user.id });
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     const qr = await this.qrRepository.findByIdAndUserId(id, user.id);
     if (!qr) throw new NotFoundException();
-    return toResponse(qr);
+    const shares = await this.qrShareRepository.findByQrIds([id]);
+    const users = shares.length > 0 ? await this.userRepository.findAll() : [];
+    const userMap = new Map(users.map((u) => [u.id, u.name]));
+    return { ...toResponse(qr), shares: shares.map((s) => toShareItem(s, userMap)) };
   }
 
   @Post(':id/logo')
@@ -164,7 +205,23 @@ export class QrController {
   }
 }
 
-function toListItemResponse(qr: QrCode) {
+interface ShareItem { shareId: string; recipientId: string; recipientName: string; }
+
+function toShareItem(share: QrShare, userMap: Map<string, string>): ShareItem {
+  return { shareId: share.id, recipientId: share.recipientId, recipientName: userMap.get(share.recipientId) ?? '' };
+}
+
+function groupSharesByQrId(shares: QrShare[]): Map<string, QrShare[]> {
+  const map = new Map<string, QrShare[]>();
+  for (const s of shares) {
+    const arr = map.get(s.qrId) ?? [];
+    arr.push(s);
+    map.set(s.qrId, arr);
+  }
+  return map;
+}
+
+function toListItemResponse(qr: QrCode, shares: ShareItem[] = []) {
   const content = qr.content.length > 80 ? qr.content.slice(0, 80) + '…' : qr.content;
   return {
     id: qr.id,
@@ -182,6 +239,7 @@ function toListItemResponse(qr: QrCode) {
     createdAt: qr.createdAt,
     pngUrl: qr.pngUrl,
     svgUrl: qr.svgUrl,
+    shares,
   };
 }
 

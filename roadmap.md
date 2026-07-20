@@ -21,4 +21,4 @@ Features ordered by hard dependencies first, then value/risk.
 | 8 | `logo-overlay` | Optional logo/image at QR center; enforce correction level ≥ Q when logo present | `qr-generate` | shipped |
 | 9 | `url-shortener` | Standalone short link UI — create `/r/{id}` without QR image; scan counter; appears in history | `url-redirect` | shipped |
 | 10 | `link-expiration` | Optional `expires_at` on redirects (URL QR + short links); expired `/r/{id}` returns 410 | `url-redirect`, `url-shortener` | shipped |
-| 11 | `internal-sharing` | Share QR with specific users; "Shared with me" section; recipient can view + download only | `qr-history`, `auth` | pending |
+| 11 | `internal-sharing` | Share QR with specific users; "Shared with me" section; recipient can view + download only | `qr-history`, `auth` | in-progress |

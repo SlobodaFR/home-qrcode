@@ -128,7 +128,7 @@ describe('LinksController', () => {
   // link-expiration: Test 36 — TPP: variable
   it('GET / list response should include expiresAt on each item', async () => {
     const { controller } = await makeController();
-    const result = await controller.list({ page: 1, limit: 20 } as any, mockUser);
+    const result = await controller.list({ page: 1, limit: 20 }, mockUser);
     expect(result.items[0]).toHaveProperty('expiresAt');
     expect(result.items[0].expiresAt).toBeNull();
   });
