@@ -3,6 +3,7 @@ export interface ShortLinkItem {
   url: string;
   shortUrl: string;
   scanCount: number;
+  expiresAt: string | null;
   createdAt: string;
 }
 
@@ -13,14 +14,25 @@ export interface ShortLinkListResponse {
   limit: number;
 }
 
-export async function createLink(url: string): Promise<ShortLinkItem> {
+export async function createLink(url: string, expiresAt?: string): Promise<ShortLinkItem> {
   const res = await fetch('/api/links', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify(expiresAt !== undefined ? { url, expiresAt } : { url }),
   });
   if (!res.ok) throw new Error(`createLink failed: ${res.status}`);
+  return res.json() as Promise<ShortLinkItem>;
+}
+
+export async function setLinkExpiration(id: string, expiresAt: string | null): Promise<ShortLinkItem> {
+  const res = await fetch(`/api/links/${id}/expiration`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expiresAt }),
+  });
+  if (!res.ok) throw new Error(`setLinkExpiration failed: ${res.status}`);
   return res.json() as Promise<ShortLinkItem>;
 }
 

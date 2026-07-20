@@ -148,4 +148,16 @@ describe('CreateQrDto', () => {
     const dto = plainToInstance(CreateQrDto, { contentType: 'vcard', name: 'Bob' });
     expect(await validate(dto)).toHaveLength(0);
   });
+
+  // link-expiration: Test 26 — TPP: variable
+  it("should accept valid optional expiresAt '2026-08-25'", async () => {
+    const dto = valid({ expiresAt: '2026-08-25' });
+    expect(await validate(dto)).toHaveLength(0);
+  });
+
+  // link-expiration: Test 27 — TPP: conditional
+  it('should still pass when expiresAt is omitted', async () => {
+    const dto = valid();
+    expect(await validate(dto)).toHaveLength(0);
+  });
 });

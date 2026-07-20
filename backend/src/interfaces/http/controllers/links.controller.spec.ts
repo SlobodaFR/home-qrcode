@@ -24,6 +24,7 @@ const makeController = async () => {
       { provide: EditLinkUseCase, useValue: { execute: jest.fn().mockResolvedValue({ link: mockLink }) } },
       { provide: DeleteLinkUseCase, useValue: { execute: jest.fn().mockResolvedValue(undefined) } },
       { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('https://qrcode.example.com') } },
+      { provide: 'SetExpirationUseCase', useValue: { execute: jest.fn().mockResolvedValue({ entity: mockLink }) } },
     ],
   }).compile();
   return {
@@ -75,5 +76,60 @@ describe('LinksController', () => {
     const { controller } = await makeController();
     const result = await controller.remove('sl-1', mockUser);
     expect(result).toBeUndefined();
+  });
+
+  // link-expiration: Test 34 — TPP: constant
+  it('PATCH :id/expiration should call SetExpirationUseCase with Date parsed from dto.expiresAt', async () => {
+    const expiry = new Date('2026-08-25T23:59:59.000Z');
+    const setExpirationUseCase = { execute: jest.fn().mockResolvedValue({ entity: mockLink.withExpiration(expiry) }) };
+    const module = await Test.createTestingModule({
+      controllers: [LinksController],
+      providers: [
+        { provide: CreateLinkUseCase, useValue: { execute: jest.fn() } },
+        { provide: ListLinksUseCase, useValue: { execute: jest.fn() } },
+        { provide: EditLinkUseCase, useValue: { execute: jest.fn() } },
+        { provide: DeleteLinkUseCase, useValue: { execute: jest.fn() } },
+        { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('https://qrcode.example.com') } },
+        { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
+      ],
+    }).compile();
+    const controller = module.get(LinksController);
+    const { SetExpirationDto } = await import('../dto/set-expiration.dto');
+    const dto = Object.assign(new SetExpirationDto(), { expiresAt: '2026-08-25' });
+    await controller.setExpiration('sl-1', dto, mockUser);
+    expect(setExpirationUseCase.execute).toHaveBeenCalledWith({
+      id: 'sl-1', userId: 'u1', expiresAt: new Date('2026-08-25T23:59:59.000Z'),
+    });
+  });
+
+  // link-expiration: Test 35 — TPP: conditional
+  it('PATCH :id/expiration with null should call SetExpirationUseCase with null', async () => {
+    const setExpirationUseCase = { execute: jest.fn().mockResolvedValue({ entity: mockLink }) };
+    const module = await Test.createTestingModule({
+      controllers: [LinksController],
+      providers: [
+        { provide: CreateLinkUseCase, useValue: { execute: jest.fn() } },
+        { provide: ListLinksUseCase, useValue: { execute: jest.fn() } },
+        { provide: EditLinkUseCase, useValue: { execute: jest.fn() } },
+        { provide: DeleteLinkUseCase, useValue: { execute: jest.fn() } },
+        { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('https://qrcode.example.com') } },
+        { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
+      ],
+    }).compile();
+    const controller = module.get(LinksController);
+    const { SetExpirationDto } = await import('../dto/set-expiration.dto');
+    const dto = Object.assign(new SetExpirationDto(), { expiresAt: null });
+    await controller.setExpiration('sl-1', dto, mockUser);
+    expect(setExpirationUseCase.execute).toHaveBeenCalledWith({
+      id: 'sl-1', userId: 'u1', expiresAt: null,
+    });
+  });
+
+  // link-expiration: Test 36 — TPP: variable
+  it('GET / list response should include expiresAt on each item', async () => {
+    const { controller } = await makeController();
+    const result = await controller.list({ page: 1, limit: 20 }, mockUser);
+    expect(result.items[0]).toHaveProperty('expiresAt');
+    expect(result.items[0].expiresAt).toBeNull();
   });
 });

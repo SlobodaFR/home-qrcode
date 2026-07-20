@@ -267,4 +267,31 @@ describe('TypeOrmQrRepository', () => {
     expect(result.items.every(i => i.source === 'shortlink')).toBe(true);
     expect(result.total).toBe(1);
   });
+
+  // link-expiration: Test 19 — TPP: variable
+  it('save() with non-null expiresAt should persist it and findById() should retrieve it as Date', async () => {
+    const expiry = new Date('2026-08-25T23:59:59.000Z');
+    const qr = QrCode.create({ id: 'exp-1', userId: 'u1', contentType: 'url', content: 'https://x.com', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date('2026-01-01'), expiresAt: expiry });
+    await repo.save(qr);
+    const found = await repo.findById('exp-1');
+    expect(found).not.toBeNull();
+    expect(found!.expiresAt).toEqual(expiry);
+  });
+
+  // link-expiration: Test 20 — TPP: conditional
+  it('save() with expiresAt=null should persist NULL and findById() should return null', async () => {
+    const qr = QrCode.create({ id: 'exp-2', userId: 'u1', contentType: 'url', content: 'https://x.com', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date('2026-01-01'), expiresAt: null });
+    await repo.save(qr);
+    const found = await repo.findById('exp-2');
+    expect(found!.expiresAt).toBeNull();
+  });
+
+  // link-expiration: Test 21 — TPP: conditional
+  it('existing row without expires_at column should return expiresAt=null after synchronize', async () => {
+    // synchronize:true already ran; TypeORM added expires_at column; existing rows default to NULL
+    const legacyQr = QrCode.create({ id: 'legacy-exp', userId: 'u1', contentType: 'url', content: 'https://x.com', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date('2026-01-01') });
+    await repo.save(legacyQr);
+    const found = await repo.findById('legacy-exp');
+    expect(found!.expiresAt).toBeNull();
+  });
 });

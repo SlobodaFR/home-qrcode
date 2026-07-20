@@ -1,4 +1,4 @@
-import { attachLogo, createQrCode } from './qr-auth.client';
+import { attachLogo, createQrCode, setQrExpiration } from './qr-auth.client';
 import type { CreateQrPayload } from './qr-auth.client';
 
 const mockItem = {
@@ -43,6 +43,39 @@ describe('createQrCode (extended-content-types)', () => {
     expect(fetch).toHaveBeenCalledWith('/api/qr', expect.objectContaining({
       body: JSON.stringify(payload),
     }));
+  });
+});
+
+describe('setQrExpiration (link-expiration)', () => {
+  // Test 41 — TPP: constant
+  it('setQrExpiration(id, expiresAt) should PATCH /api/qr/:id/expiration with {expiresAt} body and credentials', async () => {
+    const updated = { ...mockItem, expiresAt: '2026-08-25T23:59:59.000Z' };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(updated) }));
+    const result = await setQrExpiration('qr-1', '2026-08-25T23:59:59.000Z');
+    expect(fetch).toHaveBeenCalledWith('/api/qr/qr-1/expiration', expect.objectContaining({
+      method: 'PATCH',
+      credentials: 'include',
+      body: JSON.stringify({ expiresAt: '2026-08-25T23:59:59.000Z' }),
+    }));
+    expect(result.expiresAt).toBe('2026-08-25T23:59:59.000Z');
+  });
+
+  // Test 42 — TPP: variable
+  it('setQrExpiration(id, null) should send {expiresAt: null} in body', async () => {
+    const updated = { ...mockItem, expiresAt: null };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(updated) }));
+    await setQrExpiration('qr-1', null);
+    expect(fetch).toHaveBeenCalledWith('/api/qr/qr-1/expiration', expect.objectContaining({
+      body: JSON.stringify({ expiresAt: null }),
+    }));
+  });
+
+  // Test 43 — TPP: variable
+  it('QrItem returned from createQrCode should include expiresAt field from API response', async () => {
+    const withExpiry = { ...mockItem, expiresAt: '2026-08-25T23:59:59.000Z' };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(withExpiry) }));
+    const result = await createQrCode({ contentType: 'text', content: 'hello' });
+    expect(result.expiresAt).toBe('2026-08-25T23:59:59.000Z');
   });
 });
 

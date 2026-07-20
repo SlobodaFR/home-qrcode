@@ -45,4 +45,21 @@ describe('CreateLinkUseCase', () => {
     expect(link.bgColor).toBe('');
     expect(link.errorCorrection).toBe('M');
   });
+
+  // link-expiration: Test 17 — TPP: constant
+  it('should create link with expiresAt=null when not provided in command', async () => {
+    const repo = makeRepo();
+    const uc = new CreateLinkUseCase(repo);
+    await uc.execute({ userId: 'u1', url: 'https://target.com' });
+    expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ expiresAt: null }));
+  });
+
+  // link-expiration: Test 18 — TPP: variable
+  it('should create link with the provided expiresAt Date', async () => {
+    const repo = makeRepo();
+    const uc = new CreateLinkUseCase(repo);
+    const expiry = new Date('2026-08-25T23:59:59.000Z');
+    await uc.execute({ userId: 'u1', url: 'https://target.com', expiresAt: expiry });
+    expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ expiresAt: expiry }));
+  });
 });

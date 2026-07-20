@@ -5,14 +5,15 @@ import { HandleOAuthCallbackUseCase } from '../../../application/auth/handle-oau
 import { HandleSessionRevokedUseCase } from '../../../application/auth/handle-session-revoked.use-case';
 import { OAuthClient, TokenPair } from '../../../domain/auth/oauth-client';
 import { User } from '../../../domain/user/user';
+import { UserRepository } from '../../../domain/user/user.repository';
 import { AuthController } from './auth.controller';
 
 const mockTokens: TokenPair = { accessToken: 'at', refreshToken: 'rt', expiresIn: 3600 };
-const mockUser = User.create({ id: 'u1', email: 'a@b.com', name: 'Alice', avatarUrl: '', createdAt: new Date() });
+const mockUser = User.create({ id: 'u1', email: 'a@b.com', name: 'Alice', avatarUrl: 'https://avatar.png', createdAt: new Date() });
 
 const makeRes = () => ({ redirect: jest.fn(), cookie: jest.fn(), clearCookie: jest.fn() }) as unknown as Response;
 
-const makeController = async () => {
+const makeController = async (userInDb: User | null = mockUser) => {
   const module = await Test.createTestingModule({
     controllers: [AuthController],
     providers: [
@@ -20,6 +21,7 @@ const makeController = async () => {
       { provide: HandleOAuthCallbackUseCase, useValue: { execute: jest.fn().mockResolvedValue({ tokens: mockTokens, user: mockUser }) } },
       { provide: HandleSessionRevokedUseCase, useValue: { execute: jest.fn().mockResolvedValue(undefined) } },
       { provide: ConfigService, useValue: { getOrThrow: jest.fn((k: string) => ({ FRONTEND_URL: 'https://app.example.com', AUTH_WEBHOOK_SECRET: 'secret-123' }[k] ?? '')), get: jest.fn().mockReturnValue('test') } },
+      { provide: UserRepository, useValue: { findById: jest.fn().mockResolvedValue(userInDb), findByEmail: jest.fn(), findAll: jest.fn(), save: jest.fn() } },
     ],
   }).compile();
   return {
@@ -72,10 +74,27 @@ describe('AuthController', () => {
     await expect(controller.disconnect({ userId: 'u1' }, 'wrong')).rejects.toThrow('Unauthorized');
   });
 
-  // Test 31 — TPP: constant
-  it('should return { user } from @CurrentUser on GET /auth/me', async () => {
+  // T27 — TPP: variable (internal-sharing: avatarUrl from DB)
+  it('me() should return id, email, name and avatarUrl fetched from UserRepository', async () => {
+    const { controller } = await makeController(mockUser);
+    const result = await controller.me({ id: 'u1', email: 'a@b.com', name: 'Alice' });
+    expect(result.id).toBe('u1');
+    expect(result.name).toBe('Alice');
+    expect(result.avatarUrl).toBe('https://avatar.png');
+  });
+
+  // T28 — TPP: conditional (internal-sharing: avatarUrl fallback)
+  it('me() should return avatarUrl as empty string when UserRepository.findById returns null', async () => {
+    const { controller } = await makeController(null);
+    const result = await controller.me({ id: 'u1', email: 'a@b.com', name: 'Alice' });
+    expect(result.avatarUrl).toBe('');
+  });
+
+  // Test 31 — TPP: constant (kept for compatibility check)
+  it('should return id/email/name on GET /auth/me', async () => {
     const { controller } = await makeController();
-    const result = controller.me({ id: 'u1', email: 'a@b.com', name: 'Alice' });
-    expect(result).toEqual({ user: { id: 'u1', email: 'a@b.com', name: 'Alice' } });
+    const result = await controller.me({ id: 'u1', email: 'a@b.com', name: 'Alice' });
+    expect(result.id).toBe('u1');
+    expect(result.email).toBe('a@b.com');
   });
 });

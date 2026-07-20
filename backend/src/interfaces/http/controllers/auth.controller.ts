@@ -4,6 +4,7 @@ import { Response } from 'express';
 import { HandleOAuthCallbackUseCase } from '../../../application/auth/handle-oauth-callback.use-case';
 import { HandleSessionRevokedUseCase } from '../../../application/auth/handle-session-revoked.use-case';
 import { OAuthClient } from '../../../domain/auth/oauth-client';
+import { UserRepository } from '../../../domain/user/user.repository';
 import { clearAuthCookies, setAuthCookies } from '../auth-cookies';
 import { CurrentUser, CurrentUserPayload } from '../decorators/current-user.decorator';
 import { Public } from '../decorators/public.decorator';
@@ -16,6 +17,7 @@ export class AuthController {
     private readonly handleOAuthCallback: HandleOAuthCallbackUseCase,
     private readonly handleSessionRevoked: HandleSessionRevokedUseCase,
     private readonly config: ConfigService,
+    private readonly userRepository: UserRepository,
   ) {}
 
   @Public()
@@ -40,8 +42,9 @@ export class AuthController {
   }
 
   @Get('me')
-  me(@CurrentUser() user: CurrentUserPayload) {
-    return { user };
+  async me(@CurrentUser() user: CurrentUserPayload) {
+    const dbUser = await this.userRepository.findById(user.id);
+    return { id: user.id, email: user.email, name: user.name, avatarUrl: dbUser?.avatarUrl ?? '' };
   }
 
   @Public()

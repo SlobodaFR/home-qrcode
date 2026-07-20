@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ShortLinkItem, createLink, deleteLink, editLink, listLinks } from '../../infrastructure/api/links.client';
+import { ShortLinkItem, createLink, deleteLink, editLink, listLinks, setLinkExpiration } from '../../infrastructure/api/links.client';
 
 type LinksState = 'loading' | 'ready' | 'error';
 
-interface LinksHook {
+export interface LinksHook {
   state: LinksState;
   items: ShortLinkItem[];
   total: number;
-  create: (url: string) => Promise<void>;
+  create: (url: string, expiresAt?: string) => Promise<void>;
   edit: (id: string, url: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  setExpiration: (id: string, expiresAt: string | null) => Promise<void>;
 }
 
 export function useLinks(): LinksHook {
@@ -32,8 +33,8 @@ export function useLinks(): LinksHook {
     void load();
   }, [load]);
 
-  const create = useCallback(async (url: string) => {
-    const link = await createLink(url);
+  const create = useCallback(async (url: string, expiresAt?: string) => {
+    const link = await createLink(url, expiresAt);
     setItems((prev) => [link, ...prev]);
     setTotal((t) => t + 1);
   }, []);
@@ -49,5 +50,10 @@ export function useLinks(): LinksHook {
     setItems((prev) => prev.map((l) => (l.id === id ? updated : l)));
   }, []);
 
-  return { state, items, total, create, edit, remove };
+  const setExpiration = useCallback(async (id: string, expiresAt: string | null) => {
+    const updated = await setLinkExpiration(id, expiresAt);
+    setItems((prev) => prev.map((l) => (l.id === id ? updated : l)));
+  }, []);
+
+  return { state, items, total, create, edit, remove, setExpiration };
 }

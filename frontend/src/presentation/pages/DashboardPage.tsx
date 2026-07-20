@@ -1,16 +1,35 @@
-import { ChangeEvent, FormEvent, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import { useDashboard } from '../../application/hooks/useDashboard';
+import { useCurrentUser } from '../../application/hooks/useCurrentUser';
+import { useSharedWithMe } from '../../application/hooks/useSharedWithMe';
 import { useLinks } from '../../application/hooks/useLinks';
+import { listUsers } from '../../infrastructure/api/users.client';
 import { CreateQrPayload, QrItem } from '../../infrastructure/api/qr-auth.client';
+import { SharedQrItem } from '../../infrastructure/api/sharing.client';
 import { ShortLinkItem } from '../../infrastructure/api/links.client';
+import { UserItem } from '../../infrastructure/api/users.client';
 
 type ContentType = 'url' | 'text' | 'wifi' | 'email' | 'vcard';
+type ActiveTab = 'qr' | 'links';
 
-function QrCard({ qr, onDelete, onAttachLogo }: { qr: QrItem; onDelete: (id: string) => void; onAttachLogo: (id: string, file: File) => Promise<void> }) {
+function initials(name: string): string {
+  return name.split(' ').map((w) => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 2);
+}
+
+function QrCard({ qr, users, onDelete, onAttachLogo, onSetExpiration, onShare, onUnshare }: {
+  qr: QrItem;
+  users: UserItem[];
+  onDelete: (id: string) => void;
+  onAttachLogo: (id: string, file: File) => Promise<void>;
+  onSetExpiration: (id: string, expiresAt: string | null) => Promise<void>;
+  onShare: (qrId: string, recipientId: string) => Promise<void>;
+  onUnshare: (qrId: string, shareId: string) => Promise<void>;
+}) {
   const [deleting, setDeleting] = useState(false);
   const [showLogoPanel, setShowLogoPanel] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [selectedRecipient, setSelectedRecipient] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleDelete() {
@@ -37,6 +56,12 @@ function QrCard({ qr, onDelete, onAttachLogo }: { qr: QrItem; onDelete: (id: str
     }
   }
 
+  async function handleShare() {
+    if (!selectedRecipient) return;
+    await onShare(qr.id, selectedRecipient);
+    setSelectedRecipient('');
+  }
+
   const needsCorrectionUpgrade = qr.errorCorrection === 'L' || qr.errorCorrection === 'M';
 
   return (
@@ -55,6 +80,31 @@ function QrCard({ qr, onDelete, onAttachLogo }: { qr: QrItem; onDelete: (id: str
           <p className="text-xs text-gray-400">
             {new Date(qr.createdAt).toLocaleDateString('fr-FR')} · {qr.scanCount} scan{qr.scanCount !== 1 ? 's' : ''}
           </p>
+          {qr.expiresAt && new Date(qr.expiresAt) > new Date() && (
+            <p className="text-xs text-amber-600">Expire le {new Date(qr.expiresAt).toLocaleDateString('fr-FR')}</p>
+          )}
+          {qr.expiresAt && new Date(qr.expiresAt) <= new Date() && (
+            <span className="text-xs font-medium text-red-600">Expiré</span>
+          )}
+          <div className="flex gap-2 items-center">
+            <input
+              type="date"
+              data-testid="expiry-date-input"
+              defaultValue={qr.expiresAt ? qr.expiresAt.slice(0, 10) : ''}
+              onChange={(e) => void onSetExpiration(qr.id, e.target.value)}
+              className="text-xs border border-gray-200 rounded px-1 py-0.5"
+            />
+            {qr.expiresAt !== null && (
+              <button
+                type="button"
+                aria-label="Supprimer l'expiration"
+                onClick={() => void onSetExpiration(qr.id, null)}
+                className="text-xs text-gray-400 hover:text-red-500"
+              >
+                Supprimer l&apos;expiration
+              </button>
+            )}
+          </div>
           <div className="flex gap-3 mt-auto pt-1">
             <a href={qr.pngUrl} download={`qr-${qr.id}.png`} className="text-xs text-gray-500 hover:text-gray-900">PNG</a>
             <a href={qr.svgUrl} download={`qr-${qr.id}.svg`} className="text-xs text-gray-500 hover:text-gray-900">
@@ -83,6 +133,46 @@ function QrCard({ qr, onDelete, onAttachLogo }: { qr: QrItem; onDelete: (id: str
           </button>
         </div>
       </div>
+
+      {/* Share panel */}
+      <div className="flex flex-col gap-2 border-t border-gray-100 pt-2">
+        <div className="flex gap-2 items-center">
+          <select
+            data-testid="share-user-picker"
+            value={selectedRecipient}
+            onChange={(e) => setSelectedRecipient(e.target.value)}
+            className="flex-1 text-xs border border-gray-200 rounded px-1 py-0.5"
+          >
+            <option value="">Partager avec…</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            data-testid="share-submit-btn"
+            onClick={() => void handleShare()}
+            disabled={!selectedRecipient}
+            className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-40"
+          >
+            Partager
+          </button>
+        </div>
+        {qr.shares.map((share) => (
+          <div key={share.shareId} data-testid={`share-recipient-${share.recipientId}`} className="flex items-center justify-between text-xs text-gray-600">
+            <span>{share.recipientName || share.recipientId}</span>
+            <button
+              type="button"
+              data-testid={`unshare-btn-${share.recipientId}`}
+              onClick={() => void onUnshare(qr.id, share.shareId)}
+              className="text-gray-400 hover:text-red-500"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+
       {showLogoPanel && !qr.hasLogo && (
         <div className="flex flex-col gap-2 border-t border-gray-100 pt-3">
           {needsCorrectionUpgrade && (
@@ -122,43 +212,37 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
   const [contentType, setContentType] = useState<ContentType>('url');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState('');
 
-  // url / text
   const [content, setContent] = useState('');
-
-  // wifi
   const [ssid, setSsid] = useState('');
   const [security, setSecurity] = useState<'WPA' | 'WEP' | 'nopass'>('WPA');
   const [password, setPassword] = useState('');
-
-  // email
   const [to, setTo] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-
-  // vcard
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [vcardEmail, setVcardEmail] = useState('');
   const [org, setOrg] = useState('');
 
   function buildPayload(): CreateQrPayload | null {
+    const exp = expiresAt || undefined;
     if (contentType === 'url' || contentType === 'text') {
       if (!content.trim()) return null;
-      return { contentType, content: content.trim() };
+      return { contentType, content: content.trim(), expiresAt: exp };
     }
     if (contentType === 'wifi') {
       if (!ssid.trim()) return null;
       if (security !== 'nopass' && !password.trim()) return null;
-      return { contentType: 'wifi', ssid: ssid.trim(), security, password: security !== 'nopass' ? password : undefined };
+      return { contentType: 'wifi', ssid: ssid.trim(), security, password: security !== 'nopass' ? password : undefined, expiresAt: exp };
     }
     if (contentType === 'email') {
       if (!to.trim()) return null;
-      return { contentType: 'email', to: to.trim(), subject: subject || undefined, body: body || undefined };
+      return { contentType: 'email', to: to.trim(), subject: subject || undefined, body: body || undefined, expiresAt: exp };
     }
-    // vcard
     if (!name.trim()) return null;
-    return { contentType: 'vcard', name: name.trim(), phone: phone || undefined, vcardEmail: vcardEmail || undefined, org: org || undefined };
+    return { contentType: 'vcard', name: name.trim(), phone: phone || undefined, vcardEmail: vcardEmail || undefined, org: org || undefined, expiresAt: exp };
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -169,7 +253,7 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
     setError(null);
     try {
       await onCreate(payload);
-      setContent(''); setSsid(''); setPassword(''); setTo(''); setSubject(''); setBody(''); setName(''); setPhone(''); setVcardEmail(''); setOrg('');
+      setContent(''); setSsid(''); setPassword(''); setTo(''); setSubject(''); setBody(''); setName(''); setPhone(''); setVcardEmail(''); setOrg(''); setExpiresAt('');
     } catch {
       setError('Erreur lors de la création.');
     } finally {
@@ -194,6 +278,7 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
         <div className="flex gap-2">
           <input
             type={contentType === 'url' ? 'url' : 'text'}
+            data-testid={contentType === 'url' ? 'qr-url-input' : undefined}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={contentType === 'url' ? 'https://...' : 'Votre texte...'}
@@ -234,11 +319,18 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
         </div>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex items-center gap-3">
+        <input
+          type="date"
+          data-testid="qr-expiry-date-input"
+          value={expiresAt}
+          onChange={(e) => setExpiresAt(e.target.value)}
+          className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors"
+        />
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
+          className="ml-auto rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
         >
           {submitting ? '…' : 'Générer'}
         </button>
@@ -248,7 +340,46 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
   );
 }
 
-function LinkCard({ link, onEdit, onRemove }: { link: ShortLinkItem; onEdit: (id: string, url: string) => Promise<void>; onRemove: (id: string) => Promise<void> }) {
+function SharedQrCard({ item }: { item: SharedQrItem }) {
+  return (
+    <div className="flex flex-col rounded-xl border border-gray-100 p-3 bg-white gap-2">
+      <div className="flex gap-3 items-start">
+        <img src={item.pngUrl} alt="QR Code" className="w-16 h-16 object-contain rounded shrink-0" />
+        <div className="flex flex-col flex-1 min-w-0 gap-1">
+          <p className="text-sm text-gray-700 truncate">{item.content}</p>
+          <p className="text-xs text-gray-400">
+            Partagé par <span data-testid="shared-by-name">{item.sharedBy.name}</span>
+          </p>
+          <div className="flex gap-3 mt-1">
+            <a href={item.pngUrl} download className="text-xs text-gray-500 hover:text-gray-900">PNG</a>
+            <a href={item.svgUrl} download className="text-xs text-gray-500 hover:text-gray-900">SVG</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SharedWithMeSection({ items }: { items: SharedQrItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <section data-testid="shared-with-me-section" className="flex flex-col gap-3">
+      <h2 className="text-sm font-semibold text-gray-700">Partagés avec moi</h2>
+      <div className="flex flex-col gap-2">
+        {items.map((item) => (
+          <SharedQrCard key={item.id} item={item} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function LinkCard({ link, onEdit, onRemove, onSetExpiration }: {
+  link: ShortLinkItem;
+  onEdit: (id: string, url: string) => Promise<void>;
+  onRemove: (id: string) => Promise<void>;
+  onSetExpiration: (id: string, expiresAt: string | null) => Promise<void>;
+}) {
   const [editing, setEditing] = useState(false);
   const [editUrl, setEditUrl] = useState(link.url);
 
@@ -264,6 +395,31 @@ function LinkCard({ link, onEdit, onRemove }: { link: ShortLinkItem; onEdit: (id
           <span className="text-sm font-medium text-blue-600 truncate">{link.shortUrl}</span>
           <span className="text-xs text-gray-400 truncate">{link.url}</span>
           <span className="text-xs text-gray-400">{link.scanCount} scan{link.scanCount !== 1 ? 's' : ''}</span>
+          {link.expiresAt && new Date(link.expiresAt) > new Date() && (
+            <span className="text-xs text-amber-600">Expire le {new Date(link.expiresAt).toLocaleDateString('fr-FR')}</span>
+          )}
+          {link.expiresAt && new Date(link.expiresAt) <= new Date() && (
+            <span className="text-xs font-medium text-red-600">Expiré</span>
+          )}
+          <div className="flex gap-2 items-center">
+            <input
+              type="date"
+              data-testid="link-expiry-date-input"
+              defaultValue={link.expiresAt ? link.expiresAt.slice(0, 10) : ''}
+              onChange={(e) => void onSetExpiration(link.id, e.target.value)}
+              className="text-xs border border-gray-200 rounded px-1 py-0.5"
+            />
+            {link.expiresAt !== null && (
+              <button
+                type="button"
+                aria-label="Supprimer l'expiration du lien"
+                onClick={() => void onSetExpiration(link.id, null)}
+                className="text-xs text-gray-400 hover:text-red-500"
+              >
+                Supprimer l&apos;expiration
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex gap-1 shrink-0">
           <button
@@ -309,8 +465,9 @@ function LinkCard({ link, onEdit, onRemove }: { link: ShortLinkItem; onEdit: (id
 }
 
 function LinksSection() {
-  const { state, items, total, create, edit, remove } = useLinks();
+  const { state, items, total, create, edit, remove, setExpiration } = useLinks();
   const [url, setUrl] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -318,8 +475,9 @@ function LinksSection() {
     if (!url.trim()) return;
     setSubmitting(true);
     try {
-      await create(url.trim());
+      await create(url.trim(), expiresAt || undefined);
       setUrl('');
+      setExpiresAt('');
     } finally {
       setSubmitting(false);
     }
@@ -328,23 +486,32 @@ function LinksSection() {
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold text-gray-700">Liens courts</h2>
-      <form onSubmit={(e) => void handleSubmit(e)} className="flex gap-2">
+      <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <input
+            data-testid="link-url-input"
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://..."
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors"
+            required
+          />
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
+          >
+            Créer
+          </button>
+        </div>
         <input
-          data-testid="link-url-input"
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://..."
-          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors"
-          required
+          data-testid="link-expiry-create-input"
+          type="date"
+          value={expiresAt}
+          onChange={(e) => setExpiresAt(e.target.value)}
+          className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors"
         />
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
-        >
-          Créer
-        </button>
       </form>
       {state === 'loading' && <p className="text-xs text-gray-400">Chargement…</p>}
       {state === 'error' && <p className="text-xs text-red-500">Erreur lors du chargement.</p>}
@@ -356,7 +523,7 @@ function LinksSection() {
           <p className="text-xs text-gray-400">{total} lien{total !== 1 ? 's' : ''}</p>
           <div className="flex flex-col gap-2">
             {items.map((link) => (
-              <LinkCard key={link.id} link={link} onEdit={edit} onRemove={remove} />
+              <LinkCard key={link.id} link={link} onEdit={edit} onRemove={remove} onSetExpiration={setExpiration} />
             ))}
           </div>
         </>
@@ -366,7 +533,15 @@ function LinksSection() {
 }
 
 export function DashboardPage() {
-  const { state, items, total, create, remove, attachLogo } = useDashboard();
+  const { state, items, total, create, remove, attachLogo, setExpiration, share, unshare } = useDashboard();
+  const currentUser = useCurrentUser();
+  const { items: sharedItems } = useSharedWithMe();
+  const [activeTab, setActiveTab] = useState<ActiveTab>('qr');
+  const [users, setUsers] = useState<UserItem[]>([]);
+
+  useEffect(() => {
+    listUsers().then(setUsers).catch(() => {});
+  }, []);
 
   function handleLogout() {
     void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(() => {
@@ -374,43 +549,95 @@ export function DashboardPage() {
     });
   }
 
+  const userInitials = currentUser ? initials(currentUser.name) : '';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white px-4 py-3 flex items-center justify-between">
-        <h1 className="font-semibold text-gray-900">QR Codes</h1>
-        <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
-          Se déconnecter
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-2">
+            <button
+              data-testid="tab-qr"
+              type="button"
+              onClick={() => setActiveTab('qr')}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${activeTab === 'qr' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              QR Codes
+            </button>
+            <button
+              data-testid="tab-links"
+              type="button"
+              onClick={() => setActiveTab('links')}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${activeTab === 'links' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              Liens courts
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {currentUser && (
+            <>
+              {currentUser.avatarUrl ? (
+                <img
+                  data-testid="user-avatar"
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.name}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <span
+                  data-testid="user-initials"
+                  className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-700"
+                >
+                  {userInitials}
+                </span>
+              )}
+              <span data-testid="user-name" className="text-sm text-gray-700">{currentUser.name}</span>
+            </>
+          )}
+          <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
+            Se déconnecter
+          </button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-6 flex flex-col gap-6">
-        <section className="flex flex-col gap-4">
-          <CreateForm onCreate={create} />
+        {activeTab === 'qr' && (
+          <section className="flex flex-col gap-4">
+            <CreateForm onCreate={create} />
+            {state === 'loading' && (
+              <p className="text-center text-sm text-gray-400 py-8">Chargement…</p>
+            )}
+            {state === 'error' && (
+              <p className="text-center text-sm text-red-500 py-8">Erreur lors du chargement.</p>
+            )}
+            {state === 'ready' && items.length === 0 && (
+              <p className="text-center text-sm text-gray-400 py-8">Aucun QR code. Générez-en un ci-dessus.</p>
+            )}
+            {state === 'ready' && items.length > 0 && (
+              <>
+                <p className="text-xs text-gray-400">{total} QR code{total !== 1 ? 's' : ''}</p>
+                <div className="flex flex-col gap-3">
+                  {items.map((qr) => (
+                    <QrCard
+                      key={qr.id}
+                      qr={qr}
+                      users={users.filter((u) => u.id !== currentUser?.id)}
+                      onDelete={remove}
+                      onAttachLogo={attachLogo}
+                      onSetExpiration={setExpiration}
+                      onShare={share}
+                      onUnshare={unshare}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+            <SharedWithMeSection items={sharedItems} />
+          </section>
+        )}
 
-          {state === 'loading' && (
-            <p className="text-center text-sm text-gray-400 py-8">Chargement…</p>
-          )}
-          {state === 'error' && (
-            <p className="text-center text-sm text-red-500 py-8">Erreur lors du chargement.</p>
-          )}
-          {state === 'ready' && items.length === 0 && (
-            <p className="text-center text-sm text-gray-400 py-8">Aucun QR code. Générez-en un ci-dessus.</p>
-          )}
-          {state === 'ready' && items.length > 0 && (
-            <>
-              <p className="text-xs text-gray-400">{total} QR code{total !== 1 ? 's' : ''}</p>
-              <div className="flex flex-col gap-3">
-                {items.map((qr) => (
-                  <QrCard key={qr.id} qr={qr} onDelete={remove} onAttachLogo={attachLogo} />
-                ))}
-              </div>
-            </>
-          )}
-        </section>
-
-        <hr className="border-gray-200" />
-
-        <LinksSection />
+        {activeTab === 'links' && <LinksSection />}
       </main>
     </div>
   );

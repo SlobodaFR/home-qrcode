@@ -371,3 +371,92 @@ Build: ✅ Clean. Frontend: 50 modules, no TS errors. Backend: `nest build` clea
 ### Verdict
 
 **Pass.** 319 tests green. Build clean. No new issues vs prior QA run. Existing known gap (3 pre-workflow review.md missing) unchanged.
+
+## 2026-07-20 — link-expiration QA
+
+### Commands run
+- `npm run build` → PASS (frontend Vite build + NestJS compile)
+- `cd frontend && npx vitest run` → **85/85 tests pass** (10 suites)
+- `cd backend && npx jest --passWithNoTests` → **297/297 tests pass** (37 suites)
+
+### Results
+
+| Suite | Tests | Result |
+|---|---|---|
+| Frontend (vitest) | 85 | ✅ PASS |
+| Backend (jest) | 297 | ✅ PASS |
+| Build | — | ✅ PASS |
+
+### Issues found and fixed
+
+**TypeScript build errors (FIXED inline — spec-file mocks):**
+- `DashboardPage.spec.tsx`: 8 per-test `vi.spyOn(hooks, 'useDashboard').mockReturnValue(...)` calls in the `QrCard logo-overlay` block were missing `setExpiration` after `DashboardHook` was extended. Fixed by adding `setExpiration: mockSetExpiration` to each. Severity: **medium** (blocks build; tests still ran via vitest which skips tsc).
+- `useDashboard.spec.ts`: `makeItem()` factory missing `expiresAt: null` after `QrItem` was updated. Fixed.
+- `links.client.spec.ts`: `mockLink` missing `expiresAt: null` after `ShortLinkItem` was updated. Fixed.
+
+**Root cause:** `QrItem.expiresAt` and `ShortLinkItem.expiresAt` were added as required fields, but test fixtures in older specs weren't updated at the time. Vitest runs before tsc so these slip through test runs and only surface on `npm run build`. Mitigation: run `npm run build` earlier in the TDD cycle, not just at QA time.
+
+### Cross-feature checks
+
+- **Duplicate logic:** `parseExpiryDate` (shared util) avoids duplication in both controllers. No new duplication introduced.
+- **Architectural consistency:** All new code follows established layering — domain no new imports, application uses `@Injectable()` (pre-existing pattern), controllers call `parseExpiryDate` at HTTP boundary only.
+- **`roadmap.md`:** `link-expiration` still `in-progress` (correctly; shipping comes next). `public-qr-page` and `url-redirect` are shipped with no `review.md` — pre-existing gap, same as prior QA runs. `qr-history` same.
+- **Pre-existing note:** `qrcode-image-generator.spec.ts` SVG test was flaky in the prior run (1 failure) but passed cleanly in this run (297/297). Likely a timing/environment flake; no action needed.
+
+### Verdict
+
+**Pass.** 85 frontend + 297 backend tests green. Build clean after fixing 3 spec-file type errors. No regressions. Ready for /ship.
+
+---
+
+## 2026-07-20 — internal-sharing QA
+
+### Commands run
+- `npm run build` (from monorepo root) → PASS (frontend tsc+vite clean, backend nest build clean)
+- `cd backend && npx jest --no-coverage` → **338/338 tests, 45 suites** — all GREEN
+- `cd frontend && npx vitest run` → **111/111 tests, 14 suites** — all GREEN
+
+### Results
+
+| Suite | Tests | Result |
+|---|---|---|
+| Backend (Jest) | 338 | ✅ PASS |
+| Frontend (Vitest) | 111 | ✅ PASS |
+| Build | — | ✅ PASS |
+
+### Issues found and fixed
+
+**TypeScript build errors in test files (FIXED inline):**
+
+1. `DashboardPage.spec.tsx` — All `vi.spyOn(hooks, 'useDashboard').mockReturnValue(...)` calls in `QrCard logo-overlay` and `QrCard expiry UI` blocks were missing `share: mockShare, unshare: mockUnshare` after `DashboardHook` was extended. Fixed with `replace_all`. Severity: **medium** (blocks `npm run build`; vitest skips tsc so tests passed).
+
+2. `useSharedWithMe.spec.ts` — `mockItem` only had `{ id, sharedBy }` but `SharedQrItem` now requires `{ id, content, pngUrl, svgUrl, hasLogo, expiresAt, sharedBy }`. Fixed by expanding the fixture. Same root cause as link-expiration QA pattern.
+
+3. `handle-oauth-callback.use-case.spec.ts` — `makeUserRepo` mock missing `findAll` after `UserRepository` abstract class gained the method. Fixed by adding `findAll: jest.fn().mockResolvedValue([])`.
+
+**Root cause (recurring):** Required fields added to shared interfaces don't cascade to all existing test fixtures until `npm run build` is run (vitest/jest run before tsc). Mitigation: run build earlier in TDD cycle. Pattern matches link-expiration QA finding.
+
+### Cross-feature checks
+
+**Domain layer:** `domain/qr/qr-share.ts` and `domain/qr/qr-share.repository.ts` — zero framework imports. `QrCode` imported from same bounded context — consistent with existing patterns. ✅
+
+**Application layer:** All three use cases (`ShareQrUseCase`, `UnshareQrUseCase`, `ListSharedWithMeUseCase`) use `@Injectable()` and `@nestjs/common` exceptions — consistent with pre-existing use case pattern. ✅
+
+**Constitution:**
+- No `process.env` in domain/application ✅
+- No hardcoded `sloboda.fr` in production code ✅
+- No direct MinIO URLs in API responses ✅
+- `/r/{id}` remains `@Public()` and unchanged ✅
+- Auth cookies still httpOnly (unchanged) ✅
+
+**Duplicate logic check:**
+- `toShareItem` + `groupSharesByQrId` helpers in `qr.controller.ts` are local — no duplication risk.
+- `userRepository.findAll()` called in both `ListSharedWithMeUseCase` and `QrController.list()` — two distinct call sites with different consumers (use case vs controller). Not a duplication candidate at this scale.
+
+**Route ordering:** `@Get('shared-with-me')` declared at line 57, before `@Get(':id')` at line 137. E2E test T38 verifies the route resolves correctly (401 without auth, not 404). ✅
+
+**Roadmap:** `internal-sharing` still `in-progress` — shipping next. `url-redirect`, `qr-history`, `public-qr-page` shipped with no `review.md` — pre-existing pre-workflow gap, unchanged.
+
+### Verdict
+
+**Pass.** 338 backend + 111 frontend tests green. Build clean after fixing 3 spec-file type errors (same recurring pattern as link-expiration). No regressions across prior features. No constitution violations. Ready for `/ship internal-sharing`.

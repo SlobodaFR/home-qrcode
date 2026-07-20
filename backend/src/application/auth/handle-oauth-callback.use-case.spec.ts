@@ -16,6 +16,7 @@ const makeOAuthClient = (): jest.Mocked<OAuthClient> => (({
 const makeUserRepo = (existing: User | null = null): jest.Mocked<UserRepository> => (({
   findById: jest.fn().mockResolvedValue(existing),
   findByEmail: jest.fn(),
+  findAll: jest.fn().mockResolvedValue([]),
   save: jest.fn().mockResolvedValue(undefined),
 }));
 

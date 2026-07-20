@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { GoneException, Injectable, NotFoundException } from '@nestjs/common';
 import { QrRepository } from '../../domain/qr/qr.repository';
 
 export interface RedirectCommand {
@@ -17,6 +17,7 @@ export class RedirectUseCase {
     const qr = await this.repository.findById(cmd.id);
     if (!qr) throw new NotFoundException();
     if (qr.contentType !== 'url') throw new NotFoundException();
+    if (qr.expiresAt && qr.expiresAt <= new Date()) throw new GoneException();
     void this.repository.incrementScanCount(cmd.id);
     return { targetUrl: qr.content };
   }

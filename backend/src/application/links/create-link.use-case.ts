@@ -5,6 +5,7 @@ import { QrRepository } from '../../domain/qr/qr.repository';
 export interface CreateLinkCommand {
   userId: string;
   url: string;
+  expiresAt?: Date | null;
 }
 
 export interface CreateLinkResult {
@@ -23,6 +24,7 @@ export class CreateLinkUseCase {
       contentType: 'url',
       content: cmd.url,
       source: 'shortlink',
+      expiresAt: cmd.expiresAt ?? null,
       size: 0,
       fgColor: '',
       bgColor: '',

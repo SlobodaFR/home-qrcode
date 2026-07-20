@@ -12,7 +12,7 @@ type DisplayOptions = {
   errorCorrection: 'L' | 'M' | 'Q' | 'H';
 };
 
-type BaseCmd = { userId: string; frontendUrl: string } & DisplayOptions;
+type BaseCmd = { userId: string; frontendUrl: string; expiresAt?: Date | null } & DisplayOptions;
 
 export type GenerateQrCommand =
   | (BaseCmd & { contentType: 'url'; content: string })
@@ -74,6 +74,7 @@ export class GenerateQrUseCase {
       encodedContent,
       hasLogo: false,
       source: 'qr',
+      expiresAt: cmd.expiresAt ?? null,
       size: cmd.size,
       fgColor: cmd.fgColor,
       bgColor: cmd.bgColor,
