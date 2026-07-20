@@ -127,7 +127,7 @@ function QrCard({ qr, users, onDelete, onAttachLogo, onSetExpiration, onShare, o
             onClick={() => void handleDelete()}
             disabled={deleting}
             aria-label="Supprimer"
-            className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-40"
+            className="p-2 -mr-2 text-gray-300 hover:text-red-500 transition-colors disabled:opacity-40"
           >
             ✕
           </button>
@@ -141,7 +141,7 @@ function QrCard({ qr, users, onDelete, onAttachLogo, onSetExpiration, onShare, o
             data-testid="share-user-picker"
             value={selectedRecipient}
             onChange={(e) => setSelectedRecipient(e.target.value)}
-            className="flex-1 text-xs border border-gray-200 rounded px-1 py-0.5"
+            className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-2 min-w-0"
           >
             <option value="">Partager avec…</option>
             {users.map((u) => (
@@ -153,7 +153,7 @@ function QrCard({ qr, users, onDelete, onAttachLogo, onSetExpiration, onShare, o
             data-testid="share-submit-btn"
             onClick={() => void handleShare()}
             disabled={!selectedRecipient}
-            className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-40"
+            className="px-3 py-2 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 shrink-0"
           >
             Partager
           </button>
@@ -201,7 +201,7 @@ function TypeButton({ label, active, onClick }: { label: string; active: boolean
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
     >
       {label}
     </button>
@@ -553,55 +553,82 @@ export function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex gap-2">
+      <header className="sticky top-0 z-40 border-b border-gray-200 bg-white">
+        <div className="mx-auto max-w-2xl px-4 h-14 flex items-center justify-between gap-3">
+
+          {/* Left: brand on mobile, tabs on desktop */}
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="font-semibold text-gray-900 text-sm md:hidden shrink-0">QR Code</span>
+            {/* Tab nav — fixed bottom on mobile, inline here on md+ */}
+            <nav className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 flex md:static md:inset-auto md:border-0 md:bg-transparent md:gap-2">
+              <button
+                data-testid="tab-qr"
+                type="button"
+                onClick={() => setActiveTab('qr')}
+                className={`
+                  flex-1 py-4 text-sm font-medium transition-colors
+                  md:flex-none md:py-1 md:px-3 md:rounded-full
+                  ${activeTab === 'qr'
+                    ? 'text-gray-900 border-t-2 border-gray-900 md:border-0 md:bg-gray-900 md:text-white'
+                    : 'text-gray-400 md:bg-gray-100 md:text-gray-600 md:hover:bg-gray-200'}
+                `}
+              >
+                QR Codes
+              </button>
+              <button
+                data-testid="tab-links"
+                type="button"
+                onClick={() => setActiveTab('links')}
+                className={`
+                  flex-1 py-4 text-sm font-medium transition-colors
+                  md:flex-none md:py-1 md:px-3 md:rounded-full
+                  ${activeTab === 'links'
+                    ? 'text-gray-900 border-t-2 border-gray-900 md:border-0 md:bg-gray-900 md:text-white'
+                    : 'text-gray-400 md:bg-gray-100 md:text-gray-600 md:hover:bg-gray-200'}
+                `}
+              >
+                Liens courts
+              </button>
+            </nav>
+          </div>
+
+          {/* Right: user + logout */}
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            {currentUser && (
+              <>
+                {currentUser.avatarUrl ? (
+                  <img
+                    data-testid="user-avatar"
+                    src={currentUser.avatarUrl}
+                    alt={currentUser.name}
+                    className="w-8 h-8 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <span
+                    data-testid="user-initials"
+                    className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-700 shrink-0"
+                  >
+                    {userInitials}
+                  </span>
+                )}
+                <span data-testid="user-name" className="hidden sm:inline text-sm text-gray-700 truncate max-w-[120px]">
+                  {currentUser.name}
+                </span>
+              </>
+            )}
             <button
-              data-testid="tab-qr"
-              type="button"
-              onClick={() => setActiveTab('qr')}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${activeTab === 'qr' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              onClick={handleLogout}
+              className="text-sm text-gray-400 hover:text-gray-700 transition-colors whitespace-nowrap"
             >
-              QR Codes
-            </button>
-            <button
-              data-testid="tab-links"
-              type="button"
-              onClick={() => setActiveTab('links')}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${activeTab === 'links' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-            >
-              Liens courts
+              <span className="hidden sm:inline">Se déconnecter</span>
+              <span className="sm:hidden" aria-label="Se déconnecter">↪</span>
             </button>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {currentUser && (
-            <>
-              {currentUser.avatarUrl ? (
-                <img
-                  data-testid="user-avatar"
-                  src={currentUser.avatarUrl}
-                  alt={currentUser.name}
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              ) : (
-                <span
-                  data-testid="user-initials"
-                  className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-700"
-                >
-                  {userInitials}
-                </span>
-              )}
-              <span data-testid="user-name" className="text-sm text-gray-700">{currentUser.name}</span>
-            </>
-          )}
-          <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
-            Se déconnecter
-          </button>
+
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-6 flex flex-col gap-6">
+      <main className="mx-auto max-w-2xl px-4 py-4 md:py-6 pb-24 md:pb-6 flex flex-col gap-4 md:gap-6">
         {activeTab === 'qr' && (
           <section className="flex flex-col gap-4">
             <CreateForm onCreate={create} />
