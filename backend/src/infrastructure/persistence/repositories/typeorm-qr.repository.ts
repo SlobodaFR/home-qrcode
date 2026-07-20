@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { QrCode } from '../../../domain/qr/qr-code';
 import { FindAllOptions, FindAllResult, QrRepository } from '../../../domain/qr/qr.repository';
 import { QrCodeOrmEntity } from '../entities/qr-code.orm-entity';
@@ -33,6 +33,7 @@ export class TypeOrmQrRepository extends QrRepository {
       encodedContent: qr.encodedContent,
       hasLogo: qr.hasLogo,
       logoMimeType: qr.logoMimeType,
+      source: qr.source,
       size: qr.size,
       fgColor: qr.fgColor,
       bgColor: qr.bgColor,
@@ -44,7 +45,20 @@ export class TypeOrmQrRepository extends QrRepository {
 
   async findAllByUserId(userId: string, options: FindAllOptions): Promise<FindAllResult> {
     const [rows, total] = await this.repository.findAndCount({
-      where: { userId },
+      where: [
+        { userId, source: IsNull() },
+        { userId, source: Not('shortlink') },
+      ],
+      order: { createdAt: 'DESC' },
+      skip: (options.page - 1) * options.limit,
+      take: options.limit,
+    });
+    return { items: rows.map(toDomain), total };
+  }
+
+  async findAllLinksByUserId(userId: string, options: FindAllOptions): Promise<FindAllResult> {
+    const [rows, total] = await this.repository.findAndCount({
+      where: { userId, source: 'shortlink' },
       order: { createdAt: 'DESC' },
       skip: (options.page - 1) * options.limit,
       take: options.limit,
@@ -71,6 +85,7 @@ function toDomain(row: QrCodeOrmEntity): QrCode {
     encodedContent: row.encodedContent,
     hasLogo: row.hasLogo,
     logoMimeType: row.logoMimeType,
+    source: row.source,
     size: row.size,
     fgColor: row.fgColor,
     bgColor: row.bgColor,

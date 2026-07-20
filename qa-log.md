@@ -272,3 +272,102 @@ Post-fix: `npm run build` passes, all 265 tests still GREEN.
 ### Verdict
 
 **Pass (after blocker fix).** 265 tests green. Build clean post-fix. Architecture clean. Ready for `/ship logo-overlay`.
+
+---
+
+## 2026-07-20 — url-shortener QA
+
+### Commands run
+
+```
+npm test                    # all workspaces
+npm run build:backend       # nest build
+npm run build:frontend      # tsc -b && vite build
+```
+
+### Results
+
+| Suite | Files | Tests | Status |
+|---|---|---|---|
+| Backend (Jest) | 33 | 257 | ✅ GREEN |
+| Frontend (Vitest) | 10 | 62 | ✅ GREEN |
+| **Total** | **43** | **319** | ✅ |
+
+Build: ✅ Clean. `tsc -b` passes (strict mode). `nest build` clean. Vite 50 modules, no warnings.
+
+### Issues found
+
+**LOW — Missing `review.md` for 3 pre-existing shipped features**
+
+`url-redirect`, `qr-history`, and `public-qr-page` are marked `shipped` in `roadmap.md` but have no `specs/<slug>/review.md`. These predate the `/review` workflow. No code quality concern; documentation gap only.
+
+**INFO — Authenticated e2e coverage for `/api/links` limited to controller unit tests**
+
+No JWT injection helper in `app.module.spec.ts`. Authenticated happy paths (201 on create, 400 on invalid URL, 204 on delete) covered at controller unit level only. Unauthenticated (401) paths and public redirect (302) covered at e2e level. Consistent with existing project pattern (no other feature has authenticated e2e tests either).
+
+**INFO — `url-shortener` still `in-progress` in `roadmap.md`**
+
+Will be updated to `shipped` by `/ship url-shortener`.
+
+### Architecture checks
+
+- Domain layer: zero infrastructure imports ✅
+- `application/links/`: no TypeORM, no MinIO, no QrStoragePort ✅
+- `LinksModule` independent of `QrModule` — no MinIO/image-generator pulled in ✅
+- `FRONTEND_URL` via `ConfigService.getOrThrow` in all controllers — no hardcoded domains ✅
+- No `process.env` in domain/application/infrastructure layers ✅
+- No `any` types in new production files ✅
+- TypeScript strict mode: `strict: true`, `noImplicitAny: true`, `strictNullChecks: true` ✅
+
+### Cross-feature regression check
+
+- `findAllByUserId` (QR list) now uses array-where `[IsNull(), Not('shortlink')]` — backward-compat for legacy NULL rows verified by integration test T21 ✅
+- `EditTargetUrlUseCase` source guard tested (T4 in edit-target-url spec) — no regression on existing QR edit flow ✅
+- `GenerateQrUseCase` now sets `source: 'qr'` — no behavior change for existing QR codes ✅
+- `RedirectUseCase` unchanged — shortlinks redirect via same path ✅
+
+### Verdict
+
+**Pass.** 319 tests green. Build clean. No constitution violations. No regressions. Three pre-existing shipped features lack `review.md` (pre-workflow gap, low severity). Ready for `/ship url-shortener`.
+
+---
+
+## 2026-07-20 — post-ship QA
+
+### Commands run
+
+```
+npm test                          # all workspaces (root)
+npm run build                     # frontend tsc+vite + backend nest build
+```
+
+### Results
+
+| Suite | Files | Tests | Status |
+|---|---|---|---|
+| Backend (Jest) | 33 | 257 | ✅ GREEN |
+| Frontend (Vitest) | 10 | 62 | ✅ GREEN |
+| **Total** | **43** | **319** | ✅ |
+
+Build: ✅ Clean. Frontend: 50 modules, no TS errors. Backend: `nest build` clean, strict mode.
+
+### Issues found
+
+**LOW — `process.env` in `main.ts` (bootstrap only)**  
+`backend/src/main.ts` uses `process.env['FRONTEND_URL']` and `process.env['PORT']` directly. This is the NestJS bootstrap entrypoint before `ConfigService` is available; NestFactory hasn't initialized the DI container yet. Acceptable pattern — no fix required.
+
+**LOW (pre-existing) — Missing `review.md` for 3 pre-workflow shipped features**  
+`url-redirect`, `qr-history`, `public-qr-page` shipped before the `/review` workflow was introduced. No code quality concern; documentation gap only.
+
+### Cross-feature checks
+
+- `/r/{id}` computation appears in 3 places: `generate-qr.use-case.ts` (encodes into QR image), `attach-logo.use-case.ts` (re-encodes after logo), `links.controller.ts` (response shortUrl). Three distinct semantic roles — not duplicated logic.
+- Domain layer: zero infrastructure imports ✅
+- `application/links/`: no TypeORM, no MinIO, no `QrStoragePort` ✅
+- No hardcoded domains anywhere in production code ✅
+- No `any` types in new production files ✅
+- `roadmap.md`: `url-shortener` → shipped, all in-progress features have active recent work, no stalls ✅
+
+### Verdict
+
+**Pass.** 319 tests green. Build clean. No new issues vs prior QA run. Existing known gap (3 pre-workflow review.md missing) unchanged.

@@ -30,7 +30,7 @@ const makeController = async () => {
       { provide: EditTargetUrlUseCase, useValue: { execute: jest.fn().mockResolvedValue({ qr: mockQr }) } },
       { provide: ListQrUseCase, useValue: { execute: jest.fn().mockResolvedValue({ items: [mockQr], total: 1, page: 1, limit: 20 }) } },
       { provide: DeleteQrUseCase, useValue: { execute: jest.fn().mockResolvedValue(undefined) } },
-      { provide: QrRepository, useValue: { findById: jest.fn().mockResolvedValue(mockQr), findByIdAndUserId: jest.fn().mockResolvedValue(mockQr) } },
+      { provide: QrRepository, useValue: { findById: jest.fn().mockResolvedValue(mockQr), findByIdAndUserId: jest.fn().mockResolvedValue(mockQr), findAllByUserId: jest.fn(), findAllLinksByUserId: jest.fn() } },
       { provide: QrStoragePort, useValue: { streamPng: jest.fn().mockResolvedValue(Readable.from(['png'])), streamSvg: jest.fn().mockResolvedValue(Readable.from(['svg'])), streamLogo: jest.fn().mockResolvedValue(Readable.from(['logo'])), exists: jest.fn().mockResolvedValue(true) } },
       { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('https://qrcode.example.com'), get: jest.fn() } },
     ],

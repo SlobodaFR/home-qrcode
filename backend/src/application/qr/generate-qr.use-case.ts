@@ -73,6 +73,7 @@ export class GenerateQrUseCase {
       content: storedContent,
       encodedContent,
       hasLogo: false,
+      source: 'qr',
       size: cmd.size,
       fgColor: cmd.fgColor,
       bgColor: cmd.bgColor,

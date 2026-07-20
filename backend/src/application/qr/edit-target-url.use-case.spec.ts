@@ -7,6 +7,7 @@ const makeRepo = (qr: QrCode | null = null): jest.Mocked<QrRepository> => ({
   findById: jest.fn(),
   findByIdAndUserId: jest.fn().mockResolvedValue(qr),
   findAllByUserId: jest.fn(),
+  findAllLinksByUserId: jest.fn(),
   save: jest.fn().mockResolvedValue(undefined),
   deleteById: jest.fn(),
   incrementScanCount: jest.fn(),
@@ -51,5 +52,16 @@ describe('EditTargetUrlUseCase', () => {
   it('should throw UnprocessableEntityException for text-type QrCode', async () => {
     const uc = new EditTargetUrlUseCase(makeRepo(textQr));
     await expect(uc.execute({ id: 'qr-2', userId: 'user-1', content: 'https://x.com' })).rejects.toThrow(UnprocessableEntityException);
+  });
+
+  // url-shortener: Test 4 — TPP: conditional
+  it('should throw NotFoundException when QrCode has source=shortlink', async () => {
+    const shortlink = QrCode.create({
+      id: 'sl-1', userId: 'user-1', contentType: 'url', content: 'https://target.com',
+      source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M',
+      createdAt: new Date(),
+    });
+    const uc = new EditTargetUrlUseCase(makeRepo(shortlink));
+    await expect(uc.execute({ id: 'sl-1', userId: 'user-1', content: 'https://new.com' })).rejects.toThrow(NotFoundException);
   });
 });

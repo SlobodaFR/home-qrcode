@@ -13,6 +13,7 @@ const makeRepo = (qr: QrCode | null, deleteResult = true): jest.Mocked<QrReposit
   findById: jest.fn(),
   findByIdAndUserId: jest.fn().mockResolvedValue(qr),
   findAllByUserId: jest.fn(),
+  findAllLinksByUserId: jest.fn(),
   save: jest.fn(),
   deleteById: jest.fn().mockResolvedValue(deleteResult),
   incrementScanCount: jest.fn(),

@@ -1,6 +1,8 @@
 import { ChangeEvent, FormEvent, useRef, useState } from 'react';
 import { useDashboard } from '../../application/hooks/useDashboard';
+import { useLinks } from '../../application/hooks/useLinks';
 import { CreateQrPayload, QrItem } from '../../infrastructure/api/qr-auth.client';
+import { ShortLinkItem } from '../../infrastructure/api/links.client';
 
 type ContentType = 'url' | 'text' | 'wifi' | 'email' | 'vcard';
 
@@ -246,6 +248,123 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
   );
 }
 
+function LinkCard({ link, onEdit, onRemove }: { link: ShortLinkItem; onEdit: (id: string, url: string) => Promise<void>; onRemove: (id: string) => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [editUrl, setEditUrl] = useState(link.url);
+
+  async function handleSave() {
+    await onEdit(link.id, editUrl);
+    setEditing(false);
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-gray-200 p-3 bg-white">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="text-sm font-medium text-blue-600 truncate">{link.shortUrl}</span>
+          <span className="text-xs text-gray-400 truncate">{link.url}</span>
+          <span className="text-xs text-gray-400">{link.scanCount} scan{link.scanCount !== 1 ? 's' : ''}</span>
+        </div>
+        <div className="flex gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => void navigator.clipboard.writeText(link.shortUrl)}
+            className="text-xs text-gray-500 hover:text-gray-900 px-2 py-1 rounded"
+          >
+            Copier
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing((v) => !v)}
+            className="text-xs text-gray-500 hover:text-gray-900 px-2 py-1 rounded"
+          >
+            Modifier
+          </button>
+          <button
+            type="button"
+            aria-label="Supprimer le lien"
+            onClick={() => void onRemove(link.id)}
+            className="text-xs text-gray-300 hover:text-red-500 px-1"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+      {editing && (
+        <div className="flex gap-2">
+          <input
+            data-testid="link-edit-input"
+            type="url"
+            value={editUrl}
+            onChange={(e) => setEditUrl(e.target.value)}
+            className="flex-1 rounded border border-gray-200 px-2 py-1 text-sm"
+          />
+          <button type="button" onClick={() => void handleSave()} className="text-xs text-blue-600 hover:text-blue-800">
+            Enregistrer
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LinksSection() {
+  const { state, items, total, create, edit, remove } = useLinks();
+  const [url, setUrl] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!url.trim()) return;
+    setSubmitting(true);
+    try {
+      await create(url.trim());
+      setUrl('');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <h2 className="text-sm font-semibold text-gray-700">Liens courts</h2>
+      <form onSubmit={(e) => void handleSubmit(e)} className="flex gap-2">
+        <input
+          data-testid="link-url-input"
+          type="url"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://..."
+          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors"
+          required
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
+        >
+          Créer
+        </button>
+      </form>
+      {state === 'loading' && <p className="text-xs text-gray-400">Chargement…</p>}
+      {state === 'error' && <p className="text-xs text-red-500">Erreur lors du chargement.</p>}
+      {state === 'ready' && items.length === 0 && (
+        <p className="text-xs text-gray-400">Aucun lien court.</p>
+      )}
+      {state === 'ready' && items.length > 0 && (
+        <>
+          <p className="text-xs text-gray-400">{total} lien{total !== 1 ? 's' : ''}</p>
+          <div className="flex flex-col gap-2">
+            {items.map((link) => (
+              <LinkCard key={link.id} link={link} onEdit={edit} onRemove={remove} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const { state, items, total, create, remove, attachLogo } = useDashboard();
 
@@ -264,28 +383,34 @@ export function DashboardPage() {
         </button>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-6 flex flex-col gap-4">
-        <CreateForm onCreate={create} />
+      <main className="mx-auto max-w-2xl px-4 py-6 flex flex-col gap-6">
+        <section className="flex flex-col gap-4">
+          <CreateForm onCreate={create} />
 
-        {state === 'loading' && (
-          <p className="text-center text-sm text-gray-400 py-8">Chargement…</p>
-        )}
-        {state === 'error' && (
-          <p className="text-center text-sm text-red-500 py-8">Erreur lors du chargement.</p>
-        )}
-        {state === 'ready' && items.length === 0 && (
-          <p className="text-center text-sm text-gray-400 py-8">Aucun QR code. Générez-en un ci-dessus.</p>
-        )}
-        {state === 'ready' && items.length > 0 && (
-          <>
-            <p className="text-xs text-gray-400">{total} QR code{total !== 1 ? 's' : ''}</p>
-            <div className="flex flex-col gap-3">
-              {items.map((qr) => (
-                <QrCard key={qr.id} qr={qr} onDelete={remove} onAttachLogo={attachLogo} />
-              ))}
-            </div>
-          </>
-        )}
+          {state === 'loading' && (
+            <p className="text-center text-sm text-gray-400 py-8">Chargement…</p>
+          )}
+          {state === 'error' && (
+            <p className="text-center text-sm text-red-500 py-8">Erreur lors du chargement.</p>
+          )}
+          {state === 'ready' && items.length === 0 && (
+            <p className="text-center text-sm text-gray-400 py-8">Aucun QR code. Générez-en un ci-dessus.</p>
+          )}
+          {state === 'ready' && items.length > 0 && (
+            <>
+              <p className="text-xs text-gray-400">{total} QR code{total !== 1 ? 's' : ''}</p>
+              <div className="flex flex-col gap-3">
+                {items.map((qr) => (
+                  <QrCard key={qr.id} qr={qr} onDelete={remove} onAttachLogo={attachLogo} />
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+
+        <hr className="border-gray-200" />
+
+        <LinksSection />
       </main>
     </div>
   );

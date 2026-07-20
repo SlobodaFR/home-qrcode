@@ -19,6 +19,7 @@ export class EditTargetUrlUseCase {
   async execute(cmd: EditTargetUrlCommand): Promise<EditTargetUrlResult> {
     const qr = await this.repository.findByIdAndUserId(cmd.id, cmd.userId);
     if (!qr) throw new NotFoundException();
+    if (qr.source === 'shortlink') throw new NotFoundException();
     if (qr.contentType !== 'url') throw new UnprocessableEntityException();
     const updated = qr.withContent(cmd.content);
     await this.repository.save(updated);

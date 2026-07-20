@@ -1,7 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { DashboardPage } from './DashboardPage';
 import * as hooks from '../../application/hooks/useDashboard';
+import * as linksHooks from '../../application/hooks/useLinks';
 import type { CreateQrPayload } from '../../infrastructure/api/qr-auth.client';
+import type { ShortLinkItem } from '../../infrastructure/api/links.client';
 
 const mockCreate = vi.fn();
 const mockRemove = vi.fn();
@@ -194,5 +196,89 @@ describe('CreateForm', () => {
       const call = mockCreate.mock.calls[0][0] as CreateQrPayload;
       expect(call).toMatchObject({ contentType: 'wifi', ssid: 'HomeNet', security: 'WPA', password: 'secret' });
     });
+  });
+});
+
+const mockLinkCreate = vi.fn();
+const mockLinkRemove = vi.fn();
+const mockLinkEdit = vi.fn();
+
+const makeLinkItem = (overrides: Partial<ShortLinkItem> = {}): ShortLinkItem => ({
+  id: 'sl-1', url: 'https://target.com', shortUrl: 'http://localhost:5173/r/sl-1',
+  scanCount: 2, createdAt: '2026-01-01T00:00:00.000Z', ...overrides,
+});
+
+const mockLinksHook = (items: ShortLinkItem[] = []) => ({
+  state: 'ready' as const, items, total: items.length,
+  create: mockLinkCreate, edit: mockLinkEdit, remove: mockLinkRemove,
+});
+
+describe('LinksSection (url-shortener)', () => {
+  beforeEach(() => {
+    vi.spyOn(linksHooks, 'useLinks').mockReturnValue(mockLinksHook());
+  });
+
+  // url-shortener: Test 48 — TPP: constant
+  it('should render a "Liens courts" section heading', () => {
+    render(<DashboardPage />);
+    expect(screen.getByText(/liens courts/i)).toBeTruthy();
+  });
+
+  // url-shortener: Test 49 — TPP: constant
+  it('should render a URL input and "Créer" button in the create form', () => {
+    render(<DashboardPage />);
+    expect(screen.getByTestId('link-url-input')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /créer/i })).toBeTruthy();
+  });
+
+  // url-shortener: Test 50 — TPP: variable
+  it('should render each ShortLinkItem with shortUrl and scan count', () => {
+    vi.spyOn(linksHooks, 'useLinks').mockReturnValue(mockLinksHook([makeLinkItem()]));
+    render(<DashboardPage />);
+    expect(screen.getByText('http://localhost:5173/r/sl-1')).toBeTruthy();
+    expect(screen.getByText(/2 scan/i)).toBeTruthy();
+  });
+
+  // url-shortener: Test 51 — TPP: constant
+  it('"Copier" button should call navigator.clipboard.writeText with shortUrl', async () => {
+    vi.spyOn(linksHooks, 'useLinks').mockReturnValue(mockLinksHook([makeLinkItem()]));
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    render(<DashboardPage />);
+    fireEvent.click(screen.getByRole('button', { name: /copier/i }));
+    expect(writeText).toHaveBeenCalledWith('http://localhost:5173/r/sl-1');
+  });
+
+  // url-shortener: Test 52 — TPP: conditional
+  it('edit button should reveal inline URL input', async () => {
+    vi.spyOn(linksHooks, 'useLinks').mockReturnValue(mockLinksHook([makeLinkItem()]));
+    render(<DashboardPage />);
+    fireEvent.click(screen.getByRole('button', { name: /modifier/i }));
+    expect(screen.getByTestId('link-edit-input')).toBeTruthy();
+  });
+
+  // url-shortener: Test 53 — TPP: conditional
+  it('delete button should call remove with the link id', async () => {
+    vi.spyOn(linksHooks, 'useLinks').mockReturnValue(mockLinksHook([makeLinkItem()]));
+    mockLinkRemove.mockResolvedValue(undefined);
+    render(<DashboardPage />);
+    fireEvent.click(screen.getByRole('button', { name: /supprimer le lien/i }));
+    await waitFor(() => expect(mockLinkRemove).toHaveBeenCalledWith('sl-1'));
+  });
+
+  // url-shortener: Test 54 — TPP: variable
+  it('form submission should call create with entered URL and clear input', async () => {
+    mockLinkCreate.mockResolvedValue(undefined);
+    render(<DashboardPage />);
+    const input = screen.getByTestId('link-url-input');
+    fireEvent.change(input, { target: { value: 'https://new.com' } });
+    fireEvent.click(screen.getByRole('button', { name: /créer/i }));
+    await waitFor(() => expect(mockLinkCreate).toHaveBeenCalledWith('https://new.com'));
+  });
+
+  // url-shortener: Test 55 — TPP: conditional
+  it('should display empty state text when items list is empty', () => {
+    render(<DashboardPage />);
+    expect(screen.getByText(/aucun lien court/i)).toBeTruthy();
   });
 });

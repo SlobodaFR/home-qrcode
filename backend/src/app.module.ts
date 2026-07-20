@@ -5,6 +5,7 @@ import { join } from 'path';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
 import { MinioModule } from './infrastructure/minio/minio.module';
 import { AuthModule } from './interfaces/http/modules/auth.module';
+import { LinksModule } from './interfaces/http/modules/links.module';
 import { QrModule } from './interfaces/http/modules/qr.module';
 import { RedirectModule } from './interfaces/http/modules/redirect.module';
 
@@ -15,6 +16,7 @@ import { RedirectModule } from './interfaces/http/modules/redirect.module';
     MinioModule,
     AuthModule,
     QrModule,
+    LinksModule,
     RedirectModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'frontend', 'dist'),
