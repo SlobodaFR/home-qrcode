@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post, Query } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SetExpirationUseCase } from '../../../application/expiration/set-expiration.use-case';
 import { CreateLinkUseCase } from '../../../application/links/create-link.use-case';
 import { DeleteLinkUseCase } from '../../../application/links/delete-link.use-case';
 import { EditLinkUseCase } from '../../../application/links/edit-link.use-case';
@@ -8,6 +9,8 @@ import { QrCode } from '../../../domain/qr/qr-code';
 import { CurrentUser, CurrentUserPayload } from '../decorators/current-user.decorator';
 import { CreateOrEditLinkDto } from '../dto/create-or-edit-link.dto';
 import { ListQrDto } from '../dto/list-qr.dto';
+import { SetExpirationDto } from '../dto/set-expiration.dto';
+import { parseExpiryDate } from '../utils/parse-expiry-date';
 
 @Controller('links')
 export class LinksController {
@@ -17,12 +20,21 @@ export class LinksController {
     private readonly editLink: EditLinkUseCase,
     private readonly deleteLink: DeleteLinkUseCase,
     private readonly config: ConfigService,
+    @Inject('SetExpirationUseCase') private readonly setExpirationUseCase: SetExpirationUseCase,
   ) {}
+
+  @Patch(':id/expiration')
+  async setExpiration(@Param('id') id: string, @Body() dto: SetExpirationDto, @CurrentUser() user: CurrentUserPayload) {
+    const expiresAt = dto.expiresAt !== null ? parseExpiryDate(dto.expiresAt) : null;
+    const { entity } = await this.setExpirationUseCase.execute({ id, userId: user.id, expiresAt });
+    return toResponse(entity, this.config.getOrThrow<string>('FRONTEND_URL'));
+  }
 
   @Post()
   @HttpCode(201)
   async create(@Body() dto: CreateOrEditLinkDto, @CurrentUser() user: CurrentUserPayload) {
-    const { link } = await this.createLink.execute({ userId: user.id, url: dto.url });
+    const expiresAt = dto.expiresAt ? parseExpiryDate(dto.expiresAt) : null;
+    const { link } = await this.createLink.execute({ userId: user.id, url: dto.url, expiresAt });
     return toResponse(link, this.config.getOrThrow<string>('FRONTEND_URL'));
   }
 
@@ -57,6 +69,7 @@ function toResponse(link: QrCode, frontendUrl: string) {
     url: link.content,
     shortUrl: `${frontendUrl}/r/${link.id}`,
     scanCount: link.scanCount,
+    expiresAt: link.expiresAt?.toISOString() ?? null,
     createdAt: link.createdAt,
   };
 }

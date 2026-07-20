@@ -371,3 +371,38 @@ Build: ✅ Clean. Frontend: 50 modules, no TS errors. Backend: `nest build` clea
 ### Verdict
 
 **Pass.** 319 tests green. Build clean. No new issues vs prior QA run. Existing known gap (3 pre-workflow review.md missing) unchanged.
+
+## 2026-07-20 — link-expiration QA
+
+### Commands run
+- `npm run build` → PASS (frontend Vite build + NestJS compile)
+- `cd frontend && npx vitest run` → **85/85 tests pass** (10 suites)
+- `cd backend && npx jest --passWithNoTests` → **297/297 tests pass** (37 suites)
+
+### Results
+
+| Suite | Tests | Result |
+|---|---|---|
+| Frontend (vitest) | 85 | ✅ PASS |
+| Backend (jest) | 297 | ✅ PASS |
+| Build | — | ✅ PASS |
+
+### Issues found and fixed
+
+**TypeScript build errors (FIXED inline — spec-file mocks):**
+- `DashboardPage.spec.tsx`: 8 per-test `vi.spyOn(hooks, 'useDashboard').mockReturnValue(...)` calls in the `QrCard logo-overlay` block were missing `setExpiration` after `DashboardHook` was extended. Fixed by adding `setExpiration: mockSetExpiration` to each. Severity: **medium** (blocks build; tests still ran via vitest which skips tsc).
+- `useDashboard.spec.ts`: `makeItem()` factory missing `expiresAt: null` after `QrItem` was updated. Fixed.
+- `links.client.spec.ts`: `mockLink` missing `expiresAt: null` after `ShortLinkItem` was updated. Fixed.
+
+**Root cause:** `QrItem.expiresAt` and `ShortLinkItem.expiresAt` were added as required fields, but test fixtures in older specs weren't updated at the time. Vitest runs before tsc so these slip through test runs and only surface on `npm run build`. Mitigation: run `npm run build` earlier in the TDD cycle, not just at QA time.
+
+### Cross-feature checks
+
+- **Duplicate logic:** `parseExpiryDate` (shared util) avoids duplication in both controllers. No new duplication introduced.
+- **Architectural consistency:** All new code follows established layering — domain no new imports, application uses `@Injectable()` (pre-existing pattern), controllers call `parseExpiryDate` at HTTP boundary only.
+- **`roadmap.md`:** `link-expiration` still `in-progress` (correctly; shipping comes next). `public-qr-page` and `url-redirect` are shipped with no `review.md` — pre-existing gap, same as prior QA runs. `qr-history` same.
+- **Pre-existing note:** `qrcode-image-generator.spec.ts` SVG test was flaky in the prior run (1 failure) but passed cleanly in this run (297/297). Likely a timing/environment flake; no action needed.
+
+### Verdict
+
+**Pass.** 85 frontend + 297 backend tests green. Build clean after fixing 3 spec-file type errors. No regressions. Ready for /ship.

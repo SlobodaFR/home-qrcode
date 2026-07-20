@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SetExpirationUseCase } from '../../../application/expiration/set-expiration.use-case';
 import { CreateLinkUseCase } from '../../../application/links/create-link.use-case';
 import { DeleteLinkUseCase } from '../../../application/links/delete-link.use-case';
 import { EditLinkUseCase } from '../../../application/links/edit-link.use-case';
@@ -18,6 +19,7 @@ import { LinksController } from '../controllers/links.controller';
     ListLinksUseCase,
     EditLinkUseCase,
     DeleteLinkUseCase,
+    { provide: 'SetExpirationUseCase', useClass: SetExpirationUseCase },
   ],
 })
 export class LinksModule {}

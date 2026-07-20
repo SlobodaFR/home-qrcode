@@ -4,6 +4,7 @@ export interface QrItem {
   content: string;
   errorCorrection: 'L' | 'M' | 'Q' | 'H';
   scanCount: number;
+  expiresAt: string | null;
   createdAt: string;
   pngUrl: string;
   svgUrl: string;
@@ -19,11 +20,11 @@ export interface QrListResponse {
 }
 
 export type CreateQrPayload =
-  | { contentType: 'url'; content: string }
-  | { contentType: 'text'; content: string }
-  | { contentType: 'wifi'; ssid: string; security: 'WPA' | 'WEP' | 'nopass'; password?: string }
-  | { contentType: 'email'; to: string; subject?: string; body?: string }
-  | { contentType: 'vcard'; name: string; phone?: string; vcardEmail?: string; org?: string };
+  | { contentType: 'url'; content: string; expiresAt?: string }
+  | { contentType: 'text'; content: string; expiresAt?: string }
+  | { contentType: 'wifi'; ssid: string; security: 'WPA' | 'WEP' | 'nopass'; password?: string; expiresAt?: string }
+  | { contentType: 'email'; to: string; subject?: string; body?: string; expiresAt?: string }
+  | { contentType: 'vcard'; name: string; phone?: string; vcardEmail?: string; org?: string; expiresAt?: string };
 
 export async function listQrCodes(page = 1, limit = 20): Promise<QrListResponse> {
   const res = await fetch(`/api/qr?page=${page}&limit=${limit}`, { credentials: 'include' });
@@ -45,6 +46,17 @@ export async function createQrCode(payload: CreateQrPayload): Promise<QrItem> {
 export async function deleteQrCode(id: string): Promise<void> {
   const res = await fetch(`/api/qr/${id}`, { method: 'DELETE', credentials: 'include' });
   if (!res.ok && res.status !== 204) throw new Error(`deleteQrCode failed: ${res.status}`);
+}
+
+export async function setQrExpiration(id: string, expiresAt: string | null): Promise<QrItem> {
+  const res = await fetch(`/api/qr/${id}/expiration`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expiresAt }),
+  });
+  if (!res.ok) throw new Error(`setQrExpiration failed: ${res.status}`);
+  return res.json() as Promise<QrItem>;
 }
 
 export async function attachLogo(id: string, file: File): Promise<QrItem> {

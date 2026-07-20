@@ -1,4 +1,4 @@
-import { IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Matches, Max, Min, ValidateIf } from 'class-validator';
+import { IsDateString, IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Matches, Max, Min, ValidateIf } from 'class-validator';
 
 export class CreateQrDto {
   @IsIn(['url', 'text', 'wifi', 'email', 'vcard'])
@@ -80,4 +80,8 @@ export class CreateQrDto {
   @IsOptional()
   @IsIn(['L', 'M', 'Q', 'H'])
   errorCorrection: 'L' | 'M' | 'Q' | 'H' = 'M';
+
+  @IsOptional()
+  @IsDateString()
+  expiresAt?: string;
 }

@@ -5,7 +5,7 @@ import { useLinks } from './useLinks';
 
 const mockLink: ShortLinkItem = {
   id: 'sl-1', url: 'https://target.com', shortUrl: 'http://localhost:5173/r/sl-1',
-  scanCount: 0, createdAt: '2026-01-01T00:00:00.000Z',
+  scanCount: 0, expiresAt: null, createdAt: '2026-01-01T00:00:00.000Z',
 };
 
 afterEach(() => vi.restoreAllMocks());
@@ -67,5 +67,35 @@ describe('useLinks', () => {
     await act(async () => {});
     await act(async () => { await result.current.edit('sl-1', 'https://new.com'); });
     expect(result.current.items[0].url).toBe('https://new.com');
+  });
+
+  // link-expiration: Test 49 — TPP: variable
+  it('setExpiration(id, dateString) should call setLinkExpiration and replace matching item in state', async () => {
+    const item = { ...mockLink, expiresAt: null };
+    vi.spyOn(linksClient, 'listLinks').mockResolvedValue({ items: [item], total: 1, page: 1, limit: 20 });
+    const updated = { ...mockLink, expiresAt: '2026-08-25T23:59:59.000Z' };
+    vi.spyOn(linksClient, 'setLinkExpiration').mockResolvedValue(updated);
+
+    const { result } = renderHook(() => useLinks());
+    await act(async () => {});
+    await act(async () => { await result.current.setExpiration('sl-1', '2026-08-25T23:59:59.000Z'); });
+
+    expect(linksClient.setLinkExpiration).toHaveBeenCalledWith('sl-1', '2026-08-25T23:59:59.000Z');
+    expect(result.current.items[0].expiresAt).toBe('2026-08-25T23:59:59.000Z');
+  });
+
+  // link-expiration: Test 50 — TPP: conditional
+  it('setExpiration(id, null) should call setLinkExpiration with null and clear expiresAt in state', async () => {
+    const item = { ...mockLink, expiresAt: '2026-08-25T23:59:59.000Z' };
+    vi.spyOn(linksClient, 'listLinks').mockResolvedValue({ items: [item], total: 1, page: 1, limit: 20 });
+    const updated = { ...mockLink, expiresAt: null };
+    vi.spyOn(linksClient, 'setLinkExpiration').mockResolvedValue(updated);
+
+    const { result } = renderHook(() => useLinks());
+    await act(async () => {});
+    await act(async () => { await result.current.setExpiration('sl-1', null); });
+
+    expect(linksClient.setLinkExpiration).toHaveBeenCalledWith('sl-1', null);
+    expect(result.current.items[0].expiresAt).toBeNull();
   });
 });

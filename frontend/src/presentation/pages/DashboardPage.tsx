@@ -6,7 +6,12 @@ import { ShortLinkItem } from '../../infrastructure/api/links.client';
 
 type ContentType = 'url' | 'text' | 'wifi' | 'email' | 'vcard';
 
-function QrCard({ qr, onDelete, onAttachLogo }: { qr: QrItem; onDelete: (id: string) => void; onAttachLogo: (id: string, file: File) => Promise<void> }) {
+function QrCard({ qr, onDelete, onAttachLogo, onSetExpiration }: {
+  qr: QrItem;
+  onDelete: (id: string) => void;
+  onAttachLogo: (id: string, file: File) => Promise<void>;
+  onSetExpiration: (id: string, expiresAt: string | null) => Promise<void>;
+}) {
   const [deleting, setDeleting] = useState(false);
   const [showLogoPanel, setShowLogoPanel] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -55,6 +60,31 @@ function QrCard({ qr, onDelete, onAttachLogo }: { qr: QrItem; onDelete: (id: str
           <p className="text-xs text-gray-400">
             {new Date(qr.createdAt).toLocaleDateString('fr-FR')} · {qr.scanCount} scan{qr.scanCount !== 1 ? 's' : ''}
           </p>
+          {qr.expiresAt && new Date(qr.expiresAt) > new Date() && (
+            <p className="text-xs text-amber-600">Expire le {new Date(qr.expiresAt).toLocaleDateString('fr-FR')}</p>
+          )}
+          {qr.expiresAt && new Date(qr.expiresAt) <= new Date() && (
+            <span className="text-xs font-medium text-red-600">Expiré</span>
+          )}
+          <div className="flex gap-2 items-center">
+            <input
+              type="date"
+              data-testid="expiry-date-input"
+              defaultValue={qr.expiresAt ? qr.expiresAt.slice(0, 10) : ''}
+              onChange={(e) => void onSetExpiration(qr.id, e.target.value)}
+              className="text-xs border border-gray-200 rounded px-1 py-0.5"
+            />
+            {qr.expiresAt !== null && (
+              <button
+                type="button"
+                aria-label="Supprimer l'expiration"
+                onClick={() => void onSetExpiration(qr.id, null)}
+                className="text-xs text-gray-400 hover:text-red-500"
+              >
+                Supprimer l&apos;expiration
+              </button>
+            )}
+          </div>
           <div className="flex gap-3 mt-auto pt-1">
             <a href={qr.pngUrl} download={`qr-${qr.id}.png`} className="text-xs text-gray-500 hover:text-gray-900">PNG</a>
             <a href={qr.svgUrl} download={`qr-${qr.id}.svg`} className="text-xs text-gray-500 hover:text-gray-900">
@@ -122,6 +152,7 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
   const [contentType, setContentType] = useState<ContentType>('url');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState('');
 
   // url / text
   const [content, setContent] = useState('');
@@ -143,22 +174,23 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
   const [org, setOrg] = useState('');
 
   function buildPayload(): CreateQrPayload | null {
+    const exp = expiresAt || undefined;
     if (contentType === 'url' || contentType === 'text') {
       if (!content.trim()) return null;
-      return { contentType, content: content.trim() };
+      return { contentType, content: content.trim(), expiresAt: exp };
     }
     if (contentType === 'wifi') {
       if (!ssid.trim()) return null;
       if (security !== 'nopass' && !password.trim()) return null;
-      return { contentType: 'wifi', ssid: ssid.trim(), security, password: security !== 'nopass' ? password : undefined };
+      return { contentType: 'wifi', ssid: ssid.trim(), security, password: security !== 'nopass' ? password : undefined, expiresAt: exp };
     }
     if (contentType === 'email') {
       if (!to.trim()) return null;
-      return { contentType: 'email', to: to.trim(), subject: subject || undefined, body: body || undefined };
+      return { contentType: 'email', to: to.trim(), subject: subject || undefined, body: body || undefined, expiresAt: exp };
     }
     // vcard
     if (!name.trim()) return null;
-    return { contentType: 'vcard', name: name.trim(), phone: phone || undefined, vcardEmail: vcardEmail || undefined, org: org || undefined };
+    return { contentType: 'vcard', name: name.trim(), phone: phone || undefined, vcardEmail: vcardEmail || undefined, org: org || undefined, expiresAt: exp };
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -169,7 +201,7 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
     setError(null);
     try {
       await onCreate(payload);
-      setContent(''); setSsid(''); setPassword(''); setTo(''); setSubject(''); setBody(''); setName(''); setPhone(''); setVcardEmail(''); setOrg('');
+      setContent(''); setSsid(''); setPassword(''); setTo(''); setSubject(''); setBody(''); setName(''); setPhone(''); setVcardEmail(''); setOrg(''); setExpiresAt('');
     } catch {
       setError('Erreur lors de la création.');
     } finally {
@@ -194,6 +226,7 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
         <div className="flex gap-2">
           <input
             type={contentType === 'url' ? 'url' : 'text'}
+            data-testid={contentType === 'url' ? 'qr-url-input' : undefined}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={contentType === 'url' ? 'https://...' : 'Votre texte...'}
@@ -234,11 +267,18 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
         </div>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex items-center gap-3">
+        <input
+          type="date"
+          data-testid="qr-expiry-date-input"
+          value={expiresAt}
+          onChange={(e) => setExpiresAt(e.target.value)}
+          className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors"
+        />
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
+          className="ml-auto rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
         >
           {submitting ? '…' : 'Générer'}
         </button>
@@ -248,7 +288,12 @@ function CreateForm({ onCreate }: { onCreate: (payload: CreateQrPayload) => Prom
   );
 }
 
-function LinkCard({ link, onEdit, onRemove }: { link: ShortLinkItem; onEdit: (id: string, url: string) => Promise<void>; onRemove: (id: string) => Promise<void> }) {
+function LinkCard({ link, onEdit, onRemove, onSetExpiration }: {
+  link: ShortLinkItem;
+  onEdit: (id: string, url: string) => Promise<void>;
+  onRemove: (id: string) => Promise<void>;
+  onSetExpiration: (id: string, expiresAt: string | null) => Promise<void>;
+}) {
   const [editing, setEditing] = useState(false);
   const [editUrl, setEditUrl] = useState(link.url);
 
@@ -264,6 +309,31 @@ function LinkCard({ link, onEdit, onRemove }: { link: ShortLinkItem; onEdit: (id
           <span className="text-sm font-medium text-blue-600 truncate">{link.shortUrl}</span>
           <span className="text-xs text-gray-400 truncate">{link.url}</span>
           <span className="text-xs text-gray-400">{link.scanCount} scan{link.scanCount !== 1 ? 's' : ''}</span>
+          {link.expiresAt && new Date(link.expiresAt) > new Date() && (
+            <span className="text-xs text-amber-600">Expire le {new Date(link.expiresAt).toLocaleDateString('fr-FR')}</span>
+          )}
+          {link.expiresAt && new Date(link.expiresAt) <= new Date() && (
+            <span className="text-xs font-medium text-red-600">Expiré</span>
+          )}
+          <div className="flex gap-2 items-center">
+            <input
+              type="date"
+              data-testid="link-expiry-date-input"
+              defaultValue={link.expiresAt ? link.expiresAt.slice(0, 10) : ''}
+              onChange={(e) => void onSetExpiration(link.id, e.target.value)}
+              className="text-xs border border-gray-200 rounded px-1 py-0.5"
+            />
+            {link.expiresAt !== null && (
+              <button
+                type="button"
+                aria-label="Supprimer l'expiration du lien"
+                onClick={() => void onSetExpiration(link.id, null)}
+                className="text-xs text-gray-400 hover:text-red-500"
+              >
+                Supprimer l&apos;expiration
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex gap-1 shrink-0">
           <button
@@ -309,8 +379,9 @@ function LinkCard({ link, onEdit, onRemove }: { link: ShortLinkItem; onEdit: (id
 }
 
 function LinksSection() {
-  const { state, items, total, create, edit, remove } = useLinks();
+  const { state, items, total, create, edit, remove, setExpiration } = useLinks();
   const [url, setUrl] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -318,8 +389,9 @@ function LinksSection() {
     if (!url.trim()) return;
     setSubmitting(true);
     try {
-      await create(url.trim());
+      await create(url.trim(), expiresAt || undefined);
       setUrl('');
+      setExpiresAt('');
     } finally {
       setSubmitting(false);
     }
@@ -328,23 +400,32 @@ function LinksSection() {
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold text-gray-700">Liens courts</h2>
-      <form onSubmit={(e) => void handleSubmit(e)} className="flex gap-2">
+      <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <input
+            data-testid="link-url-input"
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://..."
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors"
+            required
+          />
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
+          >
+            Créer
+          </button>
+        </div>
         <input
-          data-testid="link-url-input"
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://..."
-          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors"
-          required
+          data-testid="link-expiry-create-input"
+          type="date"
+          value={expiresAt}
+          onChange={(e) => setExpiresAt(e.target.value)}
+          className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-900 transition-colors"
         />
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
-        >
-          Créer
-        </button>
       </form>
       {state === 'loading' && <p className="text-xs text-gray-400">Chargement…</p>}
       {state === 'error' && <p className="text-xs text-red-500">Erreur lors du chargement.</p>}
@@ -356,7 +437,7 @@ function LinksSection() {
           <p className="text-xs text-gray-400">{total} lien{total !== 1 ? 's' : ''}</p>
           <div className="flex flex-col gap-2">
             {items.map((link) => (
-              <LinkCard key={link.id} link={link} onEdit={edit} onRemove={remove} />
+              <LinkCard key={link.id} link={link} onEdit={edit} onRemove={remove} onSetExpiration={setExpiration} />
             ))}
           </div>
         </>
@@ -366,7 +447,7 @@ function LinksSection() {
 }
 
 export function DashboardPage() {
-  const { state, items, total, create, remove, attachLogo } = useDashboard();
+  const { state, items, total, create, remove, attachLogo, setExpiration } = useDashboard();
 
   function handleLogout() {
     void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(() => {
@@ -401,7 +482,7 @@ export function DashboardPage() {
               <p className="text-xs text-gray-400">{total} QR code{total !== 1 ? 's' : ''}</p>
               <div className="flex flex-col gap-3">
                 {items.map((qr) => (
-                  <QrCard key={qr.id} qr={qr} onDelete={remove} onAttachLogo={attachLogo} />
+                  <QrCard key={qr.id} qr={qr} onDelete={remove} onAttachLogo={attachLogo} onSetExpiration={setExpiration} />
                 ))}
               </div>
             </>

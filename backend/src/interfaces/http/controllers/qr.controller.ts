@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, HttpCode, NotFoundException, Param, Patch, Post, Query, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, NotFoundException, Param, Patch, Post, Query, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Readable } from 'stream';
 import { ConfigService } from '@nestjs/config';
+import { SetExpirationUseCase } from '../../../application/expiration/set-expiration.use-case';
 import { AttachLogoUseCase } from '../../../application/qr/attach-logo.use-case';
 import { DeleteQrUseCase } from '../../../application/qr/delete-qr.use-case';
 import { EditTargetUrlUseCase } from '../../../application/qr/edit-target-url.use-case';
@@ -15,7 +16,9 @@ import { Public } from '../decorators/public.decorator';
 import { CreateQrDto } from '../dto/create-qr.dto';
 import { EditTargetUrlDto } from '../dto/edit-target-url.dto';
 import { ListQrDto } from '../dto/list-qr.dto';
+import { SetExpirationDto } from '../dto/set-expiration.dto';
 import { FileTypeValidator, ParseFilePipe } from '@nestjs/common';
+import { parseExpiryDate } from '../utils/parse-expiry-date';
 
 @Controller('qr')
 export class QrController {
@@ -28,6 +31,7 @@ export class QrController {
     private readonly qrRepository: QrRepository,
     private readonly storage: QrStoragePort,
     private readonly config: ConfigService,
+    @Inject('SetExpirationUseCase') private readonly setExpirationUseCase: SetExpirationUseCase,
   ) {}
 
   @Public()
@@ -66,16 +70,24 @@ export class QrController {
       errorCorrection: dto.errorCorrection,
       frontendUrl: this.config.getOrThrow<string>('FRONTEND_URL'),
     };
+    const expiresAt = dto.expiresAt ? parseExpiryDate(dto.expiresAt) : null;
     const { qr } = await this.generateQr.execute(
       dto.contentType === 'wifi'
-        ? { ...base, contentType: 'wifi', wifi: { ssid: dto.ssid!, security: dto.security!, password: dto.password } }
+        ? { ...base, contentType: 'wifi', wifi: { ssid: dto.ssid!, security: dto.security!, password: dto.password }, expiresAt }
         : dto.contentType === 'email'
-          ? { ...base, contentType: 'email', emailFields: { to: dto.to!, subject: dto.subject, body: dto.body } }
+          ? { ...base, contentType: 'email', emailFields: { to: dto.to!, subject: dto.subject, body: dto.body }, expiresAt }
           : dto.contentType === 'vcard'
-            ? { ...base, contentType: 'vcard', vcard: { name: dto.name!, phone: dto.phone, email: dto.vcardEmail, org: dto.org } }
-            : { ...base, contentType: dto.contentType, content: dto.content! },
+            ? { ...base, contentType: 'vcard', vcard: { name: dto.name!, phone: dto.phone, email: dto.vcardEmail, org: dto.org }, expiresAt }
+            : { ...base, contentType: dto.contentType, content: dto.content!, expiresAt },
     );
     return toResponse(qr);
+  }
+
+  @Patch(':id/expiration')
+  async setExpiration(@Param('id') id: string, @Body() dto: SetExpirationDto, @CurrentUser() user: CurrentUserPayload) {
+    const expiresAt = dto.expiresAt !== null ? parseExpiryDate(dto.expiresAt) : null;
+    const { entity } = await this.setExpirationUseCase.execute({ id, userId: user.id, expiresAt });
+    return toResponse(entity);
   }
 
   @Patch(':id')
@@ -166,6 +178,7 @@ function toListItemResponse(qr: QrCode) {
     scanCount: qr.scanCount,
     hasLogo: qr.hasLogo,
     logoMimeType: qr.logoMimeType,
+    expiresAt: qr.expiresAt?.toISOString() ?? null,
     createdAt: qr.createdAt,
     pngUrl: qr.pngUrl,
     svgUrl: qr.svgUrl,
@@ -185,6 +198,7 @@ function toResponse(qr: QrCode) {
     scanCount: qr.scanCount,
     hasLogo: qr.hasLogo,
     logoMimeType: qr.logoMimeType,
+    expiresAt: qr.expiresAt?.toISOString() ?? null,
     createdAt: qr.createdAt,
     pngUrl: qr.pngUrl,
     svgUrl: qr.svgUrl,

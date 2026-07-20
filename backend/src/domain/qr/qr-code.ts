@@ -11,6 +11,7 @@ export interface QrCodeProps {
   hasLogo?: boolean;
   logoMimeType?: string | null;
   source?: 'qr' | 'shortlink' | null;
+  expiresAt?: Date | null;
   createdAt: Date;
   scanCount?: number;
 }
@@ -40,6 +41,7 @@ export class QrCode {
   get hasLogo(): boolean { return this.props.hasLogo ?? false; }
   get logoMimeType(): string | null { return this.props.logoMimeType ?? null; }
   get source(): 'qr' | 'shortlink' | null { return this.props.source ?? null; }
+  get expiresAt(): Date | null { return this.props.expiresAt ?? null; }
   get createdAt(): Date { return this.props.createdAt; }
   get scanCount(): number { return this.props.scanCount ?? 0; }
   get pngUrl(): string { return `/api/qr/${this.props.id}/png`; }
@@ -48,6 +50,10 @@ export class QrCode {
 
   withContent(content: string): QrCode {
     return new QrCode({ ...this.props, content });
+  }
+
+  withExpiration(date: Date | null): QrCode {
+    return new QrCode({ ...this.props, expiresAt: date });
   }
 
   withLogo(effectiveCorrection: 'L' | 'M' | 'Q' | 'H', mimeType: string): QrCode {

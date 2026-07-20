@@ -122,4 +122,36 @@ describe('QrCode', () => {
     const qr = QrCode.create({ ...validProps, source: 'shortlink' });
     expect(qr.source).toBe('shortlink');
   });
+
+  // link-expiration: Test 1 — TPP: constant
+  it('should return null for expiresAt when not provided in props', () => {
+    const qr = QrCode.create(validProps);
+    expect(qr.expiresAt).toBeNull();
+  });
+
+  // link-expiration: Test 2 — TPP: variable
+  it('should return the provided Date for expiresAt when given in props', () => {
+    const expiry = new Date('2026-08-25T23:59:59.000Z');
+    const qr = QrCode.create({ ...validProps, expiresAt: expiry });
+    expect(qr.expiresAt).toEqual(expiry);
+  });
+
+  // link-expiration: Test 3 — TPP: constant
+  it('withExpiration(date) should return a new QrCode instance with updated expiresAt', () => {
+    const qr = QrCode.create(validProps);
+    const expiry = new Date('2026-08-25T23:59:59.000Z');
+    const updated = qr.withExpiration(expiry);
+    expect(updated.expiresAt).toEqual(expiry);
+    expect(updated.id).toBe(qr.id);
+    expect(updated).not.toBe(qr);
+  });
+
+  // link-expiration: Test 4 — TPP: variable
+  it('withExpiration(null) should return a new QrCode with expiresAt=null', () => {
+    const expiry = new Date('2026-08-25T23:59:59.000Z');
+    const qr = QrCode.create({ ...validProps, expiresAt: expiry });
+    const cleared = qr.withExpiration(null);
+    expect(cleared.expiresAt).toBeNull();
+    expect(cleared.id).toBe(qr.id);
+  });
 });

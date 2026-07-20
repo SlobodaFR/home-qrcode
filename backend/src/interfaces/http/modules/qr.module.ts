@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SetExpirationUseCase } from '../../../application/expiration/set-expiration.use-case';
 import { AttachLogoUseCase } from '../../../application/qr/attach-logo.use-case';
 import { DeleteQrUseCase } from '../../../application/qr/delete-qr.use-case';
 import { EditTargetUrlUseCase } from '../../../application/qr/edit-target-url.use-case';
@@ -29,6 +30,7 @@ import { QrController } from '../controllers/qr.controller';
     EditTargetUrlUseCase,
     ListQrUseCase,
     DeleteQrUseCase,
+    { provide: 'SetExpirationUseCase', useClass: SetExpirationUseCase },
   ],
   exports: [QrRepository],
 })

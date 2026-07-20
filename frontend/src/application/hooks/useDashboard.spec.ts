@@ -7,7 +7,7 @@ import type { CreateQrPayload } from '../../infrastructure/api/qr-auth.client';
 const makeItem = (overrides = {}) => ({
   id: 'qr-1', contentType: 'url' as const, content: 'https://example.com',
   errorCorrection: 'M' as const,
-  scanCount: 0, createdAt: '2026-01-01T00:00:00.000Z',
+  scanCount: 0, expiresAt: null as string | null, createdAt: '2026-01-01T00:00:00.000Z',
   pngUrl: '/api/qr/qr-1/png', svgUrl: '/api/qr/qr-1/svg',
   hasLogo: false, logoMimeType: null as string | null,
   ...overrides,
@@ -56,5 +56,37 @@ describe('useDashboard', () => {
 
     expect(client.attachLogo).toHaveBeenCalledWith('qr-logo', file);
     expect(result.current.items.find((q) => q.id === 'qr-logo')?.hasLogo).toBe(true);
+  });
+
+  // link-expiration: Test 47 — TPP: variable
+  it('setExpiration(id, dateString) should call setQrExpiration and replace matching item in state', async () => {
+    const item = makeItem({ id: 'qr-1', expiresAt: null });
+    vi.spyOn(client, 'listQrCodes').mockResolvedValue({ items: [item], total: 1, page: 1, limit: 20 });
+    const updated = makeItem({ id: 'qr-1', expiresAt: '2026-08-25T23:59:59.000Z' });
+    vi.spyOn(client, 'setQrExpiration').mockResolvedValue(updated);
+
+    const { result } = renderHook(() => useDashboard());
+    await act(async () => {});
+
+    await act(async () => { await result.current.setExpiration('qr-1', '2026-08-25T23:59:59.000Z'); });
+
+    expect(client.setQrExpiration).toHaveBeenCalledWith('qr-1', '2026-08-25T23:59:59.000Z');
+    expect(result.current.items.find((q) => q.id === 'qr-1')?.expiresAt).toBe('2026-08-25T23:59:59.000Z');
+  });
+
+  // link-expiration: Test 48 — TPP: conditional
+  it('setExpiration(id, null) should call setQrExpiration with null and clear expiresAt in state', async () => {
+    const item = makeItem({ id: 'qr-1', expiresAt: '2026-08-25T23:59:59.000Z' });
+    vi.spyOn(client, 'listQrCodes').mockResolvedValue({ items: [item], total: 1, page: 1, limit: 20 });
+    const updated = makeItem({ id: 'qr-1', expiresAt: null });
+    vi.spyOn(client, 'setQrExpiration').mockResolvedValue(updated);
+
+    const { result } = renderHook(() => useDashboard());
+    await act(async () => {});
+
+    await act(async () => { await result.current.setExpiration('qr-1', null); });
+
+    expect(client.setQrExpiration).toHaveBeenCalledWith('qr-1', null);
+    expect(result.current.items.find((q) => q.id === 'qr-1')?.expiresAt).toBeNull();
   });
 });

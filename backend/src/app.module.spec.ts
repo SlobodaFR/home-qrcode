@@ -358,4 +358,51 @@ describe('AppModule', () => {
     expect(res.status).toBe(302);
     expect(res.headers['location']).toBe('https://shortlink-target.com');
   });
+
+  // link-expiration: Test 37 — PATCH /api/qr/:id/expiration without auth → 401
+  it('should return 401 on PATCH /api/qr/:id/expiration without auth cookies', async () => {
+    const res = await request(app.getHttpServer())
+      .patch('/api/qr/some-id/expiration')
+      .send({ expiresAt: '2026-08-25' });
+    expect(res.status).toBe(401);
+  });
+
+  // link-expiration: Test 38 — PATCH /api/links/:id/expiration without auth → 401
+  it('should return 401 on PATCH /api/links/:id/expiration without auth cookies', async () => {
+    const res = await request(app.getHttpServer())
+      .patch('/api/links/some-id/expiration')
+      .send({ expiresAt: '2026-08-25' });
+    expect(res.status).toBe(401);
+  });
+
+  // link-expiration: Test 39 — GET /r/:id → 410 when expiresAt in the past
+  it('should return 410 on GET /r/:id when record has expiresAt in the past', async () => {
+    const qrRepo = app.get(QrRepository);
+    const pastExpiry = new Date(Date.now() - 86_400_000);
+    const link = QrCode.create({
+      id: 'e2e-expired-1', userId: 'user-e2e', contentType: 'url',
+      content: 'https://expired-target.com', source: 'shortlink',
+      size: 0, fgColor: '', bgColor: '', errorCorrection: 'M',
+      createdAt: new Date(), expiresAt: pastExpiry,
+    });
+    await qrRepo.save(link);
+    const res = await request(app.getHttpServer()).get('/r/e2e-expired-1');
+    expect(res.status).toBe(410);
+  });
+
+  // link-expiration: Test 40 — GET /r/:id → 302 when expiresAt in the future
+  it('should return 302 on GET /r/:id when record has expiresAt in the future', async () => {
+    const qrRepo = app.get(QrRepository);
+    const futureExpiry = new Date(Date.now() + 86_400_000);
+    const link = QrCode.create({
+      id: 'e2e-active-1', userId: 'user-e2e', contentType: 'url',
+      content: 'https://active-target.com', source: 'shortlink',
+      size: 0, fgColor: '', bgColor: '', errorCorrection: 'M',
+      createdAt: new Date(), expiresAt: futureExpiry,
+    });
+    await qrRepo.save(link);
+    const res = await request(app.getHttpServer()).get('/r/e2e-active-1');
+    expect(res.status).toBe(302);
+    expect(res.headers['location']).toBe('https://active-target.com');
+  });
 });

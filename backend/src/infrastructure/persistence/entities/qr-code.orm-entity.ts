@@ -42,6 +42,9 @@ export class QrCodeOrmEntity {
   @Column({ type: 'text', nullable: true })
   source!: 'qr' | 'shortlink' | null;
 
+  @Column({ type: 'datetime', name: 'expires_at', nullable: true })
+  expiresAt!: Date | null;
+
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 }
