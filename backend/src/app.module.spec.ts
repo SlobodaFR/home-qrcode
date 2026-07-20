@@ -308,4 +308,54 @@ describe('AppModule', () => {
     const res = await request(app.getHttpServer()).get('/api/qr/nonexistent/logo');
     expect(res.status).toBe(404);
   });
+
+  // url-shortener: Test 30 — POST /api/links without auth → 401
+  it('should return 401 on POST /api/links without auth cookies', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/links')
+      .send({ url: 'https://target.com' });
+    expect(res.status).toBe(401);
+  });
+
+  // url-shortener: Test 31 — GET /api/links without auth → 401
+  it('should return 401 on GET /api/links without auth cookies', async () => {
+    const res = await request(app.getHttpServer()).get('/api/links');
+    expect(res.status).toBe(401);
+  });
+
+  // url-shortener: Test 32 — POST /api/links with invalid URL → 401 (auth guard fires before validation)
+  it('should return 401 on POST /api/links with invalid URL without auth (auth guard fires first)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/links')
+      .send({ url: 'not-a-url' });
+    expect(res.status).toBe(401);
+  });
+
+  // url-shortener: Test 33 — PATCH /api/links/:id without auth → 401
+  it('should return 401 on PATCH /api/links/:id without auth cookies', async () => {
+    const res = await request(app.getHttpServer())
+      .patch('/api/links/some-id')
+      .send({ url: 'https://new.com' });
+    expect(res.status).toBe(401);
+  });
+
+  // url-shortener: Test 34 — DELETE /api/links/:id without auth → 401
+  it('should return 401 on DELETE /api/links/:id without auth cookies', async () => {
+    const res = await request(app.getHttpServer()).delete('/api/links/some-id');
+    expect(res.status).toBe(401);
+  });
+
+  // url-shortener: Test 35 — GET /r/:id redirect works for shortlink (seeded directly)
+  it('should return 302 to target URL on GET /r/:id for a shortlink', async () => {
+    const qrRepo = app.get(QrRepository);
+    const link = QrCode.create({
+      id: 'e2e-shortlink-1', userId: 'user-e2e', contentType: 'url',
+      content: 'https://shortlink-target.com', source: 'shortlink',
+      size: 0, fgColor: '', bgColor: '', errorCorrection: 'M', createdAt: new Date(),
+    });
+    await qrRepo.save(link);
+    const res = await request(app.getHttpServer()).get('/r/e2e-shortlink-1');
+    expect(res.status).toBe(302);
+    expect(res.headers['location']).toBe('https://shortlink-target.com');
+  });
 });

@@ -39,6 +39,9 @@ export class QrCodeOrmEntity {
   @Column({ type: 'text', name: 'logo_mime_type', nullable: true })
   logoMimeType!: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  source!: 'qr' | 'shortlink' | null;
+
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 }

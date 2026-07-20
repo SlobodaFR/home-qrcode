@@ -7,6 +7,7 @@ const makeRepo = (qr: QrCode | null = null): jest.Mocked<QrRepository> => ({
   findById: jest.fn().mockResolvedValue(qr),
   findByIdAndUserId: jest.fn(),
   findAllByUserId: jest.fn(),
+  findAllLinksByUserId: jest.fn(),
   save: jest.fn(),
   deleteById: jest.fn(),
   incrementScanCount: jest.fn().mockResolvedValue(undefined),

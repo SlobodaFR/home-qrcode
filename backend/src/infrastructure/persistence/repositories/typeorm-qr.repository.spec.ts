@@ -204,4 +204,67 @@ describe('TypeOrmQrRepository', () => {
     expect(found!.hasLogo).toBe(false);
     expect(found!.logoMimeType).toBeNull();
   });
+
+  // url-shortener: Test 19 — TPP: variable
+  it('save() should persist source field and findById() should retrieve it', async () => {
+    const link = QrCode.create({
+      id: 'sl-1', userId: 'u1', contentType: 'url', content: 'https://t.com',
+      source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M',
+      createdAt: new Date('2026-01-01'),
+    });
+    await repo.save(link);
+    const found = await repo.findById('sl-1');
+    expect(found!.source).toBe('shortlink');
+  });
+
+  // url-shortener: Test 20 — TPP: conditional
+  it('findAllByUserId() should exclude rows with source=shortlink', async () => {
+    await repo.save(QrCode.create({ id: 'qr-a', userId: 'u-src', contentType: 'url', content: 'https://q.com', source: 'qr', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date() }));
+    await repo.save(QrCode.create({ id: 'sl-a', userId: 'u-src', contentType: 'url', content: 'https://t.com', source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M', createdAt: new Date() }));
+    const result = await repo.findAllByUserId('u-src', { page: 1, limit: 20 });
+    expect(result.items.every(i => i.source !== 'shortlink')).toBe(true);
+    expect(result.total).toBe(1);
+  });
+
+  // url-shortener: Test 21 — TPP: variable
+  it('findAllByUserId() should include rows where source is null (legacy backward compat)', async () => {
+    await repo.save(QrCode.create({ id: 'legacy', userId: 'u-legacy', contentType: 'url', content: 'https://x.com', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date() }));
+    const result = await repo.findAllByUserId('u-legacy', { page: 1, limit: 20 });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].source).toBeNull();
+  });
+
+  // url-shortener: Test 22 — TPP: variable
+  it('findAllByUserId() should include rows with source=qr', async () => {
+    await repo.save(QrCode.create({ id: 'qr-new', userId: 'u-qr', contentType: 'url', content: 'https://x.com', source: 'qr', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date() }));
+    const result = await repo.findAllByUserId('u-qr', { page: 1, limit: 20 });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].source).toBe('qr');
+  });
+
+  // url-shortener: Test 23 — TPP: constant
+  it('findAllLinksByUserId() should return empty list for user with no shortlinks', async () => {
+    const result = await repo.findAllLinksByUserId('no-links-user', { page: 1, limit: 20 });
+    expect(result.items).toHaveLength(0);
+    expect(result.total).toBe(0);
+  });
+
+  // url-shortener: Test 24 — TPP: variable
+  it('findAllLinksByUserId() should return only shortlinks for the given user', async () => {
+    await repo.save(QrCode.create({ id: 'sl-b', userId: 'u-links', contentType: 'url', content: 'https://t1.com', source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M', createdAt: new Date() }));
+    await repo.save(QrCode.create({ id: 'qr-b', userId: 'u-links', contentType: 'url', content: 'https://q1.com', source: 'qr', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date() }));
+    const result = await repo.findAllLinksByUserId('u-links', { page: 1, limit: 20 });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe('sl-b');
+    expect(result.items[0].source).toBe('shortlink');
+  });
+
+  // url-shortener: Test 25 — TPP: conditional
+  it('findAllLinksByUserId() should exclude QR codes (source=qr and source=null) from same user', async () => {
+    await repo.save(QrCode.create({ id: 'sl-c', userId: 'u-mixed', contentType: 'url', content: 'https://t2.com', source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M', createdAt: new Date() }));
+    await repo.save(QrCode.create({ id: 'qr-c', userId: 'u-mixed', contentType: 'url', content: 'https://q2.com', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date() }));
+    const result = await repo.findAllLinksByUserId('u-mixed', { page: 1, limit: 20 });
+    expect(result.items.every(i => i.source === 'shortlink')).toBe(true);
+    expect(result.total).toBe(1);
+  });
 });

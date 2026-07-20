@@ -10,6 +10,7 @@ export interface QrCodeProps {
   errorCorrection: 'L' | 'M' | 'Q' | 'H';
   hasLogo?: boolean;
   logoMimeType?: string | null;
+  source?: 'qr' | 'shortlink' | null;
   createdAt: Date;
   scanCount?: number;
 }
@@ -38,6 +39,7 @@ export class QrCode {
   get errorCorrection(): 'L' | 'M' | 'Q' | 'H' { return this.props.errorCorrection; }
   get hasLogo(): boolean { return this.props.hasLogo ?? false; }
   get logoMimeType(): string | null { return this.props.logoMimeType ?? null; }
+  get source(): 'qr' | 'shortlink' | null { return this.props.source ?? null; }
   get createdAt(): Date { return this.props.createdAt; }
   get scanCount(): number { return this.props.scanCount ?? 0; }
   get pngUrl(): string { return `/api/qr/${this.props.id}/png`; }

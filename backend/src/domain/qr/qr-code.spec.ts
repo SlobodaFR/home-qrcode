@@ -110,4 +110,16 @@ describe('QrCode', () => {
     expect(qr.hasLogo).toBe(false);
     expect(qr.logoMimeType).toBeNull();
   });
+
+  // url-shortener: Test 1 — TPP: constant
+  it('should return null for source when not provided', () => {
+    const qr = QrCode.create(validProps);
+    expect(qr.source).toBeNull();
+  });
+
+  // url-shortener: Test 2 — TPP: variable
+  it('should return shortlink for source when source=shortlink is provided', () => {
+    const qr = QrCode.create({ ...validProps, source: 'shortlink' });
+    expect(qr.source).toBe('shortlink');
+  });
 });

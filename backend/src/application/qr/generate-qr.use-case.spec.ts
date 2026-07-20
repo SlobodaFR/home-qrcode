@@ -24,7 +24,8 @@ const makeStorage = (): jest.Mocked<QrStoragePort> =>
   });
 
 const makeRepo = (): jest.Mocked<QrRepository> =>
-  ({ findById: jest.fn(), findByIdAndUserId: jest.fn(), findAllByUserId: jest.fn(), save: jest.fn().mockResolvedValue(undefined), deleteById: jest.fn(), incrementScanCount: jest.fn().mockResolvedValue(undefined) });
+  ({ findById: jest.fn(), findByIdAndUserId: jest.fn(), findAllByUserId: jest.fn(),
+  findAllLinksByUserId: jest.fn(), save: jest.fn().mockResolvedValue(undefined), deleteById: jest.fn(), incrementScanCount: jest.fn().mockResolvedValue(undefined) });
 
 const baseCmd: GenerateQrCommand = {
   userId: 'user-1',
@@ -182,5 +183,13 @@ describe('GenerateQrUseCase', () => {
     const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), makeRepo());
     const result = await uc.execute(baseCmd);
     expect(result.qr.hasLogo).toBe(false);
+  });
+
+  // url-shortener: Test 3 — TPP: variable
+  it('should save QrCode with source=qr', async () => {
+    const repo = makeRepo();
+    const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), repo);
+    await uc.execute(baseCmd);
+    expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ source: 'qr' }));
   });
 });
