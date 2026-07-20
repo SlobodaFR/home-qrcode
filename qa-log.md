@@ -329,3 +329,45 @@ Will be updated to `shipped` by `/ship url-shortener`.
 ### Verdict
 
 **Pass.** 319 tests green. Build clean. No constitution violations. No regressions. Three pre-existing shipped features lack `review.md` (pre-workflow gap, low severity). Ready for `/ship url-shortener`.
+
+---
+
+## 2026-07-20 — post-ship QA
+
+### Commands run
+
+```
+npm test                          # all workspaces (root)
+npm run build                     # frontend tsc+vite + backend nest build
+```
+
+### Results
+
+| Suite | Files | Tests | Status |
+|---|---|---|---|
+| Backend (Jest) | 33 | 257 | ✅ GREEN |
+| Frontend (Vitest) | 10 | 62 | ✅ GREEN |
+| **Total** | **43** | **319** | ✅ |
+
+Build: ✅ Clean. Frontend: 50 modules, no TS errors. Backend: `nest build` clean, strict mode.
+
+### Issues found
+
+**LOW — `process.env` in `main.ts` (bootstrap only)**  
+`backend/src/main.ts` uses `process.env['FRONTEND_URL']` and `process.env['PORT']` directly. This is the NestJS bootstrap entrypoint before `ConfigService` is available; NestFactory hasn't initialized the DI container yet. Acceptable pattern — no fix required.
+
+**LOW (pre-existing) — Missing `review.md` for 3 pre-workflow shipped features**  
+`url-redirect`, `qr-history`, `public-qr-page` shipped before the `/review` workflow was introduced. No code quality concern; documentation gap only.
+
+### Cross-feature checks
+
+- `/r/{id}` computation appears in 3 places: `generate-qr.use-case.ts` (encodes into QR image), `attach-logo.use-case.ts` (re-encodes after logo), `links.controller.ts` (response shortUrl). Three distinct semantic roles — not duplicated logic.
+- Domain layer: zero infrastructure imports ✅
+- `application/links/`: no TypeORM, no MinIO, no `QrStoragePort` ✅
+- No hardcoded domains anywhere in production code ✅
+- No `any` types in new production files ✅
+- `roadmap.md`: `url-shortener` → shipped, all in-progress features have active recent work, no stalls ✅
+
+### Verdict
+
+**Pass.** 319 tests green. Build clean. No new issues vs prior QA run. Existing known gap (3 pre-workflow review.md missing) unchanged.
