@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { DashboardPage } from './presentation/pages/DashboardPage';
+import { LoggedOutPage } from './presentation/pages/LoggedOutPage';
 import { NotFoundPage } from './presentation/pages/NotFoundPage';
 import { PublicQrPage } from './presentation/pages/PublicQrPage';
 
@@ -19,6 +20,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<AuthGate><DashboardPage /></AuthGate>} />
+      <Route path="/logged-out" element={<LoggedOutPage />} />
       <Route path="/q/:id" element={<PublicQrPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

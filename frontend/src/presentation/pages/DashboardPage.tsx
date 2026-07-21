@@ -545,7 +545,7 @@ export function DashboardPage() {
 
   function handleLogout() {
     void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(() => {
-      window.location.replace('/api/auth/login');
+      window.location.replace('/logged-out');
     });
   }
 
