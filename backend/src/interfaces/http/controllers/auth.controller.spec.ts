@@ -57,8 +57,9 @@ describe('AuthController', () => {
     const { controller } = await makeController();
     const res = makeRes();
     controller.logout(res);
-    expect(res.clearCookie).toHaveBeenCalledWith('access_token');
-    expect(res.clearCookie).toHaveBeenCalledWith('refresh_token');
+    const cookieOpts = { httpOnly: true, secure: false, sameSite: 'lax', path: '/' };
+    expect(res.clearCookie).toHaveBeenCalledWith('access_token', cookieOpts);
+    expect(res.clearCookie).toHaveBeenCalledWith('refresh_token', cookieOpts);
   });
 
   // Test 29 — TPP: conditional

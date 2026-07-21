@@ -38,7 +38,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(204)
   logout(@Res({ passthrough: true }) res: Response): void {
-    clearAuthCookies(res);
+    clearAuthCookies(res, this.config);
   }
 
   @Get('me')
