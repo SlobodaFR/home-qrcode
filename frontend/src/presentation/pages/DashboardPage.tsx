@@ -621,7 +621,21 @@ export function DashboardPage() {
               className="text-sm text-gray-400 hover:text-gray-700 transition-colors whitespace-nowrap"
             >
               <span className="hidden sm:inline">Se déconnecter</span>
-              <span className="sm:hidden" aria-label="Se déconnecter">↪</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+                aria-label="Se déconnecter"
+                className="sm:hidden"
+              >
+                <path d="m5.25 2.25h-3.5v12h3.5m5.5-9.5 3.5 3.5-3.5 3.5m-5-3.5h8.5" />
+              </svg>
             </button>
           </div>
 

@@ -15,7 +15,9 @@ export function setAuthCookies(response: Response, tokens: TokenPair, config: Co
   });
 }
 
-export function clearAuthCookies(response: Response): void {
-  response.clearCookie(ACCESS_TOKEN_COOKIE_NAME);
-  response.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+export function clearAuthCookies(response: Response, config: ConfigService): void {
+  const secure = config.get<string>('NODE_ENV') === 'production';
+  const opts = { httpOnly: true, secure, sameSite: 'lax' as const, path: '/' };
+  response.clearCookie(ACCESS_TOKEN_COOKIE_NAME, opts);
+  response.clearCookie(REFRESH_TOKEN_COOKIE_NAME, opts);
 }
