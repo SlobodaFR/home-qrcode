@@ -14,14 +14,21 @@
     "test:backend": "npm test --workspace=backend",
     "test:frontend": "npm test --workspace=frontend",
     "test": "npm run test:backend && npm run test:frontend",
-    "lint": "npm run lint --workspace=backend",
-    "prepare": "husky"
+    "lint": "oxlint --type-aware",
+    "prepare": "husky",
+    "lint:fix": "oxlint --type-aware --fix",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "typecheck": "npm run typecheck --workspace=backend && npx tsc -b --noEmit frontend"
   },
   "engines": {
     "node": ">=26.0.0"
   },
   "devDependencies": {
-    "husky": "9.1.7"
+    "husky": "9.1.7",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
+    "oxlint-tsgolint": "^7.0.2007"
   },
   "allowScripts": {
     "better-sqlite3": true,

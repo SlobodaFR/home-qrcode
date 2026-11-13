@@ -120,6 +120,6 @@ describe('TypeOrmQrShareRepository', () => {
   it('save() with duplicate (qrId, recipientId) should throw a unique constraint error', async () => {
     await qrRepo.save(makeQr());
     await shareRepo.save(makeShare({ id: 'sh-1', recipientId: 'r-1' }));
-    await expect(shareRepo.save(makeShare({ id: 'sh-2', recipientId: 'r-1' }))).rejects.toThrow();
+    await expect(shareRepo.save(makeShare({ id: 'sh-2', recipientId: 'r-1' }))).rejects.toThrow(/UNIQUE constraint failed/);
   });
 });

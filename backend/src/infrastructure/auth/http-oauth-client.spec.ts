@@ -26,6 +26,6 @@ describe('HttpOAuthClient', () => {
   it('should throw when the token endpoint returns a non-2xx response', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 400 });
     const client = new HttpOAuthClient(makeConfig());
-    await expect(client.exchangeCode('bad-code', 'https://app/callback')).rejects.toThrow();
+    await expect(client.exchangeCode('bad-code', 'https://app/callback')).rejects.toThrow('Token request failed');
   });
 });
