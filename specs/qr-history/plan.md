@@ -3,6 +3,7 @@
 ## Architecture
 
 Two new endpoints added to `QrController` (same `/api/qr` prefix, same module):
+
 - `GET /api/qr` — paginated list (authenticated)
 - `DELETE /api/qr/:id` — delete QR + MinIO files (authenticated, owner-only)
 
@@ -40,7 +41,7 @@ abstract class QrRepository {
   // ... existing ...
   abstract findAllByUserId(
     userId: string,
-    options: { page: number; limit: number }
+    options: { page: number; limit: number },
   ): Promise<{ items: QrCode[]; total: number }>;
   abstract deleteById(id: string, userId: string): Promise<boolean>;
   // returns false if not found / not owned (→ controller throws 404)
@@ -62,7 +63,10 @@ abstract class QrStoragePort {
 ### Use case — `DeleteQrUseCase`
 
 ```typescript
-interface DeleteQrCommand { id: string; userId: string; }
+interface DeleteQrCommand {
+  id: string;
+  userId: string;
+}
 
 // Logic (AC18 order):
 // 1. repository.findByIdAndUserId(id, userId) → null → NotFoundException
@@ -75,8 +79,17 @@ interface DeleteQrCommand { id: string; userId: string; }
 ### Use case — `ListQrUseCase`
 
 ```typescript
-interface ListQrCommand { userId: string; page: number; limit: number; }
-interface ListQrResult { items: QrCode[]; total: number; page: number; limit: number; }
+interface ListQrCommand {
+  userId: string;
+  page: number;
+  limit: number;
+}
+interface ListQrResult {
+  items: QrCode[];
+  total: number;
+  page: number;
+  limit: number;
+}
 
 // Logic:
 // 1. repository.findAllByUserId(userId, { page, limit })
@@ -86,10 +99,12 @@ interface ListQrResult { items: QrCode[]; total: number; page: number; limit: nu
 ### HTTP — `GET /api/qr`
 
 Query params (via `ListQrDto`):
+
 - `page`: integer, ≥ 1, default 1
 - `limit`: integer, 1–100, default 20
 
 Response 200:
+
 ```json
 {
   "items": [{ "id": "...", "contentType": "url", "content": "https://exa…", "scanCount": 3, "createdAt": "...", "pngUrl": "/api/qr/…/png", "svgUrl": "/api/qr/…/svg", ... }],
@@ -112,6 +127,7 @@ Response: 204 No Content (no body).
 No new tables or columns. Uses existing `qr_codes` table.
 
 `findAllByUserId` implementation:
+
 ```typescript
 const [items, total] = await this.repository.findAndCount({
   where: { userId },
@@ -122,6 +138,7 @@ const [items, total] = await this.repository.findAndCount({
 ```
 
 `deleteById` implementation:
+
 ```typescript
 const result = await this.repository.delete({ id, userId });
 return result.affected > 0;
@@ -132,6 +149,7 @@ return result.affected > 0;
 ## Dependencies
 
 No new third-party libraries. All existing:
+
 - `typeorm` — `findAndCount`, `delete`
 - `@nestjs/common` — `Query`, `Delete`, `HttpCode`
 
@@ -140,37 +158,42 @@ No new third-party libraries. All existing:
 ## Alternatives Considered
 
 ### A. Inline list logic in controller (no `ListQrUseCase`)
+
 The list is genuinely thin: call repo, return result. A dedicated use case adds 20 lines of boilerplate for a pass-through. Rejected: pattern consistency with `GenerateQrUseCase` wins; keeps controller zero-logic.
 
 ### B. `deletePng(id)` + `deleteSvg(id)` on `QrStoragePort`
+
 Rejected in grill (OQ2): `delete(id)` encapsulates file layout. Use case calls one method, not two.
 
 ### C. `QrRepository.deleteById` returns `void`, throw from repo on not-found
+
 Rejected: throwing from the repository leaks HTTP semantics (NotFoundException) into the domain. Returning `boolean` keeps the domain clean; controller/use-case decides the HTTP error.
 
 ### D. MinIO delete AFTER DB delete
+
 Rejected per AC18: MinIO-first ensures we never have a DB entry pointing to missing files. Orphaned files (DB deleted, MinIO still present) are far less harmful than a ghost DB record causing 500s on proxy routes.
 
 ### E. Separate `HistoryModule` instead of extending `QrModule`
+
 Rejected: the list and delete are operations on the same `QrCode` resource, same controller, same repository. A separate module would add cross-module dependency complexity for no architectural gain.
 
 ---
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| `findAndCount` slow on large `qr_codes` table | Existing index `(userId, createdAt)` covers the query exactly |
-| MinIO delete partial failure (png deleted, svg fails) | Both keys attempted in `Promise.allSettled`; individual failures logged, not thrown |
+| Risk                                                  | Mitigation                                                                                                 |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `findAndCount` slow on large `qr_codes` table         | Existing index `(userId, createdAt)` covers the query exactly                                              |
+| MinIO delete partial failure (png deleted, svg fails) | Both keys attempted in `Promise.allSettled`; individual failures logged, not thrown                        |
 | Race: delete between findByIdAndUserId and deleteById | `deleteById` returns false if `affected === 0`; use case throws NotFoundException; 404 is correct behavior |
-| `Promise.allSettled` vs `Promise.all` in MinIO delete | Use `Promise.allSettled` — ensures both deletions are attempted even if first fails |
+| `Promise.allSettled` vs `Promise.all` in MinIO delete | Use `Promise.allSettled` — ensures both deletions are attempted even if first fails                        |
 
 ---
 
 ## Grill Log
 
-| JC | Décision | Résolution | Date |
-|---|---|---|---|
-| JC1 | `ListQrUseCase` vs inline controller | **Use case conservé** — cohérence avec GenerateQrUseCase, testable sans NestJS | 2026-07-19 |
-| JC2 | `Promise.all` vs `Promise.allSettled` dans MinioQrStorage.delete() | **`Promise.allSettled`** — les deux suppressions tentées même si l'une échoue; conforme AC15 best-effort | 2026-07-19 |
-| JC3 | `toListItemResponse` séparé vs `toResponse` avec flag | **`toListItemResponse()` séparé** — pas de conditionnel dans toResponse(), formats liste et détail indépendants | 2026-07-19 |
+| JC  | Décision                                                           | Résolution                                                                                                      | Date       |
+| --- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | ---------- |
+| JC1 | `ListQrUseCase` vs inline controller                               | **Use case conservé** — cohérence avec GenerateQrUseCase, testable sans NestJS                                  | 2026-07-19 |
+| JC2 | `Promise.all` vs `Promise.allSettled` dans MinioQrStorage.delete() | **`Promise.allSettled`** — les deux suppressions tentées même si l'une échoue; conforme AC15 best-effort        | 2026-07-19 |
+| JC3 | `toListItemResponse` séparé vs `toResponse` avec flag              | **`toListItemResponse()` séparé** — pas de conditionnel dans toResponse(), formats liste et détail indépendants | 2026-07-19 |

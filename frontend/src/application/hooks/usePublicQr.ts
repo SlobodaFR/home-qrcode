@@ -3,7 +3,10 @@ import { fetchQrMeta } from '../../infrastructure/api/qr.client';
 
 type QrState = 'loading' | 'found' | 'notFound' | 'error';
 
-export function usePublicQr(id: string): { state: QrState; onImageError: () => void } {
+export function usePublicQr(id: string): {
+  state: QrState;
+  onImageError: () => void;
+} {
   const [state, setState] = useState<QrState>('loading');
 
   useEffect(() => {

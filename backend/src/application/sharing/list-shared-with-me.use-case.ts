@@ -19,7 +19,11 @@ export class ListSharedWithMeUseCase {
     private readonly userRepository: UserRepository,
   ) {}
 
-  async execute({ userId }: { userId: string }): Promise<ListSharedWithMeResult> {
+  async execute({
+    userId,
+  }: {
+    userId: string;
+  }): Promise<ListSharedWithMeResult> {
     const rows = await this.qrShareRepository.findWithQrByRecipientId(userId);
     if (rows.length === 0) return { items: [] };
 
@@ -29,7 +33,10 @@ export class ListSharedWithMeUseCase {
     return {
       items: rows.map(({ share, qrCode }) => ({
         qrCode,
-        sharedBy: { id: share.ownerId, name: ownerMap.get(share.ownerId)?.name ?? '' },
+        sharedBy: {
+          id: share.ownerId,
+          name: ownerMap.get(share.ownerId)?.name ?? '',
+        },
       })),
     };
   }

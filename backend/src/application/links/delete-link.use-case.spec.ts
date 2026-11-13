@@ -6,8 +6,16 @@ import { DeleteLinkUseCase } from './delete-link.use-case';
 
 const makeLink = (source: 'qr' | 'shortlink' | null = 'shortlink') =>
   QrCode.create({
-    id: 'sl-1', userId: 'u1', contentType: 'url', content: 'https://t.com',
-    source, size: 0, fgColor: '', bgColor: '', errorCorrection: 'M', createdAt: new Date(),
+    id: 'sl-1',
+    userId: 'u1',
+    contentType: 'url',
+    content: 'https://t.com',
+    source,
+    size: 0,
+    fgColor: '',
+    bgColor: '',
+    errorCorrection: 'M',
+    createdAt: new Date(),
   });
 
 const makeRepo = (link: QrCode | null = makeLink()): Mocked<QrRepository> => ({
@@ -32,13 +40,17 @@ describe('DeleteLinkUseCase', () => {
   // url-shortener: Test 16 — TPP: conditional
   it('should throw NotFoundException when link not found or not owned', async () => {
     const uc = new DeleteLinkUseCase(makeRepo(null));
-    await expect(uc.execute({ id: 'missing', userId: 'u1' })).rejects.toThrow(NotFoundException);
+    await expect(uc.execute({ id: 'missing', userId: 'u1' })).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   // url-shortener: Test 17 — TPP: conditional
   it('should throw NotFoundException when source is not shortlink', async () => {
     const uc = new DeleteLinkUseCase(makeRepo(makeLink('qr')));
-    await expect(uc.execute({ id: 'sl-1', userId: 'u1' })).rejects.toThrow(NotFoundException);
+    await expect(uc.execute({ id: 'sl-1', userId: 'u1' })).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   // url-shortener: Test 18 — TPP: constant

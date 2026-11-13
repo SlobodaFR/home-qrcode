@@ -1,4 +1,7 @@
-export type QrMetaStatus = { status: 200 } | { status: 404 } | { status: 'error' };
+export type QrMetaStatus =
+  | { status: 200 }
+  | { status: 404 }
+  | { status: 'error' };
 
 export async function fetchQrMeta(id: string): Promise<QrMetaStatus> {
   try {

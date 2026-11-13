@@ -5,6 +5,7 @@ Tests ordered by dependency (leaf components first). Each group references the f
 ## Tests
 
 ### Group A — `QrCode` domain entity
+
 **File**: `backend/src/domain/qr/qr-code.spec.ts` (add to existing)
 
 1. [unit] should store `encodedContent` and expose it via getter — TPP: variable — FLFI: add `encodedContent` to `QrCodeProps` and a getter that returns it
@@ -13,12 +14,14 @@ Tests ordered by dependency (leaf components first). Each group references the f
 4. [unit] `withLogo()` should not mutate the original instance — TPP: conditional — FLFI: `withLogo()` constructs a new `QrCode` rather than mutating `this.props`
 
 ### Group B — `SharpLogoCompositor`
+
 **File**: `backend/src/infrastructure/qr/sharp-logo-compositor.spec.ts` (new)
 
 5. [unit] `composite()` should return a non-empty Buffer — TPP: constant — FLFI: call `sharp` composite and return the output buffer
 6. [unit] `composite()` output should have the same pixel dimensions as the input QR PNG — TPP: variable — FLFI: use `sharp.composite()` with `fit: 'inside'` resize on logo so QR dimensions are preserved
 
 ### Group C — `GenerateQrUseCase` updates
+
 **File**: `backend/src/application/qr/generate-qr.use-case.spec.ts` (add to existing)
 
 7. [unit] URL type: saved `qr.encodedContent` should equal `{frontendUrl}/r/{id}` — TPP: variable — FLFI: pass `encodedContent` (the string given to generator) into `QrCode.create()` props
@@ -26,6 +29,7 @@ Tests ordered by dependency (leaf components first). Each group references the f
 9. [unit] Any type: saved `qr.hasLogo` should be `false` — TPP: constant — FLFI: hard-code `hasLogo: false` in `QrCode.create()` call inside use case
 
 ### Group D — `AttachLogoUseCase`
+
 **File**: `backend/src/application/qr/attach-logo.use-case.spec.ts` (new)
 
 10. [unit] should throw `NotFoundException` when QR not found — TPP: constant — FLFI: call `findByIdAndUserId`, throw if null
@@ -40,6 +44,7 @@ Tests ordered by dependency (leaf components first). Each group references the f
 19. [unit] On success: should upload logo, overwrite PNG, save QR with `hasLogo: true` and updated fields, and return updated QR — TPP: variable — FLFI: call `storage.uploadLogo`, `storage.uploadPng`, `qr.withLogo()`, `repository.save()` in sequence; return `{ qr: updatedQr }`
 
 ### Group E — `MinioQrStorage` additions
+
 **File**: `backend/src/infrastructure/qr/minio-qr-storage.spec.ts` (add to existing)
 
 20. [unit] `uploadLogo()` should call `minio.putObject` with key `{assetsPath}/{id}/logo` and the provided content-type — TPP: constant — FLFI: implement `uploadLogo()` calling `putObject` with the extension-less logo key
@@ -47,28 +52,33 @@ Tests ordered by dependency (leaf components first). Each group references the f
 22. [unit] `delete()` should include the logo key alongside png and svg in `Promise.allSettled` — TPP: variable — FLFI: add a third `removeObject` call for `{assetsPath}/{id}/logo` to the existing `allSettled` array
 
 ### Group F — TypeORM repository mapper
+
 **File**: `backend/src/infrastructure/persistence/repositories/typeorm-qr.repository.spec.ts` (add to existing)
 
 23. [unit] `toDomain()` should map `encodedContent`, `hasLogo`, and `logoMimeType` from the ORM row — TPP: variable — FLFI: add the three new fields to the `QrCode.create()` call inside `toDomain()`
 24. [unit] `save()` should persist `encodedContent`, `hasLogo`, and `logoMimeType` to the ORM entity — TPP: variable — FLFI: add the three fields to the `repository.save()` call inside the TypeORM repo's `save()`
 
 ### Group G — Controller HTTP boundary (E2E)
+
 **File**: `backend/src/app.module.spec.ts` (add to existing)
 
 25. [e2e] `POST /api/qr/:id/logo` without auth should return 401 — TPP: constant — FLFI: route exists and is protected by `JwtAuthGuard`
 26. [e2e] `GET /api/qr/:id/logo` with unknown id should return 404 — TPP: constant — FLFI: route is `@Public()`; controller calls `findById`, throws `NotFoundException` if null or `hasLogo: false`
 
 ### Group H — Frontend: API client
+
 **File**: `frontend/src/infrastructure/api/qr-auth.client.spec.ts` (add to existing)
 
 27. [unit] `attachLogo()` should send a `FormData` with a `logo` field to `POST /api/qr/{id}/logo` and return the updated `QrItem` — TPP: constant — FLFI: implement `attachLogo(id, file)` using `FormData` + `fetch` with `credentials: 'include'`
 
 ### Group I — Frontend: `useDashboard` hook
+
 **File**: `frontend/src/application/hooks/useDashboard.spec.ts` (add to existing)
 
 28. [unit] `attachLogo()` should call the API client and replace the matching item in the items list — TPP: variable — FLFI: add `attachLogo(id, file)` that calls `attachLogoQrCode()` and updates `items` state with the returned QR
 
 ### Group J — Frontend: `DashboardPage` UI
+
 **File**: `frontend/src/presentation/pages/DashboardPage.spec.tsx` (add to existing)
 
 29. [unit] `QrCard` should show "Ajouter un logo" button when `hasLogo` is `false` — TPP: constant — FLFI: render button with that label when `qr.hasLogo === false`

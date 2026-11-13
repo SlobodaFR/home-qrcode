@@ -65,38 +65,61 @@ describe('QrCode', () => {
 
   // Test 19 — TPP: constant
   it('should accept contentType wifi and return it via getter', () => {
-    const qr = QrCode.create({ ...validProps, contentType: 'wifi', content: 'HomeNet' });
+    const qr = QrCode.create({
+      ...validProps,
+      contentType: 'wifi',
+      content: 'HomeNet',
+    });
     expect(qr.contentType).toBe('wifi');
   });
 
   // Test 20 — TPP: variable
   it('should accept contentType email and return it via getter', () => {
-    const qr = QrCode.create({ ...validProps, contentType: 'email', content: 'user@example.com' });
+    const qr = QrCode.create({
+      ...validProps,
+      contentType: 'email',
+      content: 'user@example.com',
+    });
     expect(qr.contentType).toBe('email');
   });
 
   // Test 21 — TPP: variable
   it('should accept contentType vcard and return it via getter', () => {
-    const qr = QrCode.create({ ...validProps, contentType: 'vcard', content: 'Jane Doe' });
+    const qr = QrCode.create({
+      ...validProps,
+      contentType: 'vcard',
+      content: 'Jane Doe',
+    });
     expect(qr.contentType).toBe('vcard');
   });
 
   // Logo-overlay: Test 1 — TPP: variable
   it('should store encodedContent and expose it via getter', () => {
-    const qr = QrCode.create({ ...validProps, encodedContent: 'WIFI:T:WPA;S:Home;P:pass;;' });
+    const qr = QrCode.create({
+      ...validProps,
+      encodedContent: 'WIFI:T:WPA;S:Home;P:pass;;',
+    });
     expect(qr.encodedContent).toBe('WIFI:T:WPA;S:Home;P:pass;;');
   });
 
   // Logo-overlay: Test 2 — TPP: variable
   it('should store hasLogo: false and expose logoUrl as /api/qr/{id}/logo', () => {
-    const qr = QrCode.create({ ...validProps, hasLogo: false, encodedContent: 'test' });
+    const qr = QrCode.create({
+      ...validProps,
+      hasLogo: false,
+      encodedContent: 'test',
+    });
     expect(qr.hasLogo).toBe(false);
     expect(qr.logoUrl).toBe('/api/qr/abc-123/logo');
   });
 
   // Logo-overlay: Test 3 — TPP: variable
   it('withLogo() should return new instance with hasLogo true, updated errorCorrection, and logoMimeType', () => {
-    const qr = QrCode.create({ ...validProps, encodedContent: 'test', hasLogo: false });
+    const qr = QrCode.create({
+      ...validProps,
+      encodedContent: 'test',
+      hasLogo: false,
+    });
     const updated = qr.withLogo('Q', 'image/png');
     expect(updated.hasLogo).toBe(true);
     expect(updated.errorCorrection).toBe('Q');
@@ -105,7 +128,11 @@ describe('QrCode', () => {
 
   // Logo-overlay: Test 4 — TPP: conditional
   it('withLogo() should not mutate the original instance', () => {
-    const qr = QrCode.create({ ...validProps, encodedContent: 'test', hasLogo: false });
+    const qr = QrCode.create({
+      ...validProps,
+      encodedContent: 'test',
+      hasLogo: false,
+    });
     qr.withLogo('Q', 'image/png');
     expect(qr.hasLogo).toBe(false);
     expect(qr.logoMimeType).toBeNull();

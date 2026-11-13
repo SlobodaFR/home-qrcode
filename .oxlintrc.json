@@ -1,12 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "typescript",
-    "import",
-    "unicorn",
-    "react",
-    "vitest"
-  ],
+  "plugins": ["typescript", "import", "unicorn", "react", "vitest"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
@@ -52,11 +46,7 @@
     "vitest/expect-expect": [
       "error",
       {
-        "assertFunctionNames": [
-          "expect",
-          "request.**.expect",
-          "**.expect"
-        ]
+        "assertFunctionNames": ["expect", "request.**.expect", "**.expect"]
       }
     ],
     "vitest/valid-expect": [
@@ -69,10 +59,7 @@
   },
   "overrides": [
     {
-      "files": [
-        "**/*.spec.ts",
-        "**/*.spec.tsx"
-      ],
+      "files": ["**/*.spec.ts", "**/*.spec.tsx"],
       "rules": {
         "typescript/no-unsafe-assignment": "off",
         "typescript/no-unsafe-member-access": "off",

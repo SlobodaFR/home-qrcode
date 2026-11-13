@@ -11,21 +11,56 @@ import { CreateOrEditLinkDto } from '../dto/create-or-edit-link.dto';
 import { ListQrDto } from '../dto/list-qr.dto';
 
 const mockLink = QrCode.create({
-  id: 'sl-1', userId: 'u1', contentType: 'url', content: 'https://target.com',
-  source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M',
-  createdAt: new Date('2026-01-01'), scanCount: 3,
+  id: 'sl-1',
+  userId: 'u1',
+  contentType: 'url',
+  content: 'https://target.com',
+  source: 'shortlink',
+  size: 0,
+  fgColor: '',
+  bgColor: '',
+  errorCorrection: 'M',
+  createdAt: new Date('2026-01-01'),
+  scanCount: 3,
 });
 
 const makeController = async () => {
   const module = await Test.createTestingModule({
     controllers: [LinksController],
     providers: [
-      { provide: CreateLinkUseCase, useValue: { execute: vi.fn().mockResolvedValue({ link: mockLink }) } },
-      { provide: ListLinksUseCase, useValue: { execute: vi.fn().mockResolvedValue({ items: [mockLink], total: 1, page: 1, limit: 20 }) } },
-      { provide: EditLinkUseCase, useValue: { execute: vi.fn().mockResolvedValue({ link: mockLink }) } },
-      { provide: DeleteLinkUseCase, useValue: { execute: vi.fn().mockResolvedValue(undefined) } },
-      { provide: ConfigService, useValue: { getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com') } },
-      { provide: 'SetExpirationUseCase', useValue: { execute: vi.fn().mockResolvedValue({ entity: mockLink }) } },
+      {
+        provide: CreateLinkUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue({ link: mockLink }) },
+      },
+      {
+        provide: ListLinksUseCase,
+        useValue: {
+          execute: vi.fn().mockResolvedValue({
+            items: [mockLink],
+            total: 1,
+            page: 1,
+            limit: 20,
+          }),
+        },
+      },
+      {
+        provide: EditLinkUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue({ link: mockLink }) },
+      },
+      {
+        provide: DeleteLinkUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue(undefined) },
+      },
+      {
+        provide: ConfigService,
+        useValue: {
+          getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com'),
+        },
+      },
+      {
+        provide: 'SetExpirationUseCase',
+        useValue: { execute: vi.fn().mockResolvedValue({ entity: mockLink }) },
+      },
     ],
   }).compile();
   return {
@@ -43,7 +78,9 @@ describe('LinksController', () => {
   // url-shortener: Test 26 — TPP: constant
   it('create() should return 201 response shape with computed shortUrl', async () => {
     const { controller } = await makeController();
-    const dto = Object.assign(new CreateOrEditLinkDto(), { url: 'https://target.com' });
+    const dto = Object.assign(new CreateOrEditLinkDto(), {
+      url: 'https://target.com',
+    });
     const result = await controller.create(dto, mockUser);
     expect(result).toMatchObject({
       id: 'sl-1',
@@ -60,16 +97,25 @@ describe('LinksController', () => {
     const dto = Object.assign(new ListQrDto(), { page: 1, limit: 20 });
     const result = await controller.list(dto, mockUser);
     expect(result.items).toHaveLength(1);
-    expect(result.items[0]).toMatchObject({ id: 'sl-1', url: 'https://target.com', shortUrl: 'https://qrcode.example.com/r/sl-1' });
+    expect(result.items[0]).toMatchObject({
+      id: 'sl-1',
+      url: 'https://target.com',
+      shortUrl: 'https://qrcode.example.com/r/sl-1',
+    });
     expect(result.total).toBe(1);
   });
 
   // url-shortener: Test 28 — TPP: variable
   it('update() should return updated ShortLinkItem', async () => {
     const { controller } = await makeController();
-    const dto = Object.assign(new CreateOrEditLinkDto(), { url: 'https://new.com' });
+    const dto = Object.assign(new CreateOrEditLinkDto(), {
+      url: 'https://new.com',
+    });
     const result = await controller.update('sl-1', dto, mockUser);
-    expect(result).toMatchObject({ id: 'sl-1', shortUrl: 'https://qrcode.example.com/r/sl-1' });
+    expect(result).toMatchObject({
+      id: 'sl-1',
+      shortUrl: 'https://qrcode.example.com/r/sl-1',
+    });
   });
 
   // url-shortener: Test 29 — TPP: constant
@@ -82,7 +128,11 @@ describe('LinksController', () => {
   // link-expiration: Test 34 — TPP: constant
   it('PATCH :id/expiration should call SetExpirationUseCase with Date parsed from dto.expiresAt', async () => {
     const expiry = new Date('2026-08-25T23:59:59.000Z');
-    const setExpirationUseCase = { execute: vi.fn().mockResolvedValue({ entity: mockLink.withExpiration(expiry) }) };
+    const setExpirationUseCase = {
+      execute: vi
+        .fn()
+        .mockResolvedValue({ entity: mockLink.withExpiration(expiry) }),
+    };
     const module = await Test.createTestingModule({
       controllers: [LinksController],
       providers: [
@@ -90,22 +140,33 @@ describe('LinksController', () => {
         { provide: ListLinksUseCase, useValue: { execute: vi.fn() } },
         { provide: EditLinkUseCase, useValue: { execute: vi.fn() } },
         { provide: DeleteLinkUseCase, useValue: { execute: vi.fn() } },
-        { provide: ConfigService, useValue: { getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com') } },
+        {
+          provide: ConfigService,
+          useValue: {
+            getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com'),
+          },
+        },
         { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
       ],
     }).compile();
     const controller = module.get(LinksController);
     const { SetExpirationDto } = await import('../dto/set-expiration.dto');
-    const dto = Object.assign(new SetExpirationDto(), { expiresAt: '2026-08-25' });
+    const dto = Object.assign(new SetExpirationDto(), {
+      expiresAt: '2026-08-25',
+    });
     await controller.setExpiration('sl-1', dto, mockUser);
     expect(setExpirationUseCase.execute).toHaveBeenCalledWith({
-      id: 'sl-1', userId: 'u1', expiresAt: new Date('2026-08-25T23:59:59.000Z'),
+      id: 'sl-1',
+      userId: 'u1',
+      expiresAt: new Date('2026-08-25T23:59:59.000Z'),
     });
   });
 
   // link-expiration: Test 35 — TPP: conditional
   it('PATCH :id/expiration with null should call SetExpirationUseCase with null', async () => {
-    const setExpirationUseCase = { execute: vi.fn().mockResolvedValue({ entity: mockLink }) };
+    const setExpirationUseCase = {
+      execute: vi.fn().mockResolvedValue({ entity: mockLink }),
+    };
     const module = await Test.createTestingModule({
       controllers: [LinksController],
       providers: [
@@ -113,7 +174,12 @@ describe('LinksController', () => {
         { provide: ListLinksUseCase, useValue: { execute: vi.fn() } },
         { provide: EditLinkUseCase, useValue: { execute: vi.fn() } },
         { provide: DeleteLinkUseCase, useValue: { execute: vi.fn() } },
-        { provide: ConfigService, useValue: { getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com') } },
+        {
+          provide: ConfigService,
+          useValue: {
+            getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com'),
+          },
+        },
         { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
       ],
     }).compile();
@@ -122,7 +188,9 @@ describe('LinksController', () => {
     const dto = Object.assign(new SetExpirationDto(), { expiresAt: null });
     await controller.setExpiration('sl-1', dto, mockUser);
     expect(setExpirationUseCase.execute).toHaveBeenCalledWith({
-      id: 'sl-1', userId: 'u1', expiresAt: null,
+      id: 'sl-1',
+      userId: 'u1',
+      expiresAt: null,
     });
   });
 

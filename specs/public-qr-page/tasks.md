@@ -15,7 +15,7 @@
 
 ### Group 3 — Frontend infra: fetchQrMeta() (unit, vitest)
 
-*Prerequisites: install `@testing-library/react`, `@testing-library/user-event`, `jsdom`; add `test: { environment: 'jsdom' }` to `vite.config.ts`.*
+_Prerequisites: install `@testing-library/react`, `@testing-library/user-event`, `jsdom`; add `test: { environment: 'jsdom' }` to `vite.config.ts`._
 
 6. [unit] should return { status: 200 } when fetch responds 200 — TPP: constant — FLFI: `fetchQrMeta(id)` calls `fetch('/api/qr/${id}/meta')`, returns `{ status: 200 }` on 200
 7. [unit] should return { status: 404 } when fetch responds 404 — TPP: conditional — FLFI: check `response.status === 404`, return `{ status: 404 }`
@@ -36,7 +36,7 @@
 
 ### Group 6 — Frontend presentation: PublicQrPage (unit, vitest + render)
 
-*Mock `usePublicQr` via `vi.mock` to control state without network.*
+_Mock `usePublicQr` via `vi.mock` to control state without network._
 
 16. [unit] should show loading indicator while state is loading — TPP: constant — FLFI: when hook returns `state: 'loading'`, render a loading element
 17. [unit] should show QR image with src /api/qr/:id/png when state is found — TPP: constant — FLFI: when `state: 'found'`, render `<img src="/api/qr/{id}/png">`
@@ -49,7 +49,7 @@
 
 ### Group 7 — Frontend: AppRoutes router (unit, vitest + MemoryRouter)
 
-*Export `AppRoutes` from App.tsx (routes only, no BrowserRouter) for testability. `App` wraps `AppRoutes` with `BrowserRouter`.*
+_Export `AppRoutes` from App.tsx (routes only, no BrowserRouter) for testability. `App` wraps `AppRoutes` with `BrowserRouter`._
 
 24. [unit] should render PublicQrPage for /q/:id path — TPP: constant — FLFI: wrap `AppRoutes` in `MemoryRouter initialEntries={['/q/abc']}`, assert `PublicQrPage` mounts
 25. [unit] should render NotFoundPage for unknown path — TPP: conditional — FLFI: wrap `AppRoutes` in `MemoryRouter initialEntries={['/unknown']}`, assert `NotFoundPage` mounts

@@ -6,11 +6,13 @@ import { PublicQrPage } from './presentation/pages/PublicQrPage';
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' }).then((res) => {
-      if (!res.ok) window.location.replace('/api/auth/login');
-    }).catch(() => {
-      window.location.replace('/api/auth/login');
-    });
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((res) => {
+        if (!res.ok) window.location.replace('/api/auth/login');
+      })
+      .catch(() => {
+        window.location.replace('/api/auth/login');
+      });
   }, []);
   return <>{children}</>;
 }
@@ -18,7 +20,14 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<AuthGate><DashboardPage /></AuthGate>} />
+      <Route
+        path="/"
+        element={
+          <AuthGate>
+            <DashboardPage />
+          </AuthGate>
+        }
+      />
       <Route path="/q/:id" element={<PublicQrPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

@@ -1,5 +1,8 @@
 import type { Mocked } from 'vitest';
-import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { QrCode } from '../../domain/qr/qr-code';
 import { QrRepository } from '../../domain/qr/qr.repository';
 import { EditTargetUrlUseCase } from './edit-target-url.use-case';
@@ -15,14 +18,27 @@ const makeRepo = (qr: QrCode | null = null): Mocked<QrRepository> => ({
 });
 
 const urlQr = QrCode.create({
-  id: 'qr-1', userId: 'user-1', contentType: 'url', content: 'https://old.com',
-  size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
-  createdAt: new Date(), scanCount: 5,
+  id: 'qr-1',
+  userId: 'user-1',
+  contentType: 'url',
+  content: 'https://old.com',
+  size: 1024,
+  fgColor: '#000000',
+  bgColor: '#FFFFFF',
+  errorCorrection: 'M',
+  createdAt: new Date(),
+  scanCount: 5,
 });
 
 const textQr = QrCode.create({
-  id: 'qr-2', userId: 'user-1', contentType: 'text', content: 'Hello world',
-  size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+  id: 'qr-2',
+  userId: 'user-1',
+  contentType: 'text',
+  content: 'Hello world',
+  size: 1024,
+  fgColor: '#000000',
+  bgColor: '#FFFFFF',
+  errorCorrection: 'M',
   createdAt: new Date(),
 });
 
@@ -30,7 +46,11 @@ describe('EditTargetUrlUseCase', () => {
   // Test 14 — TPP: constant
   it('should return updated QrCode with new content', async () => {
     const uc = new EditTargetUrlUseCase(makeRepo(urlQr));
-    const result = await uc.execute({ id: 'qr-1', userId: 'user-1', content: 'https://new.com' });
+    const result = await uc.execute({
+      id: 'qr-1',
+      userId: 'user-1',
+      content: 'https://new.com',
+    });
     expect(result.qr.content).toBe('https://new.com');
     expect(result.qr).toBeInstanceOf(QrCode);
   });
@@ -39,30 +59,49 @@ describe('EditTargetUrlUseCase', () => {
   it('should call repository.save with the updated entity', async () => {
     const repo = makeRepo(urlQr);
     const uc = new EditTargetUrlUseCase(repo);
-    await uc.execute({ id: 'qr-1', userId: 'user-1', content: 'https://new.com' });
-    expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ content: 'https://new.com' }));
+    await uc.execute({
+      id: 'qr-1',
+      userId: 'user-1',
+      content: 'https://new.com',
+    });
+    expect(repo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ content: 'https://new.com' }),
+    );
   });
 
   // Test 16 — TPP: conditional
   it('should throw NotFoundException when QR not found or not owned', async () => {
     const uc = new EditTargetUrlUseCase(makeRepo(null));
-    await expect(uc.execute({ id: 'missing', userId: 'user-1', content: 'https://x.com' })).rejects.toThrow(NotFoundException);
+    await expect(
+      uc.execute({ id: 'missing', userId: 'user-1', content: 'https://x.com' }),
+    ).rejects.toThrow(NotFoundException);
   });
 
   // Test 17 — TPP: conditional
   it('should throw UnprocessableEntityException for text-type QrCode', async () => {
     const uc = new EditTargetUrlUseCase(makeRepo(textQr));
-    await expect(uc.execute({ id: 'qr-2', userId: 'user-1', content: 'https://x.com' })).rejects.toThrow(UnprocessableEntityException);
+    await expect(
+      uc.execute({ id: 'qr-2', userId: 'user-1', content: 'https://x.com' }),
+    ).rejects.toThrow(UnprocessableEntityException);
   });
 
   // url-shortener: Test 4 — TPP: conditional
   it('should throw NotFoundException when QrCode has source=shortlink', async () => {
     const shortlink = QrCode.create({
-      id: 'sl-1', userId: 'user-1', contentType: 'url', content: 'https://target.com',
-      source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M',
+      id: 'sl-1',
+      userId: 'user-1',
+      contentType: 'url',
+      content: 'https://target.com',
+      source: 'shortlink',
+      size: 0,
+      fgColor: '',
+      bgColor: '',
+      errorCorrection: 'M',
       createdAt: new Date(),
     });
     const uc = new EditTargetUrlUseCase(makeRepo(shortlink));
-    await expect(uc.execute({ id: 'sl-1', userId: 'user-1', content: 'https://new.com' })).rejects.toThrow(NotFoundException);
+    await expect(
+      uc.execute({ id: 'sl-1', userId: 'user-1', content: 'https://new.com' }),
+    ).rejects.toThrow(NotFoundException);
   });
 });

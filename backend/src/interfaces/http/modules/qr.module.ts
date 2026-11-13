@@ -28,7 +28,13 @@ import { TypeOrmUserRepository } from '../../../infrastructure/persistence/repos
 import { QrController } from '../controllers/qr.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([QrCodeOrmEntity, QrShareOrmEntity, UserOrmEntity])],
+  imports: [
+    TypeOrmModule.forFeature([
+      QrCodeOrmEntity,
+      QrShareOrmEntity,
+      UserOrmEntity,
+    ]),
+  ],
   controllers: [QrController],
   providers: [
     { provide: QrRepository, useClass: TypeOrmQrRepository },

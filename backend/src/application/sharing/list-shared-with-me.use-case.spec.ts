@@ -6,15 +6,31 @@ import { User } from '../../domain/user/user';
 import { UserRepository } from '../../domain/user/user.repository';
 import { ListSharedWithMeUseCase } from './list-shared-with-me.use-case';
 
-const makeQr = (id = 'qr-1', userId = 'owner-1') => QrCode.create({
-  id, userId, contentType: 'url', content: 'https://x.com',
-  size: 1024, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date(),
-});
+const makeQr = (id = 'qr-1', userId = 'owner-1') =>
+  QrCode.create({
+    id,
+    userId,
+    contentType: 'url',
+    content: 'https://x.com',
+    size: 1024,
+    fgColor: '#000',
+    bgColor: '#fff',
+    errorCorrection: 'M',
+    createdAt: new Date(),
+  });
 
 const makeShare = (qrId = 'qr-1', ownerId = 'owner-1') =>
-  QrShare.create({ id: 'sh-1', qrId, ownerId, recipientId: 'me', createdAt: new Date() });
+  QrShare.create({
+    id: 'sh-1',
+    qrId,
+    ownerId,
+    recipientId: 'me',
+    createdAt: new Date(),
+  });
 
-const makeShareRepo = (items: { share: QrShare; qrCode: QrCode }[]): Mocked<QrShareRepository> => ({
+const makeShareRepo = (
+  items: { share: QrShare; qrCode: QrCode }[],
+): Mocked<QrShareRepository> => ({
   save: vi.fn(),
   findById: vi.fn(),
   findByQrAndRecipient: vi.fn(),
@@ -41,7 +57,13 @@ describe('ListSharedWithMeUseCase', () => {
 
   // T12 — TPP: collection
   it('should return items with qrCode and sharedBy when shares exist', async () => {
-    const owner = User.create({ id: 'owner-1', email: 'owner@x.com', name: 'Alice', avatarUrl: '', createdAt: new Date() });
+    const owner = User.create({
+      id: 'owner-1',
+      email: 'owner@x.com',
+      name: 'Alice',
+      avatarUrl: '',
+      createdAt: new Date(),
+    });
     const uc = new ListSharedWithMeUseCase(
       makeShareRepo([{ share: makeShare(), qrCode: makeQr() }]),
       makeUserRepo([owner]),

@@ -1,25 +1,40 @@
 import type { Mocked } from 'vitest';
-import { OAuthClient, TokenPair, UserProfile } from '../../domain/auth/oauth-client';
+import {
+  OAuthClient,
+  TokenPair,
+  UserProfile,
+} from '../../domain/auth/oauth-client';
 import { User } from '../../domain/user/user';
 import { UserRepository } from '../../domain/user/user.repository';
 import { HandleOAuthCallbackUseCase } from './handle-oauth-callback.use-case';
 
-const mockTokens: TokenPair = { accessToken: 'at', refreshToken: 'rt', expiresIn: 3600 };
-const mockProfile: UserProfile = { id: 'sub-1', email: 'alice@example.com', name: 'Alice', avatarUrl: 'https://a.com/a.png' };
+const mockTokens: TokenPair = {
+  accessToken: 'at',
+  refreshToken: 'rt',
+  expiresIn: 3600,
+};
+const mockProfile: UserProfile = {
+  id: 'sub-1',
+  email: 'alice@example.com',
+  name: 'Alice',
+  avatarUrl: 'https://a.com/a.png',
+};
 
-const makeOAuthClient = (): Mocked<OAuthClient> => (({
+const makeOAuthClient = (): Mocked<OAuthClient> => ({
   authorizeUrl: vi.fn(),
   exchangeCode: vi.fn().mockResolvedValue(mockTokens),
   refresh: vi.fn(),
   fetchUserInfo: vi.fn().mockResolvedValue(mockProfile),
-}));
+});
 
-const makeUserRepo = (existing: User | null = null): Mocked<UserRepository> => (({
+const makeUserRepo = (
+  existing: User | null = null,
+): Mocked<UserRepository> => ({
   findById: vi.fn().mockResolvedValue(existing),
   findByEmail: vi.fn(),
   findAll: vi.fn().mockResolvedValue([]),
   save: vi.fn().mockResolvedValue(undefined),
-}));
+});
 
 describe('HandleOAuthCallbackUseCase', () => {
   // Test 5 — TPP: constant
@@ -38,7 +53,13 @@ describe('HandleOAuthCallbackUseCase', () => {
 
   // Test 6 — TPP: conditional
   it('should upsert an existing user via withProfile() when userId already exists', async () => {
-    const existing = User.create({ id: 'sub-1', email: 'old@example.com', name: 'Old', avatarUrl: '', createdAt: new Date() });
+    const existing = User.create({
+      id: 'sub-1',
+      email: 'old@example.com',
+      name: 'Old',
+      avatarUrl: '',
+      createdAt: new Date(),
+    });
     const repo = makeUserRepo(existing);
     const client = makeOAuthClient();
     const uc = new HandleOAuthCallbackUseCase(client, repo);
@@ -52,7 +73,10 @@ describe('HandleOAuthCallbackUseCase', () => {
 
   // Test 7 — TPP: variable
   it('should return the TokenPair from the OAuthClient', async () => {
-    const uc = new HandleOAuthCallbackUseCase(makeOAuthClient(), makeUserRepo());
+    const uc = new HandleOAuthCallbackUseCase(
+      makeOAuthClient(),
+      makeUserRepo(),
+    );
     const result = await uc.execute('code-abc', 'https://app/callback');
     expect(result.tokens).toEqual(mockTokens);
   });

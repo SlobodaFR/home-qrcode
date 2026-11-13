@@ -16,12 +16,17 @@ export class JwksAccessTokenVerifier extends AccessTokenVerifier {
   constructor(private readonly config: ConfigService) {
     super();
     const authBaseUrl = this.config.getOrThrow<string>('AUTH_BASE_URL');
-    this.jwks = createRemoteJWKSet(new URL('/.well-known/jwks.json', authBaseUrl));
+    this.jwks = createRemoteJWKSet(
+      new URL('/.well-known/jwks.json', authBaseUrl),
+    );
   }
 
   async verify(token: string): Promise<AccessTokenPayload | null> {
     try {
-      const { payload } = await jwtVerify<AuthServiceJwtPayload>(token, this.jwks);
+      const { payload } = await jwtVerify<AuthServiceJwtPayload>(
+        token,
+        this.jwks,
+      );
       if (!payload.sub || !payload.email || !payload.name || !payload.iat) {
         return null;
       }

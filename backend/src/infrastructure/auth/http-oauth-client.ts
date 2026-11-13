@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OAuthClient, TokenPair, UserProfile } from '../../domain/auth/oauth-client';
+import {
+  OAuthClient,
+  TokenPair,
+  UserProfile,
+} from '../../domain/auth/oauth-client';
 
 interface TokenPairDto {
   accessToken: string;
@@ -37,11 +41,18 @@ export class HttpOAuthClient extends OAuthClient {
   }
 
   async exchangeCode(code: string, redirectUri: string): Promise<TokenPair> {
-    return this.requestToken({ grant_type: 'authorization_code', code, redirect_uri: redirectUri });
+    return this.requestToken({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: redirectUri,
+    });
   }
 
   async refresh(refreshToken: string): Promise<TokenPair> {
-    return this.requestToken({ grant_type: 'refresh_token', refresh_token: refreshToken });
+    return this.requestToken({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    });
   }
 
   async fetchUserInfo(accessToken: string): Promise<UserProfile> {
@@ -52,19 +63,34 @@ export class HttpOAuthClient extends OAuthClient {
       throw new Error(`Failed to fetch user info: ${response.status}`);
     }
     const dto = (await response.json()) as UserInfoDto;
-    return { id: dto.id, email: dto.email, name: dto.name, avatarUrl: dto.avatarUrl };
+    return {
+      id: dto.id,
+      email: dto.email,
+      name: dto.name,
+      avatarUrl: dto.avatarUrl,
+    };
   }
 
-  private async requestToken(params: Record<string, string>): Promise<TokenPair> {
+  private async requestToken(
+    params: Record<string, string>,
+  ): Promise<TokenPair> {
     const response = await fetch(new URL('/token', this.authBaseUrl), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: this.clientId, client_secret: this.clientSecret, ...params }),
+      body: JSON.stringify({
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+        ...params,
+      }),
     });
     if (!response.ok) {
       throw new Error(`Token request failed: ${response.status}`);
     }
     const dto = (await response.json()) as TokenPairDto;
-    return { accessToken: dto.accessToken, refreshToken: dto.refreshToken, expiresIn: dto.expiresIn };
+    return {
+      accessToken: dto.accessToken,
+      refreshToken: dto.refreshToken,
+      expiresIn: dto.expiresIn,
+    };
   }
 }

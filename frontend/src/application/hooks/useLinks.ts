@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ShortLinkItem, createLink, deleteLink, editLink, listLinks, setLinkExpiration } from '../../infrastructure/api/links.client';
+import {
+  ShortLinkItem,
+  createLink,
+  deleteLink,
+  editLink,
+  listLinks,
+  setLinkExpiration,
+} from '../../infrastructure/api/links.client';
 
 type LinksState = 'loading' | 'ready' | 'error';
 
@@ -50,10 +57,13 @@ export function useLinks(): LinksHook {
     setItems((prev) => prev.map((l) => (l.id === id ? updated : l)));
   }, []);
 
-  const setExpiration = useCallback(async (id: string, expiresAt: string | null) => {
-    const updated = await setLinkExpiration(id, expiresAt);
-    setItems((prev) => prev.map((l) => (l.id === id ? updated : l)));
-  }, []);
+  const setExpiration = useCallback(
+    async (id: string, expiresAt: string | null) => {
+      const updated = await setLinkExpiration(id, expiresAt);
+      setItems((prev) => prev.map((l) => (l.id === id ? updated : l)));
+    },
+    [],
+  );
 
   return { state, items, total, create, edit, remove, setExpiration };
 }

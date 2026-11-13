@@ -26,14 +26,22 @@ describe('User', () => {
 
   // Test 3 — TPP: conditional
   it('should throw when email format is invalid', () => {
-    expect(() => User.create({ ...validProps, email: 'not-an-email' })).toThrow('Invalid email address');
-    expect(() => User.create({ ...validProps, email: '' })).toThrow('Invalid email address');
+    expect(() => User.create({ ...validProps, email: 'not-an-email' })).toThrow(
+      'Invalid email address',
+    );
+    expect(() => User.create({ ...validProps, email: '' })).toThrow(
+      'Invalid email address',
+    );
   });
 
   // Test 4 — TPP: variable
   it('should return a new user with updated email/name/avatarUrl via withProfile()', () => {
     const user = User.create(validProps);
-    const updated = user.withProfile({ email: 'New@Example.com', name: 'Bob', avatarUrl: 'https://example.com/new.png' });
+    const updated = user.withProfile({
+      email: 'New@Example.com',
+      name: 'Bob',
+      avatarUrl: 'https://example.com/new.png',
+    });
     expect(updated.id).toBe(user.id);
     expect(updated.createdAt).toEqual(user.createdAt);
     expect(updated.email).toBe('new@example.com');

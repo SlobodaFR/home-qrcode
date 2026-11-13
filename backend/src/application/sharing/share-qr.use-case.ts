@@ -1,4 +1,10 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { QrRepository } from '../../domain/qr/qr.repository';
 import { QrShare } from '../../domain/qr/qr-share';
 import { QrShareRepository } from '../../domain/qr/qr-share.repository';
@@ -29,12 +35,16 @@ export class ShareQrUseCase {
 
     if (qr.userId !== cmd.ownerId) throw new ForbiddenException();
 
-    if (cmd.ownerId === cmd.recipientId) throw new BadRequestException('Cannot share with yourself');
+    if (cmd.ownerId === cmd.recipientId)
+      throw new BadRequestException('Cannot share with yourself');
 
     const recipient = await this.userRepository.findById(cmd.recipientId);
     if (!recipient) throw new NotFoundException('Recipient not found');
 
-    const existing = await this.qrShareRepository.findByQrAndRecipient(cmd.qrId, cmd.recipientId);
+    const existing = await this.qrShareRepository.findByQrAndRecipient(
+      cmd.qrId,
+      cmd.recipientId,
+    );
     if (existing) throw new ConflictException('Already shared with this user');
 
     const share = QrShare.create({

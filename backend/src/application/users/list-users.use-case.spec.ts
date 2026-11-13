@@ -3,7 +3,14 @@ import { User } from '../../domain/user/user';
 import { UserRepository } from '../../domain/user/user.repository';
 import { ListUsersUseCase } from './list-users.use-case';
 
-const makeUser = (id: string) => User.create({ id, email: `${id}@x.com`, name: id, avatarUrl: '', createdAt: new Date() });
+const makeUser = (id: string) =>
+  User.create({
+    id,
+    email: `${id}@x.com`,
+    name: id,
+    avatarUrl: '',
+    createdAt: new Date(),
+  });
 
 const makeRepo = (users: User[]): Mocked<UserRepository> => ({
   findById: vi.fn(),

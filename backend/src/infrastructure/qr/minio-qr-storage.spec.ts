@@ -9,7 +9,9 @@ const ASSETS_PATH = 'qrcode-assets/prod';
 const makeConfig = (): ConfigService =>
   ({ getOrThrow: () => ASSETS_PATH }) as unknown as ConfigService;
 
-const makeMinioService = (overrides: Partial<Record<string, Mock>> = {}): MinioClientService => {
+const makeMinioService = (
+  overrides: Partial<Record<string, Mock>> = {},
+): MinioClientService => {
   const client = {
     putObject: vi.fn().mockResolvedValue(undefined),
     getObject: vi.fn().mockResolvedValue({ pipe: vi.fn() }),
@@ -17,7 +19,10 @@ const makeMinioService = (overrides: Partial<Record<string, Mock>> = {}): MinioC
     removeObject: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
-  return { client: client as unknown as Client, bucket: 'test-bucket' } as MinioClientService;
+  return {
+    client: client as unknown as Client,
+    bucket: 'test-bucket',
+  } as MinioClientService;
 };
 
 const makeStorage = (overrides: Partial<Record<string, Mock>> = {}) =>
@@ -31,7 +36,10 @@ describe('MinioQrStorage', () => {
     const buf = Buffer.from('png-data');
     await storage.uploadPng('abc-123', buf);
     expect(svc.client.putObject).toHaveBeenCalledWith(
-      'test-bucket', `${ASSETS_PATH}/abc-123/qr.png`, buf, buf.length,
+      'test-bucket',
+      `${ASSETS_PATH}/abc-123/qr.png`,
+      buf,
+      buf.length,
       { 'Content-Type': 'image/png' },
     );
   });
@@ -43,7 +51,10 @@ describe('MinioQrStorage', () => {
     await storage.uploadSvg('abc-123', '<svg/>');
     const svgBuf = Buffer.from('<svg/>');
     expect(svc.client.putObject).toHaveBeenCalledWith(
-      'test-bucket', `${ASSETS_PATH}/abc-123/qr.svg`, svgBuf, svgBuf.length,
+      'test-bucket',
+      `${ASSETS_PATH}/abc-123/qr.svg`,
+      svgBuf,
+      svgBuf.length,
       { 'Content-Type': 'image/svg+xml' },
     );
   });
@@ -53,7 +64,10 @@ describe('MinioQrStorage', () => {
     const svc = makeMinioService();
     const storage = new MinioQrStorage(svc, makeConfig());
     await storage.streamPng('abc-123');
-    expect(svc.client.getObject).toHaveBeenCalledWith('test-bucket', `${ASSETS_PATH}/abc-123/qr.png`);
+    expect(svc.client.getObject).toHaveBeenCalledWith(
+      'test-bucket',
+      `${ASSETS_PATH}/abc-123/qr.png`,
+    );
   });
 
   // Test 15 — TPP: variable
@@ -61,7 +75,10 @@ describe('MinioQrStorage', () => {
     const svc = makeMinioService();
     const storage = new MinioQrStorage(svc, makeConfig());
     await storage.streamSvg('abc-123');
-    expect(svc.client.getObject).toHaveBeenCalledWith('test-bucket', `${ASSETS_PATH}/abc-123/qr.svg`);
+    expect(svc.client.getObject).toHaveBeenCalledWith(
+      'test-bucket',
+      `${ASSETS_PATH}/abc-123/qr.svg`,
+    );
   });
 
   // Test 16 — TPP: constant
@@ -69,13 +86,20 @@ describe('MinioQrStorage', () => {
     const svc = makeMinioService();
     const storage = new MinioQrStorage(svc, makeConfig());
     expect(await storage.exists('abc-123')).toBe(true);
-    expect(svc.client.statObject).toHaveBeenCalledWith('test-bucket', `${ASSETS_PATH}/abc-123/qr.png`);
+    expect(svc.client.statObject).toHaveBeenCalledWith(
+      'test-bucket',
+      `${ASSETS_PATH}/abc-123/qr.png`,
+    );
   });
 
   // Test 17 — TPP: conditional
   it('should return false from exists() when statObject throws a NotFound-like error', async () => {
-    const notFoundErr = Object.assign(new Error('Not Found'), { code: 'NotFound' });
-    const storage = makeStorage({ statObject: vi.fn().mockRejectedValue(notFoundErr) });
+    const notFoundErr = Object.assign(new Error('Not Found'), {
+      code: 'NotFound',
+    });
+    const storage = makeStorage({
+      statObject: vi.fn().mockRejectedValue(notFoundErr),
+    });
     expect(await storage.exists('abc-123')).toBe(false);
   });
 
@@ -84,19 +108,32 @@ describe('MinioQrStorage', () => {
     const svc = makeMinioService();
     const storage = new MinioQrStorage(svc, makeConfig());
     await storage.delete('abc-123');
-    expect(svc.client.removeObject).toHaveBeenCalledWith('test-bucket', `${ASSETS_PATH}/abc-123/qr.png`);
-    expect(svc.client.removeObject).toHaveBeenCalledWith('test-bucket', `${ASSETS_PATH}/abc-123/qr.svg`);
+    expect(svc.client.removeObject).toHaveBeenCalledWith(
+      'test-bucket',
+      `${ASSETS_PATH}/abc-123/qr.png`,
+    );
+    expect(svc.client.removeObject).toHaveBeenCalledWith(
+      'test-bucket',
+      `${ASSETS_PATH}/abc-123/qr.svg`,
+    );
   });
 
   // Test 13 (history) — TPP: conditional
   it('delete() should not throw when one removal fails', async () => {
-    const storage = makeStorage({ removeObject: vi.fn().mockRejectedValueOnce(new Error('gone')).mockResolvedValue(undefined) });
+    const storage = makeStorage({
+      removeObject: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('gone'))
+        .mockResolvedValue(undefined),
+    });
     await expect(storage.delete('abc-123')).resolves.toBeUndefined();
   });
 
   // Test 14 (history) — TPP: conditional
   it('delete() should not throw when both removals fail', async () => {
-    const storage = makeStorage({ removeObject: vi.fn().mockRejectedValue(new Error('gone')) });
+    const storage = makeStorage({
+      removeObject: vi.fn().mockRejectedValue(new Error('gone')),
+    });
     await expect(storage.delete('abc-123')).resolves.toBeUndefined();
   });
 
@@ -107,7 +144,10 @@ describe('MinioQrStorage', () => {
     const buf = Buffer.from('logo-data');
     await storage.uploadLogo('abc-123', buf, 'image/png');
     expect(svc.client.putObject).toHaveBeenCalledWith(
-      'test-bucket', `${ASSETS_PATH}/abc-123/logo`, buf, buf.length,
+      'test-bucket',
+      `${ASSETS_PATH}/abc-123/logo`,
+      buf,
+      buf.length,
       { 'Content-Type': 'image/png' },
     );
   });
@@ -117,7 +157,10 @@ describe('MinioQrStorage', () => {
     const svc = makeMinioService();
     const storage = new MinioQrStorage(svc, makeConfig());
     await storage.streamLogo('abc-123');
-    expect(svc.client.getObject).toHaveBeenCalledWith('test-bucket', `${ASSETS_PATH}/abc-123/logo`);
+    expect(svc.client.getObject).toHaveBeenCalledWith(
+      'test-bucket',
+      `${ASSETS_PATH}/abc-123/logo`,
+    );
   });
 
   // Logo-overlay: Test 22 — TPP: variable
@@ -125,7 +168,10 @@ describe('MinioQrStorage', () => {
     const svc = makeMinioService();
     const storage = new MinioQrStorage(svc, makeConfig());
     await storage.delete('abc-123');
-    expect(svc.client.removeObject).toHaveBeenCalledWith('test-bucket', `${ASSETS_PATH}/abc-123/logo`);
+    expect(svc.client.removeObject).toHaveBeenCalledWith(
+      'test-bucket',
+      `${ASSETS_PATH}/abc-123/logo`,
+    );
     expect(svc.client.removeObject).toHaveBeenCalledTimes(3);
   });
 });

@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { listSharedWithMe, SharedQrItem } from '../../infrastructure/api/sharing.client';
+import {
+  listSharedWithMe,
+  SharedQrItem,
+} from '../../infrastructure/api/sharing.client';
 
 type SharedWithMeState = 'loading' | 'ready' | 'error';
 
@@ -14,8 +17,13 @@ export function useSharedWithMe(): SharedWithMeHook {
 
   useEffect(() => {
     listSharedWithMe()
-      .then((data) => { setItems(data); setState('ready'); })
-      .catch(() => { setState('error'); });
+      .then((data) => {
+        setItems(data);
+        setState('ready');
+      })
+      .catch(() => {
+        setState('error');
+      });
   }, []);
 
   return { state, items };

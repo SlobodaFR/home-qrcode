@@ -79,15 +79,24 @@ describe('TypeOrmQrRepository', () => {
 
   // Test 7 — TPP: conditional
   it('incrementScanCount() on unknown id should not throw', async () => {
-    await expect(repo.incrementScanCount('nonexistent')).resolves.toBeUndefined();
+    await expect(
+      repo.incrementScanCount('nonexistent'),
+    ).resolves.toBeUndefined();
   });
 
   // Test 8 — TPP: variable
   it('save() should persist scanCount', async () => {
     const qrWithCount = QrCode.create({
-      id: 'qr-scan', userId: 'user-1', contentType: 'url', content: 'https://x.com',
-      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
-      createdAt: new Date('2026-01-01'), scanCount: 42,
+      id: 'qr-scan',
+      userId: 'user-1',
+      contentType: 'url',
+      content: 'https://x.com',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
+      createdAt: new Date('2026-01-01'),
+      scanCount: 42,
     });
     await repo.save(qrWithCount);
     const found = await repo.findById('qr-scan');
@@ -96,22 +105,44 @@ describe('TypeOrmQrRepository', () => {
 
   // Test 9 — TPP: variable
   it('toDomain() should map scan_count column to scanCount', async () => {
-    await repo.save(QrCode.create({
-      id: 'qr-map', userId: 'user-1', contentType: 'url', content: 'https://x.com',
-      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
-      createdAt: new Date('2026-01-01'), scanCount: 3,
-    }));
+    await repo.save(
+      QrCode.create({
+        id: 'qr-map',
+        userId: 'user-1',
+        contentType: 'url',
+        content: 'https://x.com',
+        size: 1024,
+        fgColor: '#000000',
+        bgColor: '#FFFFFF',
+        errorCorrection: 'M',
+        createdAt: new Date('2026-01-01'),
+        scanCount: 3,
+      }),
+    );
     await repo.incrementScanCount('qr-map');
     const found = await repo.findById('qr-map');
     expect(found!.scanCount).toBe(4);
   });
 
   const makeQrFull = (id: string, userId: string, createdAt: Date) =>
-    QrCode.create({ id, userId, contentType: 'url', content: 'https://x.com', size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M', createdAt });
+    QrCode.create({
+      id,
+      userId,
+      contentType: 'url',
+      content: 'https://x.com',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
+      createdAt,
+    });
 
   // Test 3 — TPP: constant
   it('findAllByUserId() should return empty result for user with no QRs', async () => {
-    const result = await repo.findAllByUserId('no-such-user', { page: 1, limit: 20 });
+    const result = await repo.findAllByUserId('no-such-user', {
+      page: 1,
+      limit: 20,
+    });
     expect(result.items).toHaveLength(0);
     expect(result.total).toBe(0);
   });
@@ -120,7 +151,10 @@ describe('TypeOrmQrRepository', () => {
   it('findAllByUserId() should return items ordered by createdAt DESC', async () => {
     await repo.save(makeQrFull('old', 'u-order', new Date('2026-01-01')));
     await repo.save(makeQrFull('new', 'u-order', new Date('2026-06-01')));
-    const result = await repo.findAllByUserId('u-order', { page: 1, limit: 20 });
+    const result = await repo.findAllByUserId('u-order', {
+      page: 1,
+      limit: 20,
+    });
     expect(result.items[0].id).toBe('new');
     expect(result.items[1].id).toBe('old');
   });
@@ -130,14 +164,16 @@ describe('TypeOrmQrRepository', () => {
     await repo.save(makeQrFull('u1-qr', 'user-a', new Date()));
     await repo.save(makeQrFull('u2-qr', 'user-b', new Date()));
     const result = await repo.findAllByUserId('user-a', { page: 1, limit: 20 });
-    expect(result.items.every(q => q.userId === 'user-a')).toBe(true);
+    expect(result.items.every((q) => q.userId === 'user-a')).toBe(true);
     expect(result.total).toBe(1);
   });
 
   // Test 6 — TPP: variable
   it('findAllByUserId() should return correct total and paginated slice', async () => {
     for (let i = 0; i < 5; i++) {
-      await repo.save(makeQrFull(`pg-${i}`, 'user-pg', new Date(2026, 0, i + 1)));
+      await repo.save(
+        makeQrFull(`pg-${i}`, 'user-pg', new Date(2026, 0, i + 1)),
+      );
     }
     const result = await repo.findAllByUserId('user-pg', { page: 2, limit: 2 });
     expect(result.items).toHaveLength(2);
@@ -147,7 +183,10 @@ describe('TypeOrmQrRepository', () => {
   // Test 7 — TPP: conditional
   it('findAllByUserId() beyond last page should return empty items with correct total', async () => {
     await repo.save(makeQrFull('single', 'user-one', new Date()));
-    const result = await repo.findAllByUserId('user-one', { page: 99, limit: 20 });
+    const result = await repo.findAllByUserId('user-one', {
+      page: 99,
+      limit: 20,
+    });
     expect(result.items).toHaveLength(0);
     expect(result.total).toBe(1);
   });
@@ -177,10 +216,17 @@ describe('TypeOrmQrRepository', () => {
   // Logo-overlay: Test 23 — TPP: variable
   it('toDomain() should map encodedContent, hasLogo, and logoMimeType from ORM row', async () => {
     const qr = QrCode.create({
-      id: 'logo-qr', userId: 'user-1', contentType: 'wifi', content: 'HomeNet',
+      id: 'logo-qr',
+      userId: 'user-1',
+      contentType: 'wifi',
+      content: 'HomeNet',
       encodedContent: 'WIFI:T:WPA;S:HomeNet;P:pass;;',
-      hasLogo: true, logoMimeType: 'image/png',
-      size: 200, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'Q',
+      hasLogo: true,
+      logoMimeType: 'image/png',
+      size: 200,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'Q',
       createdAt: new Date('2026-01-01'),
     });
     await repo.save(qr);
@@ -193,9 +239,17 @@ describe('TypeOrmQrRepository', () => {
   // Logo-overlay: Test 24 — TPP: variable
   it('save() should persist encodedContent, hasLogo, and logoMimeType', async () => {
     const qr = QrCode.create({
-      id: 'save-logo', userId: 'user-1', contentType: 'text', content: 'Hello',
-      encodedContent: 'Hello', hasLogo: false, logoMimeType: null,
-      size: 200, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+      id: 'save-logo',
+      userId: 'user-1',
+      contentType: 'text',
+      content: 'Hello',
+      encodedContent: 'Hello',
+      hasLogo: false,
+      logoMimeType: null,
+      size: 200,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
       createdAt: new Date('2026-01-01'),
     });
     await repo.save(qr);
@@ -208,8 +262,15 @@ describe('TypeOrmQrRepository', () => {
   // url-shortener: Test 19 — TPP: variable
   it('save() should persist source field and findById() should retrieve it', async () => {
     const link = QrCode.create({
-      id: 'sl-1', userId: 'u1', contentType: 'url', content: 'https://t.com',
-      source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M',
+      id: 'sl-1',
+      userId: 'u1',
+      contentType: 'url',
+      content: 'https://t.com',
+      source: 'shortlink',
+      size: 0,
+      fgColor: '',
+      bgColor: '',
+      errorCorrection: 'M',
       createdAt: new Date('2026-01-01'),
     });
     await repo.save(link);
@@ -219,24 +280,78 @@ describe('TypeOrmQrRepository', () => {
 
   // url-shortener: Test 20 — TPP: conditional
   it('findAllByUserId() should exclude rows with source=shortlink', async () => {
-    await repo.save(QrCode.create({ id: 'qr-a', userId: 'u-src', contentType: 'url', content: 'https://q.com', source: 'qr', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date() }));
-    await repo.save(QrCode.create({ id: 'sl-a', userId: 'u-src', contentType: 'url', content: 'https://t.com', source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M', createdAt: new Date() }));
+    await repo.save(
+      QrCode.create({
+        id: 'qr-a',
+        userId: 'u-src',
+        contentType: 'url',
+        content: 'https://q.com',
+        source: 'qr',
+        size: 512,
+        fgColor: '#000',
+        bgColor: '#fff',
+        errorCorrection: 'M',
+        createdAt: new Date(),
+      }),
+    );
+    await repo.save(
+      QrCode.create({
+        id: 'sl-a',
+        userId: 'u-src',
+        contentType: 'url',
+        content: 'https://t.com',
+        source: 'shortlink',
+        size: 0,
+        fgColor: '',
+        bgColor: '',
+        errorCorrection: 'M',
+        createdAt: new Date(),
+      }),
+    );
     const result = await repo.findAllByUserId('u-src', { page: 1, limit: 20 });
-    expect(result.items.every(i => i.source !== 'shortlink')).toBe(true);
+    expect(result.items.every((i) => i.source !== 'shortlink')).toBe(true);
     expect(result.total).toBe(1);
   });
 
   // url-shortener: Test 21 — TPP: variable
   it('findAllByUserId() should include rows where source is null (legacy backward compat)', async () => {
-    await repo.save(QrCode.create({ id: 'legacy', userId: 'u-legacy', contentType: 'url', content: 'https://x.com', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date() }));
-    const result = await repo.findAllByUserId('u-legacy', { page: 1, limit: 20 });
+    await repo.save(
+      QrCode.create({
+        id: 'legacy',
+        userId: 'u-legacy',
+        contentType: 'url',
+        content: 'https://x.com',
+        size: 512,
+        fgColor: '#000',
+        bgColor: '#fff',
+        errorCorrection: 'M',
+        createdAt: new Date(),
+      }),
+    );
+    const result = await repo.findAllByUserId('u-legacy', {
+      page: 1,
+      limit: 20,
+    });
     expect(result.items).toHaveLength(1);
     expect(result.items[0].source).toBeNull();
   });
 
   // url-shortener: Test 22 — TPP: variable
   it('findAllByUserId() should include rows with source=qr', async () => {
-    await repo.save(QrCode.create({ id: 'qr-new', userId: 'u-qr', contentType: 'url', content: 'https://x.com', source: 'qr', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date() }));
+    await repo.save(
+      QrCode.create({
+        id: 'qr-new',
+        userId: 'u-qr',
+        contentType: 'url',
+        content: 'https://x.com',
+        source: 'qr',
+        size: 512,
+        fgColor: '#000',
+        bgColor: '#fff',
+        errorCorrection: 'M',
+        createdAt: new Date(),
+      }),
+    );
     const result = await repo.findAllByUserId('u-qr', { page: 1, limit: 20 });
     expect(result.items).toHaveLength(1);
     expect(result.items[0].source).toBe('qr');
@@ -244,16 +359,48 @@ describe('TypeOrmQrRepository', () => {
 
   // url-shortener: Test 23 — TPP: constant
   it('findAllLinksByUserId() should return empty list for user with no shortlinks', async () => {
-    const result = await repo.findAllLinksByUserId('no-links-user', { page: 1, limit: 20 });
+    const result = await repo.findAllLinksByUserId('no-links-user', {
+      page: 1,
+      limit: 20,
+    });
     expect(result.items).toHaveLength(0);
     expect(result.total).toBe(0);
   });
 
   // url-shortener: Test 24 — TPP: variable
   it('findAllLinksByUserId() should return only shortlinks for the given user', async () => {
-    await repo.save(QrCode.create({ id: 'sl-b', userId: 'u-links', contentType: 'url', content: 'https://t1.com', source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M', createdAt: new Date() }));
-    await repo.save(QrCode.create({ id: 'qr-b', userId: 'u-links', contentType: 'url', content: 'https://q1.com', source: 'qr', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date() }));
-    const result = await repo.findAllLinksByUserId('u-links', { page: 1, limit: 20 });
+    await repo.save(
+      QrCode.create({
+        id: 'sl-b',
+        userId: 'u-links',
+        contentType: 'url',
+        content: 'https://t1.com',
+        source: 'shortlink',
+        size: 0,
+        fgColor: '',
+        bgColor: '',
+        errorCorrection: 'M',
+        createdAt: new Date(),
+      }),
+    );
+    await repo.save(
+      QrCode.create({
+        id: 'qr-b',
+        userId: 'u-links',
+        contentType: 'url',
+        content: 'https://q1.com',
+        source: 'qr',
+        size: 512,
+        fgColor: '#000',
+        bgColor: '#fff',
+        errorCorrection: 'M',
+        createdAt: new Date(),
+      }),
+    );
+    const result = await repo.findAllLinksByUserId('u-links', {
+      page: 1,
+      limit: 20,
+    });
     expect(result.items).toHaveLength(1);
     expect(result.items[0].id).toBe('sl-b');
     expect(result.items[0].source).toBe('shortlink');
@@ -261,17 +408,56 @@ describe('TypeOrmQrRepository', () => {
 
   // url-shortener: Test 25 — TPP: conditional
   it('findAllLinksByUserId() should exclude QR codes (source=qr and source=null) from same user', async () => {
-    await repo.save(QrCode.create({ id: 'sl-c', userId: 'u-mixed', contentType: 'url', content: 'https://t2.com', source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M', createdAt: new Date() }));
-    await repo.save(QrCode.create({ id: 'qr-c', userId: 'u-mixed', contentType: 'url', content: 'https://q2.com', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date() }));
-    const result = await repo.findAllLinksByUserId('u-mixed', { page: 1, limit: 20 });
-    expect(result.items.every(i => i.source === 'shortlink')).toBe(true);
+    await repo.save(
+      QrCode.create({
+        id: 'sl-c',
+        userId: 'u-mixed',
+        contentType: 'url',
+        content: 'https://t2.com',
+        source: 'shortlink',
+        size: 0,
+        fgColor: '',
+        bgColor: '',
+        errorCorrection: 'M',
+        createdAt: new Date(),
+      }),
+    );
+    await repo.save(
+      QrCode.create({
+        id: 'qr-c',
+        userId: 'u-mixed',
+        contentType: 'url',
+        content: 'https://q2.com',
+        size: 512,
+        fgColor: '#000',
+        bgColor: '#fff',
+        errorCorrection: 'M',
+        createdAt: new Date(),
+      }),
+    );
+    const result = await repo.findAllLinksByUserId('u-mixed', {
+      page: 1,
+      limit: 20,
+    });
+    expect(result.items.every((i) => i.source === 'shortlink')).toBe(true);
     expect(result.total).toBe(1);
   });
 
   // link-expiration: Test 19 — TPP: variable
   it('save() with non-null expiresAt should persist it and findById() should retrieve it as Date', async () => {
     const expiry = new Date('2026-08-25T23:59:59.000Z');
-    const qr = QrCode.create({ id: 'exp-1', userId: 'u1', contentType: 'url', content: 'https://x.com', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date('2026-01-01'), expiresAt: expiry });
+    const qr = QrCode.create({
+      id: 'exp-1',
+      userId: 'u1',
+      contentType: 'url',
+      content: 'https://x.com',
+      size: 512,
+      fgColor: '#000',
+      bgColor: '#fff',
+      errorCorrection: 'M',
+      createdAt: new Date('2026-01-01'),
+      expiresAt: expiry,
+    });
     await repo.save(qr);
     const found = await repo.findById('exp-1');
     expect(found).not.toBeNull();
@@ -280,7 +466,18 @@ describe('TypeOrmQrRepository', () => {
 
   // link-expiration: Test 20 — TPP: conditional
   it('save() with expiresAt=null should persist NULL and findById() should return null', async () => {
-    const qr = QrCode.create({ id: 'exp-2', userId: 'u1', contentType: 'url', content: 'https://x.com', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date('2026-01-01'), expiresAt: null });
+    const qr = QrCode.create({
+      id: 'exp-2',
+      userId: 'u1',
+      contentType: 'url',
+      content: 'https://x.com',
+      size: 512,
+      fgColor: '#000',
+      bgColor: '#fff',
+      errorCorrection: 'M',
+      createdAt: new Date('2026-01-01'),
+      expiresAt: null,
+    });
     await repo.save(qr);
     const found = await repo.findById('exp-2');
     expect(found!.expiresAt).toBeNull();
@@ -289,7 +486,17 @@ describe('TypeOrmQrRepository', () => {
   // link-expiration: Test 21 — TPP: conditional
   it('existing row without expires_at column should return expiresAt=null after synchronize', async () => {
     // synchronize:true already ran; TypeORM added expires_at column; existing rows default to NULL
-    const legacyQr = QrCode.create({ id: 'legacy-exp', userId: 'u1', contentType: 'url', content: 'https://x.com', size: 512, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date('2026-01-01') });
+    const legacyQr = QrCode.create({
+      id: 'legacy-exp',
+      userId: 'u1',
+      contentType: 'url',
+      content: 'https://x.com',
+      size: 512,
+      fgColor: '#000',
+      bgColor: '#fff',
+      errorCorrection: 'M',
+      createdAt: new Date('2026-01-01'),
+    });
     await repo.save(legacyQr);
     const found = await repo.findById('legacy-exp');
     expect(found!.expiresAt).toBeNull();

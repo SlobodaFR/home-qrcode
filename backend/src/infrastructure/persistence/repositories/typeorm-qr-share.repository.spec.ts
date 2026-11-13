@@ -9,12 +9,27 @@ import { RevokedSessionOrmEntity } from '../entities/revoked-session.orm-entity'
 import { TypeOrmQrShareRepository } from './typeorm-qr-share.repository';
 import { TypeOrmQrRepository } from './typeorm-qr.repository';
 
-const makeQr = (id = 'qr-1', userId = 'user-1') => QrCode.create({
-  id, userId, contentType: 'url', content: 'https://x.com',
-  size: 1024, fgColor: '#000', bgColor: '#fff', errorCorrection: 'M', createdAt: new Date('2026-01-01'),
-});
+const makeQr = (id = 'qr-1', userId = 'user-1') =>
+  QrCode.create({
+    id,
+    userId,
+    contentType: 'url',
+    content: 'https://x.com',
+    size: 1024,
+    fgColor: '#000',
+    bgColor: '#fff',
+    errorCorrection: 'M',
+    createdAt: new Date('2026-01-01'),
+  });
 
-const makeShare = (overrides: Partial<{ id: string; qrId: string; recipientId: string; ownerId: string }> = {}) =>
+const makeShare = (
+  overrides: Partial<{
+    id: string;
+    qrId: string;
+    recipientId: string;
+    ownerId: string;
+  }> = {},
+) =>
   QrShare.create({
     id: overrides.id ?? 'sh-1',
     qrId: overrides.qrId ?? 'qr-1',
@@ -33,7 +48,12 @@ describe('TypeOrmQrShareRepository', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [UserOrmEntity, RevokedSessionOrmEntity, QrCodeOrmEntity, QrShareOrmEntity],
+          entities: [
+            UserOrmEntity,
+            RevokedSessionOrmEntity,
+            QrCodeOrmEntity,
+            QrShareOrmEntity,
+          ],
           synchronize: true,
           enableWAL: false,
         }),
@@ -81,8 +101,12 @@ describe('TypeOrmQrShareRepository', () => {
   it('findByQrIds() should return shares for given QR ids and empty array when input is empty', async () => {
     await qrRepo.save(makeQr('qr-1'));
     await qrRepo.save(makeQr('qr-2'));
-    await shareRepo.save(makeShare({ id: 'sh-1', qrId: 'qr-1', recipientId: 'r-1' }));
-    await shareRepo.save(makeShare({ id: 'sh-2', qrId: 'qr-2', recipientId: 'r-2' }));
+    await shareRepo.save(
+      makeShare({ id: 'sh-1', qrId: 'qr-1', recipientId: 'r-1' }),
+    );
+    await shareRepo.save(
+      makeShare({ id: 'sh-2', qrId: 'qr-2', recipientId: 'r-2' }),
+    );
     const found = await shareRepo.findByQrIds(['qr-1', 'qr-2']);
     expect(found).toHaveLength(2);
     const empty = await shareRepo.findByQrIds([]);
@@ -92,7 +116,14 @@ describe('TypeOrmQrShareRepository', () => {
   // T20 — TPP: collection
   it('findWithQrByRecipientId() should return {share, qrCode} joined by qr_id', async () => {
     await qrRepo.save(makeQr('qr-1', 'owner-1'));
-    await shareRepo.save(makeShare({ id: 'sh-1', qrId: 'qr-1', ownerId: 'owner-1', recipientId: 'me' }));
+    await shareRepo.save(
+      makeShare({
+        id: 'sh-1',
+        qrId: 'qr-1',
+        ownerId: 'owner-1',
+        recipientId: 'me',
+      }),
+    );
     const rows = await shareRepo.findWithQrByRecipientId('me');
     expect(rows).toHaveLength(1);
     expect(rows[0].share.id).toBe('sh-1');
@@ -120,6 +151,8 @@ describe('TypeOrmQrShareRepository', () => {
   it('save() with duplicate (qrId, recipientId) should throw a unique constraint error', async () => {
     await qrRepo.save(makeQr());
     await shareRepo.save(makeShare({ id: 'sh-1', recipientId: 'r-1' }));
-    await expect(shareRepo.save(makeShare({ id: 'sh-2', recipientId: 'r-1' }))).rejects.toThrow(/UNIQUE constraint failed/);
+    await expect(
+      shareRepo.save(makeShare({ id: 'sh-2', recipientId: 'r-1' })),
+    ).rejects.toThrow(/UNIQUE constraint failed/);
   });
 });

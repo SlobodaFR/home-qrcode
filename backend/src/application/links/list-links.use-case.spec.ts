@@ -3,17 +3,27 @@ import { QrCode } from '../../domain/qr/qr-code';
 import { QrRepository } from '../../domain/qr/qr.repository';
 import { ListLinksUseCase } from './list-links.use-case';
 
-const makeLink = () => QrCode.create({
-  id: 'sl-1', userId: 'u1', contentType: 'url', content: 'https://t.com',
-  source: 'shortlink', size: 0, fgColor: '', bgColor: '', errorCorrection: 'M',
-  createdAt: new Date(),
-});
+const makeLink = () =>
+  QrCode.create({
+    id: 'sl-1',
+    userId: 'u1',
+    contentType: 'url',
+    content: 'https://t.com',
+    source: 'shortlink',
+    size: 0,
+    fgColor: '',
+    bgColor: '',
+    errorCorrection: 'M',
+    createdAt: new Date(),
+  });
 
 const makeRepo = (): Mocked<QrRepository> => ({
   findById: vi.fn(),
   findByIdAndUserId: vi.fn(),
   findAllByUserId: vi.fn(),
-  findAllLinksByUserId: vi.fn().mockResolvedValue({ items: [makeLink()], total: 1 }),
+  findAllLinksByUserId: vi
+    .fn()
+    .mockResolvedValue({ items: [makeLink()], total: 1 }),
   save: vi.fn(),
   deleteById: vi.fn(),
   incrementScanCount: vi.fn(),
@@ -25,7 +35,10 @@ describe('ListLinksUseCase', () => {
     const repo = makeRepo();
     const uc = new ListLinksUseCase(repo);
     await uc.execute({ userId: 'u1', page: 2, limit: 10 });
-    expect(repo.findAllLinksByUserId).toHaveBeenCalledWith('u1', { page: 2, limit: 10 });
+    expect(repo.findAllLinksByUserId).toHaveBeenCalledWith('u1', {
+      page: 2,
+      limit: 10,
+    });
   });
 
   // url-shortener: Test 10 — TPP: variable

@@ -54,7 +54,10 @@ export interface QrOptions {
   errorCorrection: 'L' | 'M' | 'Q' | 'H';
 }
 export abstract class QrImageGenerator {
-  abstract generate(encodedContent: string, options: QrOptions): Promise<{ png: Buffer; svg: string }>;
+  abstract generate(
+    encodedContent: string,
+    options: QrOptions,
+  ): Promise<{ png: Buffer; svg: string }>;
 }
 
 // domain/qr/qr-storage.port.ts
@@ -71,7 +74,10 @@ export abstract class QrStoragePort {
 // domain/qr/qr.repository.ts
 export abstract class QrRepository {
   abstract findById(id: string): Promise<QrCode | null>;
-  abstract findByIdAndUserId(id: string, userId: string): Promise<QrCode | null>;
+  abstract findByIdAndUserId(
+    id: string,
+    userId: string,
+  ): Promise<QrCode | null>;
   abstract save(qr: QrCode): Promise<void>;
 }
 ```
@@ -83,22 +89,23 @@ export abstract class QrRepository {
 export interface GenerateQrCommand {
   userId: string;
   contentType: 'url' | 'text';
-  content: string;        // target URL (url type) or plain text (text type)
+  content: string; // target URL (url type) or plain text (text type)
   size: number;
   fgColor: string;
   bgColor: string;
   errorCorrection: 'L' | 'M' | 'Q' | 'H';
-  frontendUrl: string;    // passed by controller from ConfigService — use case stays framework-free
+  frontendUrl: string; // passed by controller from ConfigService — use case stays framework-free
 }
 export interface GenerateQrResult {
   qr: QrCode;
 }
 class GenerateQrUseCase {
-  async execute(cmd: GenerateQrCommand): Promise<GenerateQrResult>
+  async execute(cmd: GenerateQrCommand): Promise<GenerateQrResult>;
 }
 ```
 
 Use case logic:
+
 1. `id = crypto.randomUUID()` (Node built-in, no `uuid` dep)
 2. `encodedContent = cmd.contentType === 'url' ? \`${cmd.frontendUrl}/r/${id}\` : cmd.content`
 3. `{ png, svg } = await generator.generate(encodedContent, options)`
@@ -109,14 +116,15 @@ Use case logic:
 
 ### HTTP endpoints
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| POST | `/api/qr` | required | Create QR → 201 |
-| GET | `/api/qr/:id` | required (owner) | Get metadata → 200 |
-| GET | `/api/qr/:id/png` | `@Public()` | Stream PNG → 200 |
-| GET | `/api/qr/:id/svg` | `@Public()` | Stream SVG → 200 |
+| Method | Path              | Auth             | Description        |
+| ------ | ----------------- | ---------------- | ------------------ |
+| POST   | `/api/qr`         | required         | Create QR → 201    |
+| GET    | `/api/qr/:id`     | required (owner) | Get metadata → 200 |
+| GET    | `/api/qr/:id/png` | `@Public()`      | Stream PNG → 200   |
+| GET    | `/api/qr/:id/svg` | `@Public()`      | Stream SVG → 200   |
 
 **Response shape (POST + GET metadata):**
+
 ```json
 {
   "id": "uuid-v4",
@@ -134,6 +142,7 @@ Use case logic:
 ```
 
 **CreateQrDto** (class-validator):
+
 ```typescript
 contentType: 'url' | 'text'   // @IsIn(['url', 'text'])
 content: string               // @IsNotEmpty()
@@ -152,13 +161,16 @@ Conditional URL validation via `@ValidateIf(o => o.contentType === 'url')` + `@I
 ```typescript
 @Injectable()
 export class MinioClientService implements OnModuleInit {
-  readonly client: Client;  // minio.Client
+  readonly client: Client; // minio.Client
   readonly bucket: string;
 
   async onModuleInit(): Promise<void> {
     if (this.config.get<string>('NODE_ENV') !== 'production') return;
     const exists = await this.client.bucketExists(this.bucket);
-    if (!exists) throw new Error(`MinIO bucket "${this.bucket}" not found — check MINIO_* env vars`);
+    if (!exists)
+      throw new Error(
+        `MinIO bucket "${this.bucket}" not found — check MINIO_* env vars`,
+      );
   }
 }
 ```
@@ -186,24 +198,26 @@ export interface QrCodeProps {
 
 export class QrCode {
   private constructor(private readonly props: QrCodeProps) {}
-  static create(props: QrCodeProps): QrCode { return new QrCode(props); }
+  static create(props: QrCodeProps): QrCode {
+    return new QrCode(props);
+  }
   // getters for all props
 }
 ```
 
 ### SQLite table: `qr_codes`
 
-| Column | Type | Constraints |
-|---|---|---|
-| `id` | TEXT | PK |
-| `user_id` | TEXT | NOT NULL |
-| `content_type` | TEXT | NOT NULL ('url' \| 'text') |
-| `content` | TEXT | NOT NULL |
-| `size` | INTEGER | NOT NULL |
-| `fg_color` | TEXT | NOT NULL |
-| `bg_color` | TEXT | NOT NULL |
-| `error_correction` | TEXT | NOT NULL |
-| `created_at` | DATETIME | NOT NULL |
+| Column             | Type     | Constraints                |
+| ------------------ | -------- | -------------------------- |
+| `id`               | TEXT     | PK                         |
+| `user_id`          | TEXT     | NOT NULL                   |
+| `content_type`     | TEXT     | NOT NULL ('url' \| 'text') |
+| `content`          | TEXT     | NOT NULL                   |
+| `size`             | INTEGER  | NOT NULL                   |
+| `fg_color`         | TEXT     | NOT NULL                   |
+| `bg_color`         | TEXT     | NOT NULL                   |
+| `error_correction` | TEXT     | NOT NULL                   |
+| `created_at`       | DATETIME | NOT NULL                   |
 
 Index: `(user_id, created_at DESC)` — added proactively for `qr-history` pagination. `synchronize: true` creates it at startup with zero migration cost.
 
@@ -218,6 +232,7 @@ Index: `(user_id, created_at DESC)` — added proactively for `qr-history` pagin
 ### `docker-compose.dev.yml`
 
 Provides:
+
 - MinIO service (local, `localhost:9000` API + `localhost:9001` console)
 - Backend dev service (optional — can use `npm run dev:backend` directly)
 
@@ -227,17 +242,17 @@ Provides:
 
 ### New production dependencies
 
-| Package | Version | Last publish | Justification |
-|---|---|---|---|
-| `minio` | `^8.0.7` | 2026-02-27 | Official MinIO JS SDK — uploads, streams, health check. Swap path: `@aws-sdk/client-s3` (S3-compatible, only `MinioQrStorage` + `MinioClientService` change) |
-| `qrcode` | `^1.5.4` | 2024-08-05 | PNG buffer + SVG string generation, ISO 18004, MIT. Swap path: `qr-image` or custom. Only `QrcodeImageGenerator` changes. |
+| Package  | Version  | Last publish | Justification                                                                                                                                                |
+| -------- | -------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `minio`  | `^8.0.7` | 2026-02-27   | Official MinIO JS SDK — uploads, streams, health check. Swap path: `@aws-sdk/client-s3` (S3-compatible, only `MinioQrStorage` + `MinioClientService` change) |
+| `qrcode` | `^1.5.4` | 2024-08-05   | PNG buffer + SVG string generation, ISO 18004, MIT. Swap path: `qr-image` or custom. Only `QrcodeImageGenerator` changes.                                    |
 
 Both wrapped behind domain ports (`QrImageGenerator`, `QrStoragePort`) — implementation swap = 1 file each, zero domain/application changes.
 
 ### New dev dependencies
 
-| Package | Version | Justification |
-|---|---|---|
+| Package         | Version  | Justification                     |
+| --------------- | -------- | --------------------------------- |
 | `@types/qrcode` | `^1.5.6` | TypeScript types for `qrcode` npm |
 
 ### No `uuid` dependency
@@ -254,22 +269,27 @@ Both wrapped behind domain ports (`QrImageGenerator`, `QrStoragePort`) — imple
 ## Alternatives Considered
 
 ### 1. Client-side QR generation (rejected)
+
 Generate QR in browser, skip server storage. Instant UX, no MinIO needed.
 **Rejected**: PRD requires server-side PNG+SVG stored in MinIO for proxy routes and `/q/{id}` public page. AC5/6/8/9 impossible client-side.
 
 ### 2. `@aws-sdk/client-s3` instead of `minio` npm (rejected)
+
 MinIO is S3-compatible; AWS SDK works against it.
 **Rejected**: `minio` npm is the official SDK for this backend, lighter, project is MinIO-first (Litestream uses same MinIO). Both wrapped behind `QrStoragePort` — swap cost is one file if needed.
 
 ### 3. Inject `ConfigService` into `GenerateQrUseCase` (rejected)
+
 Use case reads `FRONTEND_URL` directly from `ConfigService`.
 **Rejected**: `ConfigService` is NestJS infrastructure. Application layer must depend only on domain. Controller passes `frontendUrl` in the command — mirrors `callbackUrl()` pattern in `AuthController`.
 
 ### 4. `streamFile(key: string)` on `QrStoragePort` (rejected)
+
 Single method, controller builds the MinIO key.
 **Rejected**: MinIO key format (`qr/{id}/qr.png`) would leak into the HTTP controller layer. Named methods `streamPng(id)` / `streamSvg(id)` keep the key convention inside `MinioQrStorage`. Format change = 1 infra file, not the controller.
 
 ### 5. MinIO health check always active (rejected)
+
 Fail startup unconditionally if MinIO unreachable, even in dev.
 **Rejected by user**: health check production-only (`NODE_ENV === 'production'`). Dev setup provided by `docker-compose.dev.yml` — using it is the recommended path, but not forced.
 
@@ -277,21 +297,21 @@ Fail startup unconditionally if MinIO unreachable, even in dev.
 
 ## Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|
-| MinIO upload timeout causes > 2s response | Medium | Medium | Local MinIO on same host should be < 100ms; flag against PRD metric |
-| `qrcode` SVG contains external refs | Low | Low | Inspect output once; serve with `Content-Security-Policy` if needed |
-| 4096×4096 PNG ~1–4MB in memory | Low | Low | Acceptable for personal use |
-| Dev without `docker-compose.dev.yml` setup — MinIO calls fail at runtime | Medium | Low | Health check skipped in dev; first `/api/qr` call fails with 500 — clear error |
+| Risk                                                                     | Likelihood | Impact | Mitigation                                                                     |
+| ------------------------------------------------------------------------ | ---------- | ------ | ------------------------------------------------------------------------------ |
+| MinIO upload timeout causes > 2s response                                | Medium     | Medium | Local MinIO on same host should be < 100ms; flag against PRD metric            |
+| `qrcode` SVG contains external refs                                      | Low        | Low    | Inspect output once; serve with `Content-Security-Policy` if needed            |
+| 4096×4096 PNG ~1–4MB in memory                                           | Low        | Low    | Acceptable for personal use                                                    |
+| Dev without `docker-compose.dev.yml` setup — MinIO calls fail at runtime | Medium     | Low    | Health check skipped in dev; first `/api/qr` call fails with 500 — clear error |
 
 ---
 
 ## Grill Log
 
-| Decision | Question | Resolution |
-|---|---|---|
-| `minio` + `qrcode` deps | Abandonment risk? Could this be done without? | Both wrapped behind domain ports — swap = 1 file each. `minio` active (Feb 2026), `qrcode` active (Aug 2024). Approved. |
-| Abstraction level | Swap deps or DIY by design? | Domain ports (`QrImageGenerator`, `QrStoragePort`) already enforce this. NestJS module wires `useClass` — swap by config. No change needed. |
-| `QrStoragePort` method shape | `streamFile(key)` vs named methods? | Named methods (`streamPng(id)`, `streamSvg(id)`, `exists(id)`) — MinIO key format stays in infra, not in controller. |
-| Proactive index | YAGNI vs zero-cost now? | Added now — `synchronize: true` makes it free. Avoids touching schema when `qr-history` is built. |
-| MinIO health check scope | Always vs prod-only? | Prod-only (`NODE_ENV === 'production'` guard). Dev setup via `docker-compose.dev.yml` (added to scope). |
+| Decision                     | Question                                      | Resolution                                                                                                                                  |
+| ---------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `minio` + `qrcode` deps      | Abandonment risk? Could this be done without? | Both wrapped behind domain ports — swap = 1 file each. `minio` active (Feb 2026), `qrcode` active (Aug 2024). Approved.                     |
+| Abstraction level            | Swap deps or DIY by design?                   | Domain ports (`QrImageGenerator`, `QrStoragePort`) already enforce this. NestJS module wires `useClass` — swap by config. No change needed. |
+| `QrStoragePort` method shape | `streamFile(key)` vs named methods?           | Named methods (`streamPng(id)`, `streamSvg(id)`, `exists(id)`) — MinIO key format stays in infra, not in controller.                        |
+| Proactive index              | YAGNI vs zero-cost now?                       | Added now — `synchronize: true` makes it free. Avoids touching schema when `qr-history` is built.                                           |
+| MinIO health check scope     | Always vs prod-only?                          | Prod-only (`NODE_ENV === 'production'` guard). Dev setup via `docker-compose.dev.yml` (added to scope).                                     |

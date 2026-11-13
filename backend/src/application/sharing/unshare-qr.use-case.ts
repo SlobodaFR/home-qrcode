@@ -14,7 +14,8 @@ export class UnshareQrUseCase {
   async execute(cmd: UnshareQrCommand): Promise<void> {
     const share = await this.qrShareRepository.findById(cmd.shareId);
     if (!share) throw new NotFoundException();
-    if (share.qrId !== cmd.qrId || share.ownerId !== cmd.ownerId) throw new NotFoundException();
+    if (share.qrId !== cmd.qrId || share.ownerId !== cmd.ownerId)
+      throw new NotFoundException();
     await this.qrShareRepository.deleteById(cmd.shareId);
   }
 }

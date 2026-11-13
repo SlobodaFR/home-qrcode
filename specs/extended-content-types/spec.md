@@ -7,14 +7,17 @@ Add three new static QR content types: **Wi-Fi** (SSID + password + security), *
 ## User Stories
 
 **Wi-Fi**
+
 - Given I am on the dashboard, when I select "Wi-Fi", fill in SSID + security + optional password and click Generate, then a QR code is created that any smartphone camera can scan to join the network.
 - Given I created a Wi-Fi QR code, when I view it in the list, then the content preview shows the SSID.
 
 **Email**
+
 - Given I am on the dashboard, when I select "Email", fill in recipient + optional subject + optional body and click Generate, then a QR code is created that opens the device mail client pre-filled.
 - Given I created an Email QR code, when I view it in the list, then the content preview shows the recipient address.
 
 **vCard**
+
 - Given I am on the dashboard, when I select "vCard", fill in at least a name and click Generate, then a QR code is created that any smartphone camera can scan to add the contact.
 - Given I created a vCard QR code, when I view it in the list, then the content preview shows the contact full name.
 
@@ -30,6 +33,7 @@ Given `contentType = 'email'` and `{ to, subject?, body? }`, when `GenerateQrUse
 
 **AC3 — vCard encoding**
 Given `contentType = 'vcard'` and `{ name, phone?, email?, org? }`, when `GenerateQrUseCase` runs, then the encoded QR string is a vCard 3.0 payload:
+
 ```
 BEGIN:VCARD
 VERSION:3.0
@@ -45,6 +49,7 @@ Given the `QrCode` entity, `contentType` is `'url' | 'text' | 'wifi' | 'email' |
 
 **AC5 — CreateQrDto validation (wifi)**
 Given `contentType = 'wifi'`, when the request is received, then:
+
 - `ssid` is required non-empty string
 - `security` is required, one of `'WPA' | 'WEP' | 'nopass'`
 - `password` is required and non-empty when `security !== 'nopass'`; optional (ignored) when `security = 'nopass'`
@@ -53,6 +58,7 @@ Given `contentType = 'wifi'`, when the request is received, then:
 
 **AC6 — CreateQrDto validation (email)**
 Given `contentType = 'email'`, when the request is received, then:
+
 - `to` is required, validated as a valid email address
 - `subject` is optional string
 - `body` is optional string
@@ -60,6 +66,7 @@ Given `contentType = 'email'`, when the request is received, then:
 
 **AC7 — CreateQrDto validation (vcard)**
 Given `contentType = 'vcard'`, when the request is received, then:
+
 - `name` is required non-empty string
 - `phone` is optional string (any format accepted)
 - `email` is optional, validated as a valid email address when present
@@ -68,10 +75,11 @@ Given `contentType = 'vcard'`, when the request is received, then:
 
 **AC8 — `content` stored as human-readable summary**
 Given any of the three new types, when `GenerateQrUseCase` runs, then the `content` field persisted in the DB is:
+
 - `wifi` → `ssid`
 - `email` → `to`
 - `vcard` → `name`
-This is what `toListItemResponse()` truncates and returns.
+  This is what `toListItemResponse()` truncates and returns.
 
 **AC9 — Static types rejected by editTargetUrl**
 Given a QR code with `contentType` in `{ 'wifi', 'email', 'vcard', 'text' }`, when `PATCH /api/qr/:id` is called, then the response is 422 Unprocessable Entity. _(Already implemented in use case — no code change needed.)_
@@ -119,12 +127,12 @@ Given a QR card in the list with `contentType` in `{ 'wifi', 'email', 'vcard' }`
 
 ## Grill Log
 
-| OQ | Question | Resolution | Testable Given/When/Then |
-|---|---|---|---|
-| OQ1 | WPA vs WPA2 separate options? | Single `'WPA'` value covers both; UI labels it "WPA/WPA2" | Given security = 'WPA', the encoded string has `T:WPA` |
-| OQ2 | Password required for WPA/WEP? | Yes — 400 if `security !== 'nopass'` and password is absent/empty | Given wifi request with security='WPA' and no password, then 400 |
-| OQ3 | vCard phone format? | Free string, no validation | Given phone='06 12 34 56 78', then accepted and included verbatim in TEL field |
-| OQ4 | What to store in `content`? | Human-readable summary (ssid / to / name) | Given wifi created, then DB content = ssid value |
-| OQ5 | editTargetUrl for non-URL types? | 422 — already implemented in use case | Given wifi QR, when PATCH called, then 422 |
-| GAP1 | `content` field in existing DTO | Make `content` optional for structured types (ValidateIf url or text only) | Given wifi request without `content`, then no 400 for missing content |
-| GAP2 | `editTargetUrl` already guards | No code change needed at use-case level | Covered by existing tests |
+| OQ   | Question                         | Resolution                                                                 | Testable Given/When/Then                                                       |
+| ---- | -------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| OQ1  | WPA vs WPA2 separate options?    | Single `'WPA'` value covers both; UI labels it "WPA/WPA2"                  | Given security = 'WPA', the encoded string has `T:WPA`                         |
+| OQ2  | Password required for WPA/WEP?   | Yes — 400 if `security !== 'nopass'` and password is absent/empty          | Given wifi request with security='WPA' and no password, then 400               |
+| OQ3  | vCard phone format?              | Free string, no validation                                                 | Given phone='06 12 34 56 78', then accepted and included verbatim in TEL field |
+| OQ4  | What to store in `content`?      | Human-readable summary (ssid / to / name)                                  | Given wifi created, then DB content = ssid value                               |
+| OQ5  | editTargetUrl for non-URL types? | 422 — already implemented in use case                                      | Given wifi QR, when PATCH called, then 422                                     |
+| GAP1 | `content` field in existing DTO  | Make `content` optional for structured types (ValidateIf url or text only) | Given wifi request without `content`, then no 400 for missing content          |
+| GAP2 | `editTargetUrl` already guards   | No code change needed at use-case level                                    | Covered by existing tests                                                      |

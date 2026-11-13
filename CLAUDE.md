@@ -2,36 +2,40 @@
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Backend | NestJS + TypeORM + SQLite (better-sqlite3) |
-| Frontend | React + Vite + TypeScript + Tailwind CSS |
-| Storage | SQLite (params) + MinIO (PNG/SVG via Litestream) |
-| Auth | OAuth2 Authorization Code → auth.sloboda.fr |
-| Runtime | Node.js (version pinned in `.nvmrc`) |
-| Packaging | Docker (single image), npm workspaces |
+| Layer     | Technology                                       |
+| --------- | ------------------------------------------------ |
+| Backend   | NestJS + TypeORM + SQLite (better-sqlite3)       |
+| Frontend  | React + Vite + TypeScript + Tailwind CSS         |
+| Storage   | SQLite (params) + MinIO (PNG/SVG via Litestream) |
+| Auth      | OAuth2 Authorization Code → auth.sloboda.fr      |
+| Runtime   | Node.js (version pinned in `.nvmrc`)             |
+| Packaging | Docker (single image), npm workspaces            |
 
 ## Architecture
 
 **Monorepo structure:**
+
 ```
 backend/   # NestJS — domain / application / infrastructure / interfaces/http
 frontend/  # React   — domain / application / infrastructure / presentation
 ```
 
 **Backend layers (strict top-down dependency):**
+
 - `domain` — entities, value objects, repository interfaces. Zero framework imports.
 - `application` — use cases, ports. Depends on domain only.
 - `infrastructure` — TypeORM repos, MinIO client, QR generator, JWKS verifier.
 - `interfaces/http` — NestJS controllers, guards, DTOs.
 
 **Frontend layers:**
+
 - `domain` — types, interfaces.
 - `application` — hooks, state, use-case orchestration.
 - `infrastructure` — API clients, fetch wrappers.
 - `presentation` — React components, pages, Tailwind styling.
 
 **QR generation flow:**
+
 1. Backend generates PNG + SVG (Node lib, server-side).
 2. Both files uploaded to MinIO at creation time.
 3. Params + MinIO keys stored in SQLite.

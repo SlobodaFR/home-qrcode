@@ -5,7 +5,9 @@ import { RevokedSessionOrmEntity } from '../entities/revoked-session.orm-entity'
 import { UserOrmEntity } from '../entities/user.orm-entity';
 import { TypeOrmUserRepository } from './typeorm-user.repository';
 
-const makeUser = (overrides: Partial<{ id: string; email: string; name: string }> = {}) =>
+const makeUser = (
+  overrides: Partial<{ id: string; email: string; name: string }> = {},
+) =>
   User.create({
     id: overrides.id ?? 'sub-1',
     email: overrides.email ?? 'alice@example.com',
@@ -63,7 +65,9 @@ describe('TypeOrmUserRepository', () => {
     await repo.save(makeUser({ id: 'u-2', email: 'b@x.com' }));
     const all = await repo.findAll();
     expect(all).toHaveLength(2);
-    expect(all.map((u) => u.id)).toEqual(expect.arrayContaining(['u-1', 'u-2']));
+    expect(all.map((u) => u.id)).toEqual(
+      expect.arrayContaining(['u-1', 'u-2']),
+    );
   });
 
   // Test 16 — TPP: variable

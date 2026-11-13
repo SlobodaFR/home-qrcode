@@ -15,22 +15,42 @@ const makeRepo = (qr: QrCode | null = null): Mocked<QrRepository> => ({
 });
 
 const urlQr = QrCode.create({
-  id: 'qr-1', userId: 'u1', contentType: 'url', content: 'https://target.com',
-  size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+  id: 'qr-1',
+  userId: 'u1',
+  contentType: 'url',
+  content: 'https://target.com',
+  size: 1024,
+  fgColor: '#000000',
+  bgColor: '#FFFFFF',
+  errorCorrection: 'M',
   createdAt: new Date(),
 });
 
 const textQr = QrCode.create({
-  id: 'qr-2', userId: 'u1', contentType: 'text', content: 'Hello world',
-  size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+  id: 'qr-2',
+  userId: 'u1',
+  contentType: 'text',
+  content: 'Hello world',
+  size: 1024,
+  fgColor: '#000000',
+  bgColor: '#FFFFFF',
+  errorCorrection: 'M',
   createdAt: new Date(),
 });
 
-const urlQrWithExpiry = (expiresAt: Date | null) => QrCode.create({
-  id: 'qr-1', userId: 'u1', contentType: 'url', content: 'https://target.com',
-  size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
-  createdAt: new Date(), expiresAt,
-});
+const urlQrWithExpiry = (expiresAt: Date | null) =>
+  QrCode.create({
+    id: 'qr-1',
+    userId: 'u1',
+    contentType: 'url',
+    content: 'https://target.com',
+    size: 1024,
+    fgColor: '#000000',
+    bgColor: '#FFFFFF',
+    errorCorrection: 'M',
+    createdAt: new Date(),
+    expiresAt,
+  });
 
 describe('RedirectUseCase', () => {
   // Test 10 — TPP: constant
@@ -54,7 +74,9 @@ describe('RedirectUseCase', () => {
   // Test 12 — TPP: conditional
   it('should throw NotFoundException when id not found', async () => {
     const uc = new RedirectUseCase(makeRepo(null));
-    await expect(uc.execute({ id: 'missing' })).rejects.toThrow(NotFoundException);
+    await expect(uc.execute({ id: 'missing' })).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   // Test 13 — TPP: conditional
