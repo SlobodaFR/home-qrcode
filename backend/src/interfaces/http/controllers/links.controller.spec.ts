@@ -9,6 +9,7 @@ import { DeleteLinkUseCase } from '../../../application/links/delete-link.use-ca
 import { LinksController } from './links.controller';
 import { CreateOrEditLinkDto } from '../dto/create-or-edit-link.dto';
 import { ListQrDto } from '../dto/list-qr.dto';
+import { SetExpirationDto } from '../dto/set-expiration.dto';
 
 const mockLink = QrCode.create({
   id: 'sl-1',
@@ -150,7 +151,6 @@ describe('LinksController', () => {
       ],
     }).compile();
     const controller = module.get(LinksController);
-    const { SetExpirationDto } = await import('../dto/set-expiration.dto');
     const dto = Object.assign(new SetExpirationDto(), {
       expiresAt: '2026-08-25',
     });
@@ -184,7 +184,6 @@ describe('LinksController', () => {
       ],
     }).compile();
     const controller = module.get(LinksController);
-    const { SetExpirationDto } = await import('../dto/set-expiration.dto');
     const dto = Object.assign(new SetExpirationDto(), { expiresAt: null });
     await controller.setExpiration('sl-1', dto, mockUser);
     expect(setExpirationUseCase.execute).toHaveBeenCalledWith({
