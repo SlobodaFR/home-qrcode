@@ -1,3 +1,4 @@
+import type { Mock, Mocked } from 'vitest';
 import { QrCode } from '../../domain/qr/qr-code';
 import { QrImageGenerator, QrOptions } from '../../domain/qr/qr-image-generator';
 import { QrRepository } from '../../domain/qr/qr.repository';
@@ -8,24 +9,24 @@ import { encodeEmail, encodeVcard, encodeWifi } from './qr-content.encoder';
 const mockPng = Buffer.from('png');
 const mockSvg = '<svg/>';
 
-const makeGenerator = (): jest.Mocked<QrImageGenerator> =>
-  ({ generate: jest.fn().mockResolvedValue({ png: mockPng, svg: mockSvg }) });
+const makeGenerator = (): Mocked<QrImageGenerator> =>
+  ({ generate: vi.fn().mockResolvedValue({ png: mockPng, svg: mockSvg }) });
 
-const makeStorage = (): jest.Mocked<QrStoragePort> =>
+const makeStorage = (): Mocked<QrStoragePort> =>
   ({
-    uploadPng: jest.fn().mockResolvedValue(undefined),
-    uploadSvg: jest.fn().mockResolvedValue(undefined),
-    uploadLogo: jest.fn().mockResolvedValue(undefined),
-    streamPng: jest.fn(),
-    streamSvg: jest.fn(),
-    streamLogo: jest.fn(),
-    exists: jest.fn(),
-    delete: jest.fn().mockResolvedValue(undefined),
+    uploadPng: vi.fn().mockResolvedValue(undefined),
+    uploadSvg: vi.fn().mockResolvedValue(undefined),
+    uploadLogo: vi.fn().mockResolvedValue(undefined),
+    streamPng: vi.fn(),
+    streamSvg: vi.fn(),
+    streamLogo: vi.fn(),
+    exists: vi.fn(),
+    delete: vi.fn().mockResolvedValue(undefined),
   });
 
-const makeRepo = (): jest.Mocked<QrRepository> =>
-  ({ findById: jest.fn(), findByIdAndUserId: jest.fn(), findAllByUserId: jest.fn(),
-  findAllLinksByUserId: jest.fn(), save: jest.fn().mockResolvedValue(undefined), deleteById: jest.fn(), incrementScanCount: jest.fn().mockResolvedValue(undefined) });
+const makeRepo = (): Mocked<QrRepository> =>
+  ({ findById: vi.fn(), findByIdAndUserId: vi.fn(), findAllByUserId: vi.fn(),
+  findAllLinksByUserId: vi.fn(), save: vi.fn().mockResolvedValue(undefined), deleteById: vi.fn(), incrementScanCount: vi.fn().mockResolvedValue(undefined) });
 
 const baseCmd: GenerateQrCommand = {
   userId: 'user-1',
@@ -53,7 +54,7 @@ describe('GenerateQrUseCase', () => {
     const generator = makeGenerator();
     const uc = new GenerateQrUseCase(generator, makeStorage(), makeRepo());
     const result = await uc.execute({ ...baseCmd, contentType: 'url', content: 'https://target.com' });
-    const callArg = ((generator.generate as jest.Mock).mock.calls[0] as unknown[])[0] as string;
+    const callArg = ((generator.generate as Mock).mock.calls[0] as unknown[])[0] as string;
     expect(callArg).toMatch(/^https:\/\/qrcode\.example\.com\/r\/.+$/);
     expect(callArg).not.toContain('target.com');
     expect(result.qr.content).toBe('https://target.com');
@@ -90,7 +91,7 @@ describe('GenerateQrUseCase', () => {
   // Test 8 — TPP: conditional
   it('should propagate error and not call repository.save if uploadPng throws', async () => {
     const storage = makeStorage();
-    (storage.uploadPng as jest.Mock).mockRejectedValue(new Error('minio error'));
+    (storage.uploadPng as Mock).mockRejectedValue(new Error('minio error'));
     const repo = makeRepo();
     const uc = new GenerateQrUseCase(makeGenerator(), storage, repo);
     await expect(uc.execute(baseCmd)).rejects.toThrow('minio error');
@@ -100,7 +101,7 @@ describe('GenerateQrUseCase', () => {
   // Test 9 — TPP: conditional
   it('should propagate error and not call repository.save if uploadSvg throws', async () => {
     const storage = makeStorage();
-    (storage.uploadSvg as jest.Mock).mockRejectedValue(new Error('svg upload error'));
+    (storage.uploadSvg as Mock).mockRejectedValue(new Error('svg upload error'));
     const repo = makeRepo();
     const uc = new GenerateQrUseCase(makeGenerator(), storage, repo);
     await expect(uc.execute(baseCmd)).rejects.toThrow('svg upload error');

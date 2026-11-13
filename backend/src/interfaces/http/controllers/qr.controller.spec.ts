@@ -1,3 +1,4 @@
+import type { Mock, Mocked } from 'vitest';
 import { ForbiddenException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
@@ -36,35 +37,35 @@ const makeController = async () => {
   const module = await Test.createTestingModule({
     controllers: [QrController],
     providers: [
-      { provide: GenerateQrUseCase, useValue: { execute: jest.fn().mockResolvedValue({ qr: mockQr }) } },
-      { provide: AttachLogoUseCase, useValue: { execute: jest.fn().mockResolvedValue({ qr: mockQr }) } },
-      { provide: EditTargetUrlUseCase, useValue: { execute: jest.fn().mockResolvedValue({ qr: mockQr }) } },
-      { provide: ListQrUseCase, useValue: { execute: jest.fn().mockResolvedValue({ items: [mockQr], total: 1, page: 1, limit: 20 }) } },
-      { provide: DeleteQrUseCase, useValue: { execute: jest.fn().mockResolvedValue(undefined) } },
-      { provide: QrRepository, useValue: { findById: jest.fn().mockResolvedValue(mockQr), findByIdAndUserId: jest.fn().mockResolvedValue(mockQr), findAllByUserId: jest.fn(), findAllLinksByUserId: jest.fn() } },
-      { provide: QrStoragePort, useValue: { streamPng: jest.fn().mockResolvedValue(Readable.from(['png'])), streamSvg: jest.fn().mockResolvedValue(Readable.from(['svg'])), streamLogo: jest.fn().mockResolvedValue(Readable.from(['logo'])), exists: jest.fn().mockResolvedValue(true) } },
-      { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('https://qrcode.example.com'), get: jest.fn() } },
-      { provide: 'SetExpirationUseCase', useValue: { execute: jest.fn().mockResolvedValue({ entity: mockQr }) } },
-      { provide: ShareQrUseCase, useValue: { execute: jest.fn().mockResolvedValue({ share: mockShare }) } },
-      { provide: UnshareQrUseCase, useValue: { execute: jest.fn().mockResolvedValue(undefined) } },
-      { provide: ListSharedWithMeUseCase, useValue: { execute: jest.fn().mockResolvedValue({ items: [] }) } },
-      { provide: QrShareRepository, useValue: { findByQrIds: jest.fn().mockResolvedValue([]) } },
-      { provide: UserRepository, useValue: { findAll: jest.fn().mockResolvedValue([mockRecipient]), findById: jest.fn() } },
+      { provide: GenerateQrUseCase, useValue: { execute: vi.fn().mockResolvedValue({ qr: mockQr }) } },
+      { provide: AttachLogoUseCase, useValue: { execute: vi.fn().mockResolvedValue({ qr: mockQr }) } },
+      { provide: EditTargetUrlUseCase, useValue: { execute: vi.fn().mockResolvedValue({ qr: mockQr }) } },
+      { provide: ListQrUseCase, useValue: { execute: vi.fn().mockResolvedValue({ items: [mockQr], total: 1, page: 1, limit: 20 }) } },
+      { provide: DeleteQrUseCase, useValue: { execute: vi.fn().mockResolvedValue(undefined) } },
+      { provide: QrRepository, useValue: { findById: vi.fn().mockResolvedValue(mockQr), findByIdAndUserId: vi.fn().mockResolvedValue(mockQr), findAllByUserId: vi.fn(), findAllLinksByUserId: vi.fn() } },
+      { provide: QrStoragePort, useValue: { streamPng: vi.fn().mockResolvedValue(Readable.from(['png'])), streamSvg: vi.fn().mockResolvedValue(Readable.from(['svg'])), streamLogo: vi.fn().mockResolvedValue(Readable.from(['logo'])), exists: vi.fn().mockResolvedValue(true) } },
+      { provide: ConfigService, useValue: { getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com'), get: vi.fn() } },
+      { provide: 'SetExpirationUseCase', useValue: { execute: vi.fn().mockResolvedValue({ entity: mockQr }) } },
+      { provide: ShareQrUseCase, useValue: { execute: vi.fn().mockResolvedValue({ share: mockShare }) } },
+      { provide: UnshareQrUseCase, useValue: { execute: vi.fn().mockResolvedValue(undefined) } },
+      { provide: ListSharedWithMeUseCase, useValue: { execute: vi.fn().mockResolvedValue({ items: [] }) } },
+      { provide: QrShareRepository, useValue: { findByQrIds: vi.fn().mockResolvedValue([]) } },
+      { provide: UserRepository, useValue: { findAll: vi.fn().mockResolvedValue([mockRecipient]), findById: vi.fn() } },
     ],
   }).compile();
   return {
     controller: module.get(QrController),
-    useCase: module.get<jest.Mocked<GenerateQrUseCase>>(GenerateQrUseCase),
-    editUseCase: module.get<jest.Mocked<EditTargetUrlUseCase>>(EditTargetUrlUseCase),
-    listUseCase: module.get<jest.Mocked<ListQrUseCase>>(ListQrUseCase),
-    deleteUseCase: module.get<jest.Mocked<DeleteQrUseCase>>(DeleteQrUseCase),
-    repo: module.get<jest.Mocked<QrRepository>>(QrRepository),
-    storage: module.get<jest.Mocked<QrStoragePort>>(QrStoragePort),
-    shareUseCase: module.get<jest.Mocked<ShareQrUseCase>>(ShareQrUseCase),
-    unshareUseCase: module.get<jest.Mocked<UnshareQrUseCase>>(UnshareQrUseCase),
-    listSharedWithMeUseCase: module.get<jest.Mocked<ListSharedWithMeUseCase>>(ListSharedWithMeUseCase),
-    shareRepo: module.get<jest.Mocked<QrShareRepository>>(QrShareRepository),
-    userRepo: module.get<jest.Mocked<UserRepository>>(UserRepository),
+    useCase: module.get<Mocked<GenerateQrUseCase>>(GenerateQrUseCase),
+    editUseCase: module.get<Mocked<EditTargetUrlUseCase>>(EditTargetUrlUseCase),
+    listUseCase: module.get<Mocked<ListQrUseCase>>(ListQrUseCase),
+    deleteUseCase: module.get<Mocked<DeleteQrUseCase>>(DeleteQrUseCase),
+    repo: module.get<Mocked<QrRepository>>(QrRepository),
+    storage: module.get<Mocked<QrStoragePort>>(QrStoragePort),
+    shareUseCase: module.get<Mocked<ShareQrUseCase>>(ShareQrUseCase),
+    unshareUseCase: module.get<Mocked<UnshareQrUseCase>>(UnshareQrUseCase),
+    listSharedWithMeUseCase: module.get<Mocked<ListSharedWithMeUseCase>>(ListSharedWithMeUseCase),
+    shareRepo: module.get<Mocked<QrShareRepository>>(QrShareRepository),
+    userRepo: module.get<Mocked<UserRepository>>(UserRepository),
   };
 };
 
@@ -97,7 +98,7 @@ describe('QrController', () => {
   // Test 36 — TPP: conditional
   it('should throw NotFoundException on GET /api/qr/:id when QR not found or not owned', async () => {
     const { controller, repo } = await makeController();
-    (repo.findByIdAndUserId as jest.Mock).mockResolvedValue(null);
+    (repo.findByIdAndUserId as Mock).mockResolvedValue(null);
     await expect(controller.findOne('qr-999', mockUser)).rejects.toThrow(NotFoundException);
   });
 
@@ -118,13 +119,13 @@ describe('QrController', () => {
   // Test 39 — TPP: conditional
   it('should throw NotFoundException on GET /api/qr/:id/png when exists() returns false', async () => {
     const { controller, storage } = await makeController();
-    (storage.exists as jest.Mock).mockResolvedValue(false);
+    (storage.exists as Mock).mockResolvedValue(false);
     await expect(controller.streamPng('qr-1')).rejects.toThrow(NotFoundException);
   });
 
   it('should throw NotFoundException on GET /api/qr/:id/png when QR not in DB', async () => {
     const { controller, repo } = await makeController();
-    (repo.findById as jest.Mock).mockResolvedValue(null);
+    (repo.findById as Mock).mockResolvedValue(null);
     await expect(controller.streamPng('nonexistent')).rejects.toThrow(NotFoundException);
   });
 
@@ -148,7 +149,7 @@ describe('QrController', () => {
   // Test 23 — TPP: conditional
   it('should propagate NotFoundException from EditTargetUrlUseCase as 404 on PATCH', async () => {
     const { controller, editUseCase } = await makeController();
-    (editUseCase.execute as jest.Mock).mockRejectedValue(new NotFoundException());
+    (editUseCase.execute as Mock).mockRejectedValue(new NotFoundException());
     const dto = Object.assign(new EditTargetUrlDto(), { content: 'https://x.com' });
     await expect(controller.update('missing', dto, mockUser)).rejects.toThrow(NotFoundException);
   });
@@ -156,7 +157,7 @@ describe('QrController', () => {
   // Test 24 — TPP: conditional
   it('should propagate UnprocessableEntityException from EditTargetUrlUseCase as 422 on PATCH', async () => {
     const { controller, editUseCase } = await makeController();
-    (editUseCase.execute as jest.Mock).mockRejectedValue(new UnprocessableEntityException());
+    (editUseCase.execute as Mock).mockRejectedValue(new UnprocessableEntityException());
     const dto = Object.assign(new EditTargetUrlDto(), { content: 'https://x.com' });
     await expect(controller.update('qr-text', dto, mockUser)).rejects.toThrow(UnprocessableEntityException);
   });
@@ -178,7 +179,7 @@ describe('QrController', () => {
       size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
     });
     const { controller, listUseCase } = await makeController();
-    (listUseCase.execute as jest.Mock).mockResolvedValue({ items: [longQr], total: 1, page: 1, limit: 20 });
+    (listUseCase.execute as Mock).mockResolvedValue({ items: [longQr], total: 1, page: 1, limit: 20 });
     const dto = new ListQrDto();
     const result = await controller.list(dto, mockUser);
     expect(result.items[0].content).toHaveLength(81); // 80 chars + '…'
@@ -203,7 +204,7 @@ describe('QrController', () => {
   // Test 29 — TPP: conditional
   it('should propagate NotFoundException from DeleteQrUseCase as 404', async () => {
     const { controller, deleteUseCase } = await makeController();
-    (deleteUseCase.execute as jest.Mock).mockRejectedValue(new NotFoundException());
+    (deleteUseCase.execute as Mock).mockRejectedValue(new NotFoundException());
     await expect(controller.remove('qr-999', mockUser)).rejects.toThrow(NotFoundException);
   });
 
@@ -267,31 +268,31 @@ describe('QrController', () => {
   // Test 2 (public-qr-page) — TPP: conditional
   it('should throw NotFoundException on GET /api/qr/:id/meta when QR not found', async () => {
     const { controller, repo } = await makeController();
-    (repo.findById as jest.Mock).mockResolvedValue(null);
+    (repo.findById as Mock).mockResolvedValue(null);
     await expect(controller.getMeta('unknown')).rejects.toThrow(NotFoundException);
   });
 
   // link-expiration: Test 30 — TPP: constant
   it('PATCH :id/expiration should call SetExpirationUseCase with Date parsed from dto.expiresAt', async () => {
     const expiry = new Date('2026-08-25T23:59:59.000Z');
-    const setExpirationUseCase = { execute: jest.fn().mockResolvedValue({ entity: mockQr.withExpiration(expiry) }) };
+    const setExpirationUseCase = { execute: vi.fn().mockResolvedValue({ entity: mockQr.withExpiration(expiry) }) };
     const module = await Test.createTestingModule({
       controllers: [QrController],
       providers: [
-        { provide: GenerateQrUseCase, useValue: { execute: jest.fn() } },
-        { provide: AttachLogoUseCase, useValue: { execute: jest.fn() } },
-        { provide: EditTargetUrlUseCase, useValue: { execute: jest.fn() } },
-        { provide: ListQrUseCase, useValue: { execute: jest.fn() } },
-        { provide: DeleteQrUseCase, useValue: { execute: jest.fn() } },
-        { provide: QrRepository, useValue: { findById: jest.fn(), findByIdAndUserId: jest.fn(), findAllByUserId: jest.fn(), findAllLinksByUserId: jest.fn() } },
+        { provide: GenerateQrUseCase, useValue: { execute: vi.fn() } },
+        { provide: AttachLogoUseCase, useValue: { execute: vi.fn() } },
+        { provide: EditTargetUrlUseCase, useValue: { execute: vi.fn() } },
+        { provide: ListQrUseCase, useValue: { execute: vi.fn() } },
+        { provide: DeleteQrUseCase, useValue: { execute: vi.fn() } },
+        { provide: QrRepository, useValue: { findById: vi.fn(), findByIdAndUserId: vi.fn(), findAllByUserId: vi.fn(), findAllLinksByUserId: vi.fn() } },
         { provide: QrStoragePort, useValue: {} },
-        { provide: ConfigService, useValue: { getOrThrow: jest.fn(), get: jest.fn() } },
+        { provide: ConfigService, useValue: { getOrThrow: vi.fn(), get: vi.fn() } },
         { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
-        { provide: ShareQrUseCase, useValue: { execute: jest.fn() } },
-        { provide: UnshareQrUseCase, useValue: { execute: jest.fn() } },
-        { provide: ListSharedWithMeUseCase, useValue: { execute: jest.fn() } },
-        { provide: QrShareRepository, useValue: { findByQrIds: jest.fn().mockResolvedValue([]) } },
-        { provide: UserRepository, useValue: { findAll: jest.fn().mockResolvedValue([]) } },
+        { provide: ShareQrUseCase, useValue: { execute: vi.fn() } },
+        { provide: UnshareQrUseCase, useValue: { execute: vi.fn() } },
+        { provide: ListSharedWithMeUseCase, useValue: { execute: vi.fn() } },
+        { provide: QrShareRepository, useValue: { findByQrIds: vi.fn().mockResolvedValue([]) } },
+        { provide: UserRepository, useValue: { findAll: vi.fn().mockResolvedValue([]) } },
       ],
     }).compile();
     const controller = module.get(QrController);
@@ -305,24 +306,24 @@ describe('QrController', () => {
 
   // link-expiration: Test 31 — TPP: conditional
   it('PATCH :id/expiration with null should call SetExpirationUseCase with null', async () => {
-    const setExpirationUseCase = { execute: jest.fn().mockResolvedValue({ entity: mockQr }) };
+    const setExpirationUseCase = { execute: vi.fn().mockResolvedValue({ entity: mockQr }) };
     const module = await Test.createTestingModule({
       controllers: [QrController],
       providers: [
-        { provide: GenerateQrUseCase, useValue: { execute: jest.fn() } },
-        { provide: AttachLogoUseCase, useValue: { execute: jest.fn() } },
-        { provide: EditTargetUrlUseCase, useValue: { execute: jest.fn() } },
-        { provide: ListQrUseCase, useValue: { execute: jest.fn() } },
-        { provide: DeleteQrUseCase, useValue: { execute: jest.fn() } },
-        { provide: QrRepository, useValue: { findById: jest.fn(), findByIdAndUserId: jest.fn(), findAllByUserId: jest.fn(), findAllLinksByUserId: jest.fn() } },
+        { provide: GenerateQrUseCase, useValue: { execute: vi.fn() } },
+        { provide: AttachLogoUseCase, useValue: { execute: vi.fn() } },
+        { provide: EditTargetUrlUseCase, useValue: { execute: vi.fn() } },
+        { provide: ListQrUseCase, useValue: { execute: vi.fn() } },
+        { provide: DeleteQrUseCase, useValue: { execute: vi.fn() } },
+        { provide: QrRepository, useValue: { findById: vi.fn(), findByIdAndUserId: vi.fn(), findAllByUserId: vi.fn(), findAllLinksByUserId: vi.fn() } },
         { provide: QrStoragePort, useValue: {} },
-        { provide: ConfigService, useValue: { getOrThrow: jest.fn(), get: jest.fn() } },
+        { provide: ConfigService, useValue: { getOrThrow: vi.fn(), get: vi.fn() } },
         { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
-        { provide: ShareQrUseCase, useValue: { execute: jest.fn() } },
-        { provide: UnshareQrUseCase, useValue: { execute: jest.fn() } },
-        { provide: ListSharedWithMeUseCase, useValue: { execute: jest.fn() } },
-        { provide: QrShareRepository, useValue: { findByQrIds: jest.fn().mockResolvedValue([]) } },
-        { provide: UserRepository, useValue: { findAll: jest.fn().mockResolvedValue([]) } },
+        { provide: ShareQrUseCase, useValue: { execute: vi.fn() } },
+        { provide: UnshareQrUseCase, useValue: { execute: vi.fn() } },
+        { provide: ListSharedWithMeUseCase, useValue: { execute: vi.fn() } },
+        { provide: QrShareRepository, useValue: { findByQrIds: vi.fn().mockResolvedValue([]) } },
+        { provide: UserRepository, useValue: { findAll: vi.fn().mockResolvedValue([]) } },
       ],
     }).compile();
     const controller = module.get(QrController);

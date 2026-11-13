@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { Client } from 'minio';
 import { MinioClientService } from '../minio/minio-client.service';
@@ -8,18 +9,18 @@ const ASSETS_PATH = 'qrcode-assets/prod';
 const makeConfig = (): ConfigService =>
   ({ getOrThrow: () => ASSETS_PATH }) as unknown as ConfigService;
 
-const makeMinioService = (overrides: Partial<Record<string, jest.Mock>> = {}): MinioClientService => {
+const makeMinioService = (overrides: Partial<Record<string, Mock>> = {}): MinioClientService => {
   const client = {
-    putObject: jest.fn().mockResolvedValue(undefined),
-    getObject: jest.fn().mockResolvedValue({ pipe: jest.fn() }),
-    statObject: jest.fn().mockResolvedValue({}),
-    removeObject: jest.fn().mockResolvedValue(undefined),
+    putObject: vi.fn().mockResolvedValue(undefined),
+    getObject: vi.fn().mockResolvedValue({ pipe: vi.fn() }),
+    statObject: vi.fn().mockResolvedValue({}),
+    removeObject: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
   return { client: client as unknown as Client, bucket: 'test-bucket' } as MinioClientService;
 };
 
-const makeStorage = (overrides: Partial<Record<string, jest.Mock>> = {}) =>
+const makeStorage = (overrides: Partial<Record<string, Mock>> = {}) =>
   new MinioQrStorage(makeMinioService(overrides), makeConfig());
 
 describe('MinioQrStorage', () => {
@@ -74,7 +75,7 @@ describe('MinioQrStorage', () => {
   // Test 17 — TPP: conditional
   it('should return false from exists() when statObject throws a NotFound-like error', async () => {
     const notFoundErr = Object.assign(new Error('Not Found'), { code: 'NotFound' });
-    const storage = makeStorage({ statObject: jest.fn().mockRejectedValue(notFoundErr) });
+    const storage = makeStorage({ statObject: vi.fn().mockRejectedValue(notFoundErr) });
     expect(await storage.exists('abc-123')).toBe(false);
   });
 
@@ -89,13 +90,13 @@ describe('MinioQrStorage', () => {
 
   // Test 13 (history) — TPP: conditional
   it('delete() should not throw when one removal fails', async () => {
-    const storage = makeStorage({ removeObject: jest.fn().mockRejectedValueOnce(new Error('gone')).mockResolvedValue(undefined) });
+    const storage = makeStorage({ removeObject: vi.fn().mockRejectedValueOnce(new Error('gone')).mockResolvedValue(undefined) });
     await expect(storage.delete('abc-123')).resolves.toBeUndefined();
   });
 
   // Test 14 (history) — TPP: conditional
   it('delete() should not throw when both removals fail', async () => {
-    const storage = makeStorage({ removeObject: jest.fn().mockRejectedValue(new Error('gone')) });
+    const storage = makeStorage({ removeObject: vi.fn().mockRejectedValue(new Error('gone')) });
     await expect(storage.delete('abc-123')).resolves.toBeUndefined();
   });
 

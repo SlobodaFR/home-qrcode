@@ -8,7 +8,7 @@ const makeConfig = (overrides: Record<string, string> = {}) => {
     AUTH_CLIENT_SECRET: 'client-secret',
   };
   return {
-    getOrThrow: jest.fn((key: string) => overrides[key] ?? defaults[key]),
+    getOrThrow: vi.fn((key: string) => overrides[key] ?? defaults[key]),
   } as unknown as ConfigService;
 };
 
@@ -24,7 +24,7 @@ describe('HttpOAuthClient', () => {
 
   // Test 12 — TPP: conditional
   it('should throw when the token endpoint returns a non-2xx response', async () => {
-    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 400 });
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 400 });
     const client = new HttpOAuthClient(makeConfig());
     await expect(client.exchangeCode('bad-code', 'https://app/callback')).rejects.toThrow();
   });

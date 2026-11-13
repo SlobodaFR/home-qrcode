@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { QrShare } from '../../domain/qr/qr-share';
 import { QrShareRepository } from '../../domain/qr/qr-share.repository';
@@ -6,14 +7,14 @@ import { UnshareQrUseCase } from './unshare-qr.use-case';
 const makeShare = (overrides: Partial<{ qrId: string; ownerId: string }> = {}) =>
   QrShare.create({ id: 'sh-1', qrId: overrides.qrId ?? 'qr-1', ownerId: overrides.ownerId ?? 'owner-1', recipientId: 'u-2', createdAt: new Date() });
 
-const makeRepo = (share: QrShare | null): jest.Mocked<QrShareRepository> => ({
-  save: jest.fn(),
-  findById: jest.fn().mockResolvedValue(share),
-  findByQrAndRecipient: jest.fn(),
-  findByQrIds: jest.fn(),
-  findWithQrByRecipientId: jest.fn(),
-  deleteById: jest.fn().mockResolvedValue(undefined),
-  deleteByQrId: jest.fn(),
+const makeRepo = (share: QrShare | null): Mocked<QrShareRepository> => ({
+  save: vi.fn(),
+  findById: vi.fn().mockResolvedValue(share),
+  findByQrAndRecipient: vi.fn(),
+  findByQrIds: vi.fn(),
+  findWithQrByRecipientId: vi.fn(),
+  deleteById: vi.fn().mockResolvedValue(undefined),
+  deleteByQrId: vi.fn(),
 });
 
 describe('UnshareQrUseCase', () => {

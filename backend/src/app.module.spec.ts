@@ -3,11 +3,11 @@ import { QrCode } from './domain/qr/qr-code';
 import { QrRepository } from './domain/qr/qr.repository';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import * as cookieParser from 'cookie-parser';
-import * as express from 'express';
+import cookieParser from 'cookie-parser';
+import express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './app.module';
 
 const DIST_PATH = path.join(__dirname, '..', '..', 'frontend', 'dist');

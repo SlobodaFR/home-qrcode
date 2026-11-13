@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { QrCode } from '../../domain/qr/qr-code';
 import { QrRepository } from '../../domain/qr/qr.repository';
@@ -9,14 +10,14 @@ const makeLink = (source: 'qr' | 'shortlink' | null = 'shortlink') =>
     source, size: 0, fgColor: '', bgColor: '', errorCorrection: 'M', createdAt: new Date(),
   });
 
-const makeRepo = (link: QrCode | null = makeLink()): jest.Mocked<QrRepository> => ({
-  findById: jest.fn(),
-  findByIdAndUserId: jest.fn().mockResolvedValue(link),
-  findAllByUserId: jest.fn(),
-  findAllLinksByUserId: jest.fn(),
-  save: jest.fn(),
-  deleteById: jest.fn().mockResolvedValue(true),
-  incrementScanCount: jest.fn(),
+const makeRepo = (link: QrCode | null = makeLink()): Mocked<QrRepository> => ({
+  findById: vi.fn(),
+  findByIdAndUserId: vi.fn().mockResolvedValue(link),
+  findAllByUserId: vi.fn(),
+  findAllLinksByUserId: vi.fn(),
+  save: vi.fn(),
+  deleteById: vi.fn().mockResolvedValue(true),
+  incrementScanCount: vi.fn(),
 });
 
 describe('DeleteLinkUseCase', () => {
