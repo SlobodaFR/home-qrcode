@@ -1,16 +1,17 @@
+import type { Mocked } from 'vitest';
 import { GoneException, NotFoundException } from '@nestjs/common';
 import { QrCode } from '../../domain/qr/qr-code';
 import { QrRepository } from '../../domain/qr/qr.repository';
 import { RedirectUseCase } from './redirect.use-case';
 
-const makeRepo = (qr: QrCode | null = null): jest.Mocked<QrRepository> => ({
-  findById: jest.fn().mockResolvedValue(qr),
-  findByIdAndUserId: jest.fn(),
-  findAllByUserId: jest.fn(),
-  findAllLinksByUserId: jest.fn(),
-  save: jest.fn(),
-  deleteById: jest.fn(),
-  incrementScanCount: jest.fn().mockResolvedValue(undefined),
+const makeRepo = (qr: QrCode | null = null): Mocked<QrRepository> => ({
+  findById: vi.fn().mockResolvedValue(qr),
+  findByIdAndUserId: vi.fn(),
+  findAllByUserId: vi.fn(),
+  findAllLinksByUserId: vi.fn(),
+  save: vi.fn(),
+  deleteById: vi.fn(),
+  incrementScanCount: vi.fn().mockResolvedValue(undefined),
 });
 
 const urlQr = QrCode.create({

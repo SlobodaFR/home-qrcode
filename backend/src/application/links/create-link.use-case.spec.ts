@@ -1,15 +1,16 @@
+import type { Mocked } from 'vitest';
 import { QrCode } from '../../domain/qr/qr-code';
 import { QrRepository } from '../../domain/qr/qr.repository';
 import { CreateLinkUseCase } from './create-link.use-case';
 
-const makeRepo = (): jest.Mocked<QrRepository> => ({
-  findById: jest.fn(),
-  findByIdAndUserId: jest.fn(),
-  findAllByUserId: jest.fn(),
-  findAllLinksByUserId: jest.fn(),
-  save: jest.fn().mockResolvedValue(undefined),
-  deleteById: jest.fn(),
-  incrementScanCount: jest.fn(),
+const makeRepo = (): Mocked<QrRepository> => ({
+  findById: vi.fn(),
+  findByIdAndUserId: vi.fn(),
+  findAllByUserId: vi.fn(),
+  findAllLinksByUserId: vi.fn(),
+  save: vi.fn().mockResolvedValue(undefined),
+  deleteById: vi.fn(),
+  incrementScanCount: vi.fn(),
 });
 
 describe('CreateLinkUseCase', () => {

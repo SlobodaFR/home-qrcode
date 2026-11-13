@@ -1,14 +1,15 @@
+import type { Mocked } from 'vitest';
 import { User } from '../../domain/user/user';
 import { UserRepository } from '../../domain/user/user.repository';
 import { ListUsersUseCase } from './list-users.use-case';
 
 const makeUser = (id: string) => User.create({ id, email: `${id}@x.com`, name: id, avatarUrl: '', createdAt: new Date() });
 
-const makeRepo = (users: User[]): jest.Mocked<UserRepository> => ({
-  findById: jest.fn(),
-  findByEmail: jest.fn(),
-  findAll: jest.fn().mockResolvedValue(users),
-  save: jest.fn(),
+const makeRepo = (users: User[]): Mocked<UserRepository> => ({
+  findById: vi.fn(),
+  findByEmail: vi.fn(),
+  findAll: vi.fn().mockResolvedValue(users),
+  save: vi.fn(),
 });
 
 describe('ListUsersUseCase', () => {

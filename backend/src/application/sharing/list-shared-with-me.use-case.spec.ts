@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { QrCode } from '../../domain/qr/qr-code';
 import { QrShare } from '../../domain/qr/qr-share';
 import { QrShareRepository } from '../../domain/qr/qr-share.repository';
@@ -13,21 +14,21 @@ const makeQr = (id = 'qr-1', userId = 'owner-1') => QrCode.create({
 const makeShare = (qrId = 'qr-1', ownerId = 'owner-1') =>
   QrShare.create({ id: 'sh-1', qrId, ownerId, recipientId: 'me', createdAt: new Date() });
 
-const makeShareRepo = (items: { share: QrShare; qrCode: QrCode }[]): jest.Mocked<QrShareRepository> => ({
-  save: jest.fn(),
-  findById: jest.fn(),
-  findByQrAndRecipient: jest.fn(),
-  findByQrIds: jest.fn(),
-  findWithQrByRecipientId: jest.fn().mockResolvedValue(items),
-  deleteById: jest.fn(),
-  deleteByQrId: jest.fn(),
+const makeShareRepo = (items: { share: QrShare; qrCode: QrCode }[]): Mocked<QrShareRepository> => ({
+  save: vi.fn(),
+  findById: vi.fn(),
+  findByQrAndRecipient: vi.fn(),
+  findByQrIds: vi.fn(),
+  findWithQrByRecipientId: vi.fn().mockResolvedValue(items),
+  deleteById: vi.fn(),
+  deleteByQrId: vi.fn(),
 });
 
-const makeUserRepo = (users: User[]): jest.Mocked<UserRepository> => ({
-  findById: jest.fn(),
-  findByEmail: jest.fn(),
-  findAll: jest.fn().mockResolvedValue(users),
-  save: jest.fn(),
+const makeUserRepo = (users: User[]): Mocked<UserRepository> => ({
+  findById: vi.fn(),
+  findByEmail: vi.fn(),
+  findAll: vi.fn().mockResolvedValue(users),
+  save: vi.fn(),
 });
 
 describe('ListSharedWithMeUseCase', () => {

@@ -2,16 +2,16 @@ import { ConfigService } from '@nestjs/config';
 import * as jose from 'jose';
 import { JwksAccessTokenVerifier } from './jwks-access-token-verifier';
 
-jest.mock('jose');
+vi.mock('jose');
 
-const mockJose = jest.mocked(jose);
+const mockJose = vi.mocked(jose);
 
 describe('JwksAccessTokenVerifier', () => {
   const makeConfig = () =>
-    ({ getOrThrow: jest.fn().mockReturnValue('https://auth.example.com') }) as unknown as ConfigService;
+    ({ getOrThrow: vi.fn().mockReturnValue('https://auth.example.com') }) as unknown as ConfigService;
 
   beforeEach(() => {
-    mockJose.createRemoteJWKSet.mockReturnValue(jest.fn() as unknown as ReturnType<typeof jose.createRemoteJWKSet>);
+    mockJose.createRemoteJWKSet.mockReturnValue(vi.fn() as unknown as ReturnType<typeof jose.createRemoteJWKSet>);
   });
 
   // Test 9 — TPP: constant

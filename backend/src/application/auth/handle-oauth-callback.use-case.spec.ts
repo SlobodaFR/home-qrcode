@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { OAuthClient, TokenPair, UserProfile } from '../../domain/auth/oauth-client';
 import { User } from '../../domain/user/user';
 import { UserRepository } from '../../domain/user/user.repository';
@@ -6,18 +7,18 @@ import { HandleOAuthCallbackUseCase } from './handle-oauth-callback.use-case';
 const mockTokens: TokenPair = { accessToken: 'at', refreshToken: 'rt', expiresIn: 3600 };
 const mockProfile: UserProfile = { id: 'sub-1', email: 'alice@example.com', name: 'Alice', avatarUrl: 'https://a.com/a.png' };
 
-const makeOAuthClient = (): jest.Mocked<OAuthClient> => (({
-  authorizeUrl: jest.fn(),
-  exchangeCode: jest.fn().mockResolvedValue(mockTokens),
-  refresh: jest.fn(),
-  fetchUserInfo: jest.fn().mockResolvedValue(mockProfile),
+const makeOAuthClient = (): Mocked<OAuthClient> => (({
+  authorizeUrl: vi.fn(),
+  exchangeCode: vi.fn().mockResolvedValue(mockTokens),
+  refresh: vi.fn(),
+  fetchUserInfo: vi.fn().mockResolvedValue(mockProfile),
 }));
 
-const makeUserRepo = (existing: User | null = null): jest.Mocked<UserRepository> => (({
-  findById: jest.fn().mockResolvedValue(existing),
-  findByEmail: jest.fn(),
-  findAll: jest.fn().mockResolvedValue([]),
-  save: jest.fn().mockResolvedValue(undefined),
+const makeUserRepo = (existing: User | null = null): Mocked<UserRepository> => (({
+  findById: vi.fn().mockResolvedValue(existing),
+  findByEmail: vi.fn(),
+  findAll: vi.fn().mockResolvedValue([]),
+  save: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe('HandleOAuthCallbackUseCase', () => {

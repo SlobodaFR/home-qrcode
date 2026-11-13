@@ -1,3 +1,4 @@
+import type { Mock, Mocked } from 'vitest';
 import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { QrCode } from '../../domain/qr/qr-code';
 import { QrImageGenerator } from '../../domain/qr/qr-image-generator';
@@ -27,32 +28,32 @@ function makeQr(overrides: Partial<Parameters<typeof QrCode.create>[0]> = {}): Q
   });
 }
 
-const makeGenerator = (): jest.Mocked<QrImageGenerator> =>
-  ({ generate: jest.fn().mockResolvedValue({ png: mockPng, svg: mockSvg }) });
+const makeGenerator = (): Mocked<QrImageGenerator> =>
+  ({ generate: vi.fn().mockResolvedValue({ png: mockPng, svg: mockSvg }) });
 
-const makeStorage = (): jest.Mocked<QrStoragePort> => (({
-  uploadPng: jest.fn().mockResolvedValue(undefined),
-  uploadSvg: jest.fn().mockResolvedValue(undefined),
-  uploadLogo: jest.fn().mockResolvedValue(undefined),
-  streamPng: jest.fn(),
-  streamSvg: jest.fn(),
-  streamLogo: jest.fn(),
-  exists: jest.fn(),
-  delete: jest.fn().mockResolvedValue(undefined),
+const makeStorage = (): Mocked<QrStoragePort> => (({
+  uploadPng: vi.fn().mockResolvedValue(undefined),
+  uploadSvg: vi.fn().mockResolvedValue(undefined),
+  uploadLogo: vi.fn().mockResolvedValue(undefined),
+  streamPng: vi.fn(),
+  streamSvg: vi.fn(),
+  streamLogo: vi.fn(),
+  exists: vi.fn(),
+  delete: vi.fn().mockResolvedValue(undefined),
 }));
 
-const makeRepo = (): jest.Mocked<QrRepository> => (({
-  findById: jest.fn(),
-  findByIdAndUserId: jest.fn(),
-  findAllByUserId: jest.fn(),
-  findAllLinksByUserId: jest.fn(),
-  save: jest.fn().mockResolvedValue(undefined),
-  deleteById: jest.fn(),
-  incrementScanCount: jest.fn(),
+const makeRepo = (): Mocked<QrRepository> => (({
+  findById: vi.fn(),
+  findByIdAndUserId: vi.fn(),
+  findAllByUserId: vi.fn(),
+  findAllLinksByUserId: vi.fn(),
+  save: vi.fn().mockResolvedValue(undefined),
+  deleteById: vi.fn(),
+  incrementScanCount: vi.fn(),
 }));
 
-const makeCompositor = (): jest.Mocked<LogoCompositorPort> =>
-  ({ composite: jest.fn().mockResolvedValue(Buffer.from('composited-png')) });
+const makeCompositor = (): Mocked<LogoCompositorPort> =>
+  ({ composite: vi.fn().mockResolvedValue(Buffer.from('composited-png')) });
 
 const baseCmd: AttachLogoCommand = {
   id: 'qr-1',
@@ -169,7 +170,7 @@ describe('AttachLogoUseCase', () => {
     const storage = makeStorage();
     const compositedPng = Buffer.from('composited');
     const compositor = makeCompositor();
-    (compositor.composite as jest.Mock).mockResolvedValue(compositedPng);
+    (compositor.composite as Mock).mockResolvedValue(compositedPng);
     const uc = new AttachLogoUseCase(makeGenerator(), storage, repo, compositor);
     const result = await uc.execute(baseCmd);
     expect(storage.uploadLogo).toHaveBeenCalledWith('qr-1', logoBuffer, 'image/png');

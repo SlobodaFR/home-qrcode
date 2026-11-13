@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { QrCode } from '../../domain/qr/qr-code';
 import { QrRepository } from '../../domain/qr/qr.repository';
@@ -16,31 +17,31 @@ const makeUser = (id = 'recipient-1') => User.create({
   id, email: `${id}@example.com`, name: 'Bob', avatarUrl: '', createdAt: new Date(),
 });
 
-const makeQrRepo = (qr: QrCode | null): jest.Mocked<QrRepository> => ({
-  findById: jest.fn().mockResolvedValue(qr),
-  findByIdAndUserId: jest.fn(),
-  findAllByUserId: jest.fn(),
-  findAllLinksByUserId: jest.fn(),
-  save: jest.fn(),
-  deleteById: jest.fn(),
-  incrementScanCount: jest.fn(),
+const makeQrRepo = (qr: QrCode | null): Mocked<QrRepository> => ({
+  findById: vi.fn().mockResolvedValue(qr),
+  findByIdAndUserId: vi.fn(),
+  findAllByUserId: vi.fn(),
+  findAllLinksByUserId: vi.fn(),
+  save: vi.fn(),
+  deleteById: vi.fn(),
+  incrementScanCount: vi.fn(),
 });
 
-const makeShareRepo = (existing: QrShare | null = null): jest.Mocked<QrShareRepository> => ({
-  save: jest.fn().mockResolvedValue(undefined),
-  findById: jest.fn(),
-  findByQrAndRecipient: jest.fn().mockResolvedValue(existing),
-  findByQrIds: jest.fn(),
-  findWithQrByRecipientId: jest.fn(),
-  deleteById: jest.fn(),
-  deleteByQrId: jest.fn(),
+const makeShareRepo = (existing: QrShare | null = null): Mocked<QrShareRepository> => ({
+  save: vi.fn().mockResolvedValue(undefined),
+  findById: vi.fn(),
+  findByQrAndRecipient: vi.fn().mockResolvedValue(existing),
+  findByQrIds: vi.fn(),
+  findWithQrByRecipientId: vi.fn(),
+  deleteById: vi.fn(),
+  deleteByQrId: vi.fn(),
 });
 
-const makeUserRepo = (user: User | null): jest.Mocked<UserRepository> => ({
-  findById: jest.fn().mockResolvedValue(user),
-  findByEmail: jest.fn(),
-  findAll: jest.fn(),
-  save: jest.fn(),
+const makeUserRepo = (user: User | null): Mocked<UserRepository> => ({
+  findById: vi.fn().mockResolvedValue(user),
+  findByEmail: vi.fn(),
+  findAll: vi.fn(),
+  save: vi.fn(),
 });
 
 describe('ShareQrUseCase', () => {

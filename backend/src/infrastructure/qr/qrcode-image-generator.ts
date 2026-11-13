@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import * as QRCode from 'qrcode';
+import QRCode from 'qrcode';
 import { QrImageGenerator, QrOptions } from '../../domain/qr/qr-image-generator';
 
 @Injectable()

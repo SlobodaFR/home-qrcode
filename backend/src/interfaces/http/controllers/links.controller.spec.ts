@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { QrCode } from '../../../domain/qr/qr-code';
@@ -19,20 +20,20 @@ const makeController = async () => {
   const module = await Test.createTestingModule({
     controllers: [LinksController],
     providers: [
-      { provide: CreateLinkUseCase, useValue: { execute: jest.fn().mockResolvedValue({ link: mockLink }) } },
-      { provide: ListLinksUseCase, useValue: { execute: jest.fn().mockResolvedValue({ items: [mockLink], total: 1, page: 1, limit: 20 }) } },
-      { provide: EditLinkUseCase, useValue: { execute: jest.fn().mockResolvedValue({ link: mockLink }) } },
-      { provide: DeleteLinkUseCase, useValue: { execute: jest.fn().mockResolvedValue(undefined) } },
-      { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('https://qrcode.example.com') } },
-      { provide: 'SetExpirationUseCase', useValue: { execute: jest.fn().mockResolvedValue({ entity: mockLink }) } },
+      { provide: CreateLinkUseCase, useValue: { execute: vi.fn().mockResolvedValue({ link: mockLink }) } },
+      { provide: ListLinksUseCase, useValue: { execute: vi.fn().mockResolvedValue({ items: [mockLink], total: 1, page: 1, limit: 20 }) } },
+      { provide: EditLinkUseCase, useValue: { execute: vi.fn().mockResolvedValue({ link: mockLink }) } },
+      { provide: DeleteLinkUseCase, useValue: { execute: vi.fn().mockResolvedValue(undefined) } },
+      { provide: ConfigService, useValue: { getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com') } },
+      { provide: 'SetExpirationUseCase', useValue: { execute: vi.fn().mockResolvedValue({ entity: mockLink }) } },
     ],
   }).compile();
   return {
     controller: module.get(LinksController),
-    createUc: module.get<jest.Mocked<CreateLinkUseCase>>(CreateLinkUseCase),
-    listUc: module.get<jest.Mocked<ListLinksUseCase>>(ListLinksUseCase),
-    editUc: module.get<jest.Mocked<EditLinkUseCase>>(EditLinkUseCase),
-    deleteUc: module.get<jest.Mocked<DeleteLinkUseCase>>(DeleteLinkUseCase),
+    createUc: module.get<Mocked<CreateLinkUseCase>>(CreateLinkUseCase),
+    listUc: module.get<Mocked<ListLinksUseCase>>(ListLinksUseCase),
+    editUc: module.get<Mocked<EditLinkUseCase>>(EditLinkUseCase),
+    deleteUc: module.get<Mocked<DeleteLinkUseCase>>(DeleteLinkUseCase),
   };
 };
 
@@ -81,15 +82,15 @@ describe('LinksController', () => {
   // link-expiration: Test 34 — TPP: constant
   it('PATCH :id/expiration should call SetExpirationUseCase with Date parsed from dto.expiresAt', async () => {
     const expiry = new Date('2026-08-25T23:59:59.000Z');
-    const setExpirationUseCase = { execute: jest.fn().mockResolvedValue({ entity: mockLink.withExpiration(expiry) }) };
+    const setExpirationUseCase = { execute: vi.fn().mockResolvedValue({ entity: mockLink.withExpiration(expiry) }) };
     const module = await Test.createTestingModule({
       controllers: [LinksController],
       providers: [
-        { provide: CreateLinkUseCase, useValue: { execute: jest.fn() } },
-        { provide: ListLinksUseCase, useValue: { execute: jest.fn() } },
-        { provide: EditLinkUseCase, useValue: { execute: jest.fn() } },
-        { provide: DeleteLinkUseCase, useValue: { execute: jest.fn() } },
-        { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('https://qrcode.example.com') } },
+        { provide: CreateLinkUseCase, useValue: { execute: vi.fn() } },
+        { provide: ListLinksUseCase, useValue: { execute: vi.fn() } },
+        { provide: EditLinkUseCase, useValue: { execute: vi.fn() } },
+        { provide: DeleteLinkUseCase, useValue: { execute: vi.fn() } },
+        { provide: ConfigService, useValue: { getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com') } },
         { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
       ],
     }).compile();
@@ -104,15 +105,15 @@ describe('LinksController', () => {
 
   // link-expiration: Test 35 — TPP: conditional
   it('PATCH :id/expiration with null should call SetExpirationUseCase with null', async () => {
-    const setExpirationUseCase = { execute: jest.fn().mockResolvedValue({ entity: mockLink }) };
+    const setExpirationUseCase = { execute: vi.fn().mockResolvedValue({ entity: mockLink }) };
     const module = await Test.createTestingModule({
       controllers: [LinksController],
       providers: [
-        { provide: CreateLinkUseCase, useValue: { execute: jest.fn() } },
-        { provide: ListLinksUseCase, useValue: { execute: jest.fn() } },
-        { provide: EditLinkUseCase, useValue: { execute: jest.fn() } },
-        { provide: DeleteLinkUseCase, useValue: { execute: jest.fn() } },
-        { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('https://qrcode.example.com') } },
+        { provide: CreateLinkUseCase, useValue: { execute: vi.fn() } },
+        { provide: ListLinksUseCase, useValue: { execute: vi.fn() } },
+        { provide: EditLinkUseCase, useValue: { execute: vi.fn() } },
+        { provide: DeleteLinkUseCase, useValue: { execute: vi.fn() } },
+        { provide: ConfigService, useValue: { getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com') } },
         { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
       ],
     }).compile();

@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
@@ -13,11 +14,11 @@ const validTokens: TokenPair = { accessToken: 'new-at', refreshToken: 'new-rt', 
 
 const makeCtx = (cookies: Record<string, string>, isPublic = false): ExecutionContext => {
   const req: Partial<AuthenticatedRequest> = { cookies };
-  const res: Partial<Response> = { cookie: jest.fn(), clearCookie: jest.fn() };
-  const reflector: Partial<Reflector> = { getAllAndOverride: jest.fn().mockReturnValue(isPublic) };
+  const res: Partial<Response> = { cookie: vi.fn(), clearCookie: vi.fn() };
+  const reflector: Partial<Reflector> = { getAllAndOverride: vi.fn().mockReturnValue(isPublic) };
   return {
-    getHandler: jest.fn(),
-    getClass: jest.fn(),
+    getHandler: vi.fn(),
+    getClass: vi.fn(),
     switchToHttp: () => ({
       getRequest: () => req,
       getResponse: () => res,
@@ -32,26 +33,26 @@ const makeGuard = (opts: {
   refreshThrows?: boolean;
   revokedAt?: Date | null;
 }) => {
-  const verifier: jest.Mocked<AccessTokenVerifier> = { verify: jest.fn().mockResolvedValue(opts.verifyResult ?? null) };
-  const oauthClient: jest.Mocked<OAuthClient> = {
+  const verifier: Mocked<AccessTokenVerifier> = { verify: vi.fn().mockResolvedValue(opts.verifyResult ?? null) };
+  const oauthClient: Mocked<OAuthClient> = {
     refresh: opts.refreshThrows
-      ? jest.fn().mockRejectedValue(new Error('refresh failed'))
-      : jest.fn().mockResolvedValue(opts.refreshResult ?? validTokens),
-  } as unknown as jest.Mocked<OAuthClient>;
-  const revokedRepo: jest.Mocked<RevokedSessionRepository> = { getRevokedAt: jest.fn().mockResolvedValue(opts.revokedAt ?? null) } as unknown as jest.Mocked<RevokedSessionRepository>;
-  const config = { get: jest.fn().mockReturnValue('test') } as unknown as ConfigService;
-  const reflector = { getAllAndOverride: jest.fn() } as unknown as Reflector;
+      ? vi.fn().mockRejectedValue(new Error('refresh failed'))
+      : vi.fn().mockResolvedValue(opts.refreshResult ?? validTokens),
+  } as unknown as Mocked<OAuthClient>;
+  const revokedRepo: Mocked<RevokedSessionRepository> = { getRevokedAt: vi.fn().mockResolvedValue(opts.revokedAt ?? null) } as unknown as Mocked<RevokedSessionRepository>;
+  const config = { get: vi.fn().mockReturnValue('test') } as unknown as ConfigService;
+  const reflector = { getAllAndOverride: vi.fn() } as unknown as Reflector;
   return new JwtAuthGuard(verifier, oauthClient, revokedRepo, config, reflector);
 };
 
 describe('JwtAuthGuard', () => {
   // Test 20 — TPP: constant
   it('should return true for routes decorated with @Public() without checking cookies', async () => {
-    const verifier = { verify: jest.fn() } as unknown as AccessTokenVerifier;
-    const oauthClient = { refresh: jest.fn() } as unknown as OAuthClient;
-    const revokedRepo = { getRevokedAt: jest.fn() } as unknown as RevokedSessionRepository;
-    const config = { get: jest.fn() } as unknown as ConfigService;
-    const publicReflector = { getAllAndOverride: jest.fn().mockReturnValue(true) } as unknown as Reflector;
+    const verifier = { verify: vi.fn() } as unknown as AccessTokenVerifier;
+    const oauthClient = { refresh: vi.fn() } as unknown as OAuthClient;
+    const revokedRepo = { getRevokedAt: vi.fn() } as unknown as RevokedSessionRepository;
+    const config = { get: vi.fn() } as unknown as ConfigService;
+    const publicReflector = { getAllAndOverride: vi.fn().mockReturnValue(true) } as unknown as Reflector;
     const guard = new JwtAuthGuard(verifier, oauthClient, revokedRepo, config, publicReflector);
     const ctx = makeCtx({});
     const result = await guard.canActivate(ctx);
@@ -86,7 +87,7 @@ describe('JwtAuthGuard', () => {
   it('should set new cookies and return true when access_token invalid but refresh succeeds', async () => {
     const guard = makeGuard({ verifyResult: validPayload, refreshResult: validTokens });
     // First verify call (for access token) returns null, second (for new token) returns valid
-    const verifier = (guard as unknown as { accessTokenVerifier: jest.Mocked<AccessTokenVerifier> }).accessTokenVerifier;
+    const verifier = (guard as unknown as { accessTokenVerifier: Mocked<AccessTokenVerifier> }).accessTokenVerifier;
     verifier.verify.mockResolvedValueOnce(null).mockResolvedValueOnce(validPayload);
     const ctx = makeCtx({ [ACCESS_TOKEN_COOKIE_NAME]: 'expired-token', [REFRESH_TOKEN_COOKIE_NAME]: 'valid-rt' });
     const result = await guard.canActivate(ctx);

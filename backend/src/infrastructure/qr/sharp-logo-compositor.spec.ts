@@ -1,4 +1,4 @@
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 import { SharpLogoCompositor } from './sharp-logo-compositor';
 
 async function makePng(width: number, height: number): Promise<Buffer> {

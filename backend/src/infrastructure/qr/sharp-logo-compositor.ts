@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 import { LogoCompositorPort } from '../../domain/qr/logo-compositor.port';
 
 @Injectable()

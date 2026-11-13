@@ -1,3 +1,4 @@
+import type { Mock, Mocked } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { RedirectUseCase } from '../../../application/redirect/redirect.use-case';
@@ -7,12 +8,12 @@ const makeController = async () => {
   const module = await Test.createTestingModule({
     controllers: [RedirectController],
     providers: [
-      { provide: RedirectUseCase, useValue: { execute: jest.fn().mockResolvedValue({ targetUrl: 'https://target.com' }) } },
+      { provide: RedirectUseCase, useValue: { execute: vi.fn().mockResolvedValue({ targetUrl: 'https://target.com' }) } },
     ],
   }).compile();
   return {
     controller: module.get(RedirectController),
-    useCase: module.get<jest.Mocked<RedirectUseCase>>(RedirectUseCase),
+    useCase: module.get<Mocked<RedirectUseCase>>(RedirectUseCase),
   };
 };
 
@@ -33,7 +34,7 @@ describe('RedirectController', () => {
   // Test 27 — TPP: conditional
   it('should propagate NotFoundException from use case as 404', async () => {
     const { controller, useCase } = await makeController();
-    (useCase.execute as jest.Mock).mockRejectedValue(new NotFoundException());
+    (useCase.execute as Mock).mockRejectedValue(new NotFoundException());
     await expect(controller.redirect('missing')).rejects.toThrow(NotFoundException);
   });
 });

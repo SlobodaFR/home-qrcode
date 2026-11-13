@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
@@ -11,24 +12,24 @@ import { AuthController } from './auth.controller';
 const mockTokens: TokenPair = { accessToken: 'at', refreshToken: 'rt', expiresIn: 3600 };
 const mockUser = User.create({ id: 'u1', email: 'a@b.com', name: 'Alice', avatarUrl: 'https://avatar.png', createdAt: new Date() });
 
-const makeRes = () => ({ redirect: jest.fn(), cookie: jest.fn(), clearCookie: jest.fn() }) as unknown as Response;
+const makeRes = () => ({ redirect: vi.fn(), cookie: vi.fn(), clearCookie: vi.fn() }) as unknown as Response;
 
 const makeController = async (userInDb: User | null = mockUser) => {
   const module = await Test.createTestingModule({
     controllers: [AuthController],
     providers: [
-      { provide: OAuthClient, useValue: { authorizeUrl: jest.fn().mockReturnValue('https://auth.example.com/authorize?client_id=x&redirect_uri=y') } },
-      { provide: HandleOAuthCallbackUseCase, useValue: { execute: jest.fn().mockResolvedValue({ tokens: mockTokens, user: mockUser }) } },
-      { provide: HandleSessionRevokedUseCase, useValue: { execute: jest.fn().mockResolvedValue(undefined) } },
-      { provide: ConfigService, useValue: { getOrThrow: jest.fn((k: string) => ({ FRONTEND_URL: 'https://app.example.com', AUTH_WEBHOOK_SECRET: 'secret-123' }[k] ?? '')), get: jest.fn().mockReturnValue('test') } },
-      { provide: UserRepository, useValue: { findById: jest.fn().mockResolvedValue(userInDb), findByEmail: jest.fn(), findAll: jest.fn(), save: jest.fn() } },
+      { provide: OAuthClient, useValue: { authorizeUrl: vi.fn().mockReturnValue('https://auth.example.com/authorize?client_id=x&redirect_uri=y') } },
+      { provide: HandleOAuthCallbackUseCase, useValue: { execute: vi.fn().mockResolvedValue({ tokens: mockTokens, user: mockUser }) } },
+      { provide: HandleSessionRevokedUseCase, useValue: { execute: vi.fn().mockResolvedValue(undefined) } },
+      { provide: ConfigService, useValue: { getOrThrow: vi.fn((k: string) => ({ FRONTEND_URL: 'https://app.example.com', AUTH_WEBHOOK_SECRET: 'secret-123' }[k] ?? '')), get: vi.fn().mockReturnValue('test') } },
+      { provide: UserRepository, useValue: { findById: vi.fn().mockResolvedValue(userInDb), findByEmail: vi.fn(), findAll: vi.fn(), save: vi.fn() } },
     ],
   }).compile();
   return {
     controller: module.get(AuthController),
-    oauthClient: module.get<jest.Mocked<OAuthClient>>(OAuthClient),
-    callbackUseCase: module.get<jest.Mocked<HandleOAuthCallbackUseCase>>(HandleOAuthCallbackUseCase),
-    sessionRevokedUseCase: module.get<jest.Mocked<HandleSessionRevokedUseCase>>(HandleSessionRevokedUseCase),
+    oauthClient: module.get<Mocked<OAuthClient>>(OAuthClient),
+    callbackUseCase: module.get<Mocked<HandleOAuthCallbackUseCase>>(HandleOAuthCallbackUseCase),
+    sessionRevokedUseCase: module.get<Mocked<HandleSessionRevokedUseCase>>(HandleSessionRevokedUseCase),
   };
 };
 

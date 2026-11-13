@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { QrCode } from '../../domain/qr/qr-code';
 import { QrRepository } from '../../domain/qr/qr.repository';
 import { ListQrUseCase } from './list-qr.use-case';
@@ -7,14 +8,14 @@ const qr = QrCode.create({
   size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
 });
 
-const makeRepo = (): jest.Mocked<QrRepository> => ({
-  findById: jest.fn(),
-  findByIdAndUserId: jest.fn(),
-  findAllByUserId: jest.fn().mockResolvedValue({ items: [qr], total: 1 }),
-  findAllLinksByUserId: jest.fn().mockResolvedValue({ items: [], total: 0 }),
-  save: jest.fn(),
-  deleteById: jest.fn(),
-  incrementScanCount: jest.fn(),
+const makeRepo = (): Mocked<QrRepository> => ({
+  findById: vi.fn(),
+  findByIdAndUserId: vi.fn(),
+  findAllByUserId: vi.fn().mockResolvedValue({ items: [qr], total: 1 }),
+  findAllLinksByUserId: vi.fn().mockResolvedValue({ items: [], total: 0 }),
+  save: vi.fn(),
+  deleteById: vi.fn(),
+  incrementScanCount: vi.fn(),
 });
 
 describe('ListQrUseCase', () => {

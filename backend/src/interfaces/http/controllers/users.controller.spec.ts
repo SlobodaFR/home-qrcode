@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { User } from '../../../domain/user/user';
 import { ListUsersUseCase } from '../../../application/users/list-users.use-case';
@@ -7,13 +8,13 @@ const makeUser = (id: string) => User.create({ id, email: `${id}@x.com`, name: `
 
 describe('UsersController', () => {
   let controller: UsersController;
-  let listUsers: jest.Mocked<ListUsersUseCase>;
+  let listUsers: Mocked<ListUsersUseCase>;
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       controllers: [UsersController],
       providers: [
-        { provide: ListUsersUseCase, useValue: { execute: jest.fn().mockResolvedValue({ users: [makeUser('u-1'), makeUser('u-2')] }) } },
+        { provide: ListUsersUseCase, useValue: { execute: vi.fn().mockResolvedValue({ users: [makeUser('u-1'), makeUser('u-2')] }) } },
       ],
     }).compile();
     controller = module.get(UsersController);
