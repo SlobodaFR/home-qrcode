@@ -11,7 +11,7 @@ export default tseslint.config(
   eslintConfigPrettier,
   {
     languageOptions: {
-      globals: { ...globals.node, ...globals.vitest },
+      globals: { ...globals.node },
       sourceType: 'commonjs',
       parserOptions: {
         projectService: true,
