@@ -63,6 +63,39 @@ beforeEach(() => {
 
 afterEach(() => vi.restoreAllMocks());
 
+describe('QrCard deletion', () => {
+  it('keeps the delete button disabled until the deletion resolves', async () => {
+    let resolveRemove: () => void = () => undefined;
+    const pendingRemove = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveRemove = resolve;
+        }),
+    );
+    vi.spyOn(hooks, 'useDashboard').mockReturnValue({
+      state: 'ready',
+      items: [makeQrItem()],
+      total: 1,
+      create: mockCreate,
+      remove: pendingRemove,
+      attachLogo: mockAttachLogo,
+      setExpiration: mockSetExpiration,
+      share: mockShare,
+      unshare: mockUnshare,
+    });
+    render(<DashboardPage />);
+    const button = screen.getAllByRole<HTMLButtonElement>('button', {
+      name: 'Supprimer',
+    })[0];
+
+    fireEvent.click(button);
+
+    await waitFor(() => expect(button.disabled).toBe(true));
+    resolveRemove();
+    await waitFor(() => expect(button.disabled).toBe(false));
+  });
+});
+
 describe('QrCard logo-overlay', () => {
   // Test 29 — TPP: constant
   it('should show "Ajouter un logo" button when hasLogo is false', () => {
