@@ -236,15 +236,15 @@ Then no broken image is shown (avatar falls back to initials or placeholder).
 
 ## Grill Log
 
-| Question | Resolution | Date |
-|---|---|---|
-| OQ1: `GET /api/users` — include self? | Return all users. Frontend filters self from picker. | 2026-07-20 |
-| OQ2: Domain placement for `QrShare` | `domain/qr/qr-share.ts` + `domain/qr/qr-share.repository.ts`; use cases in `application/sharing/` | 2026-07-20 |
-| OQ3: Shared-with-me pagination? | Flat array, no pagination. Household scale. | 2026-07-20 |
-| OQ4: Response shape for shared-with-me? | Full QrItem shape + `sharedBy: { id, name }`. Reuses existing mapper. | 2026-07-20 |
-| OQ5: UsersController placement? | New `UsersModule` imports `AuthModule` (which exports `UserRepository`), adds `ListUsersUseCase` + `UsersController`. | 2026-07-20 |
-| Implied: Shares in list response? | Shares embedded in `GET /api/qr` list items and `GET /api/qr/:id` response as `shares: [{shareId, recipientId, recipientName}]`. No extra round-trip for share panel. | 2026-07-20 |
-| EC6: Response ordering for error codes on POST /shares? | QR existence → 404; ownership → 403; self-share → 400; recipient existence → 404; duplicate → 409. Order prevents existence leakage to non-owners. | 2026-07-20 |
-| UI: Tab navigation? | Two tabs: "QR Codes" (default, shows create + list + shared-with-me) and "Liens courts". No 3rd tab — shared-with-me is QR content. | 2026-07-20 |
-| UI: User header — where does avatarUrl come from? | `GET /api/auth/me` enriched to return `avatarUrl` from DB (`UserRepository.findById`). `CurrentUserPayload` in JWT has no avatarUrl. AuthController.me() does DB lookup. | 2026-07-20 |
-| UI: Avatar fallback? | Initials (first letter of name) in colored circle. No broken image shown. | 2026-07-20 |
+| Question                                                | Resolution                                                                                                                                                               | Date       |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| OQ1: `GET /api/users` — include self?                   | Return all users. Frontend filters self from picker.                                                                                                                     | 2026-07-20 |
+| OQ2: Domain placement for `QrShare`                     | `domain/qr/qr-share.ts` + `domain/qr/qr-share.repository.ts`; use cases in `application/sharing/`                                                                        | 2026-07-20 |
+| OQ3: Shared-with-me pagination?                         | Flat array, no pagination. Household scale.                                                                                                                              | 2026-07-20 |
+| OQ4: Response shape for shared-with-me?                 | Full QrItem shape + `sharedBy: { id, name }`. Reuses existing mapper.                                                                                                    | 2026-07-20 |
+| OQ5: UsersController placement?                         | New `UsersModule` imports `AuthModule` (which exports `UserRepository`), adds `ListUsersUseCase` + `UsersController`.                                                    | 2026-07-20 |
+| Implied: Shares in list response?                       | Shares embedded in `GET /api/qr` list items and `GET /api/qr/:id` response as `shares: [{shareId, recipientId, recipientName}]`. No extra round-trip for share panel.    | 2026-07-20 |
+| EC6: Response ordering for error codes on POST /shares? | QR existence → 404; ownership → 403; self-share → 400; recipient existence → 404; duplicate → 409. Order prevents existence leakage to non-owners.                       | 2026-07-20 |
+| UI: Tab navigation?                                     | Two tabs: "QR Codes" (default, shows create + list + shared-with-me) and "Liens courts". No 3rd tab — shared-with-me is QR content.                                      | 2026-07-20 |
+| UI: User header — where does avatarUrl come from?       | `GET /api/auth/me` enriched to return `avatarUrl` from DB (`UserRepository.findById`). `CurrentUserPayload` in JWT has no avatarUrl. AuthController.me() does DB lookup. | 2026-07-20 |
+| UI: Avatar fallback?                                    | Initials (first letter of name) in colored circle. No broken image shown.                                                                                                | 2026-07-20 |

@@ -1,4 +1,10 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn, Unique } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryColumn,
+  Unique,
+} from 'typeorm';
 
 @Entity({ name: 'qr_shares' })
 @Unique(['qrId', 'recipientId'])

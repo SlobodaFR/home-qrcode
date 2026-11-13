@@ -14,7 +14,7 @@ describe('SetExpirationDto', () => {
     const dto = plainToInstance(SetExpirationDto, { expiresAt: 'hello' });
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
-    expect(errors.some(e => e.property === 'expiresAt')).toBe(true);
+    expect(errors.some((e) => e.property === 'expiresAt')).toBe(true);
   });
 
   // link-expiration: Test 24 — TPP: conditional
@@ -28,6 +28,6 @@ describe('SetExpirationDto', () => {
     const dto = plainToInstance(SetExpirationDto, {});
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
-    expect(errors.some(e => e.property === 'expiresAt')).toBe(true);
+    expect(errors.some((e) => e.property === 'expiresAt')).toBe(true);
   });
 });

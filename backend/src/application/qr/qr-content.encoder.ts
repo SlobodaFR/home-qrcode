@@ -18,20 +18,29 @@ export interface VcardFields {
 }
 
 function escapeWifi(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/"/g, '\\"');
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/"/g, '\\"');
 }
 
 export function encodeWifi(fields: WifiFields): string {
   const ssid = escapeWifi(fields.ssid);
-  const pass = fields.security === 'nopass' ? '' : escapeWifi(fields.password ?? '');
+  const pass =
+    fields.security === 'nopass' ? '' : escapeWifi(fields.password ?? '');
   return `WIFI:T:${fields.security};S:${ssid};P:${pass};;`;
 }
 
 export function encodeEmail(fields: EmailFields): string {
   const parts: string[] = [];
-  if (fields.subject !== undefined) parts.push(`subject=${encodeURIComponent(fields.subject)}`);
-  if (fields.body !== undefined) parts.push(`body=${encodeURIComponent(fields.body)}`);
-  return parts.length ? `MAILTO:${fields.to}?${parts.join('&')}` : `MAILTO:${fields.to}`;
+  if (fields.subject !== undefined)
+    parts.push(`subject=${encodeURIComponent(fields.subject)}`);
+  if (fields.body !== undefined)
+    parts.push(`body=${encodeURIComponent(fields.body)}`);
+  return parts.length
+    ? `MAILTO:${fields.to}?${parts.join('&')}`
+    : `MAILTO:${fields.to}`;
 }
 
 export function encodeVcard(fields: VcardFields): string {

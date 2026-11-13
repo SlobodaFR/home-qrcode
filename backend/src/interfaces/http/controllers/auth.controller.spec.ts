@@ -9,27 +9,85 @@ import { User } from '../../../domain/user/user';
 import { UserRepository } from '../../../domain/user/user.repository';
 import { AuthController } from './auth.controller';
 
-const mockTokens: TokenPair = { accessToken: 'at', refreshToken: 'rt', expiresIn: 3600 };
-const mockUser = User.create({ id: 'u1', email: 'a@b.com', name: 'Alice', avatarUrl: 'https://avatar.png', createdAt: new Date() });
+const mockTokens: TokenPair = {
+  accessToken: 'at',
+  refreshToken: 'rt',
+  expiresIn: 3600,
+};
+const mockUser = User.create({
+  id: 'u1',
+  email: 'a@b.com',
+  name: 'Alice',
+  avatarUrl: 'https://avatar.png',
+  createdAt: new Date(),
+});
 
-const makeRes = () => ({ redirect: vi.fn(), cookie: vi.fn(), clearCookie: vi.fn() }) as unknown as Response;
+const makeRes = () =>
+  ({
+    redirect: vi.fn(),
+    cookie: vi.fn(),
+    clearCookie: vi.fn(),
+  }) as unknown as Response;
 
 const makeController = async (userInDb: User | null = mockUser) => {
   const module = await Test.createTestingModule({
     controllers: [AuthController],
     providers: [
-      { provide: OAuthClient, useValue: { authorizeUrl: vi.fn().mockReturnValue('https://auth.example.com/authorize?client_id=x&redirect_uri=y') } },
-      { provide: HandleOAuthCallbackUseCase, useValue: { execute: vi.fn().mockResolvedValue({ tokens: mockTokens, user: mockUser }) } },
-      { provide: HandleSessionRevokedUseCase, useValue: { execute: vi.fn().mockResolvedValue(undefined) } },
-      { provide: ConfigService, useValue: { getOrThrow: vi.fn((k: string) => ({ FRONTEND_URL: 'https://app.example.com', AUTH_WEBHOOK_SECRET: 'secret-123' }[k] ?? '')), get: vi.fn().mockReturnValue('test') } },
-      { provide: UserRepository, useValue: { findById: vi.fn().mockResolvedValue(userInDb), findByEmail: vi.fn(), findAll: vi.fn(), save: vi.fn() } },
+      {
+        provide: OAuthClient,
+        useValue: {
+          authorizeUrl: vi
+            .fn()
+            .mockReturnValue(
+              'https://auth.example.com/authorize?client_id=x&redirect_uri=y',
+            ),
+        },
+      },
+      {
+        provide: HandleOAuthCallbackUseCase,
+        useValue: {
+          execute: vi
+            .fn()
+            .mockResolvedValue({ tokens: mockTokens, user: mockUser }),
+        },
+      },
+      {
+        provide: HandleSessionRevokedUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue(undefined) },
+      },
+      {
+        provide: ConfigService,
+        useValue: {
+          getOrThrow: vi.fn(
+            (k: string) =>
+              ({
+                FRONTEND_URL: 'https://app.example.com',
+                AUTH_WEBHOOK_SECRET: 'secret-123',
+              })[k] ?? '',
+          ),
+          get: vi.fn().mockReturnValue('test'),
+        },
+      },
+      {
+        provide: UserRepository,
+        useValue: {
+          findById: vi.fn().mockResolvedValue(userInDb),
+          findByEmail: vi.fn(),
+          findAll: vi.fn(),
+          save: vi.fn(),
+        },
+      },
     ],
   }).compile();
   return {
     controller: module.get(AuthController),
     oauthClient: module.get<Mocked<OAuthClient>>(OAuthClient),
-    callbackUseCase: module.get<Mocked<HandleOAuthCallbackUseCase>>(HandleOAuthCallbackUseCase),
-    sessionRevokedUseCase: module.get<Mocked<HandleSessionRevokedUseCase>>(HandleSessionRevokedUseCase),
+    callbackUseCase: module.get<Mocked<HandleOAuthCallbackUseCase>>(
+      HandleOAuthCallbackUseCase,
+    ),
+    sessionRevokedUseCase: module.get<Mocked<HandleSessionRevokedUseCase>>(
+      HandleSessionRevokedUseCase,
+    ),
   };
 };
 
@@ -39,8 +97,12 @@ describe('AuthController', () => {
     const { controller, oauthClient } = await makeController();
     const res = makeRes();
     controller.login(res);
-    expect(oauthClient.authorizeUrl).toHaveBeenCalledWith(expect.stringContaining('/api/auth/callback'));
-    expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('auth.example.com'));
+    expect(oauthClient.authorizeUrl).toHaveBeenCalledWith(
+      expect.stringContaining('/api/auth/callback'),
+    );
+    expect(res.redirect).toHaveBeenCalledWith(
+      expect.stringContaining('auth.example.com'),
+    );
   });
 
   // Test 27 — TPP: variable
@@ -48,8 +110,16 @@ describe('AuthController', () => {
     const { controller } = await makeController();
     const res = makeRes();
     await controller.callback('code-abc', res);
-    expect(res.cookie).toHaveBeenCalledWith('access_token', 'at', expect.any(Object));
-    expect(res.cookie).toHaveBeenCalledWith('refresh_token', 'rt', expect.any(Object));
+    expect(res.cookie).toHaveBeenCalledWith(
+      'access_token',
+      'at',
+      expect.any(Object),
+    );
+    expect(res.cookie).toHaveBeenCalledWith(
+      'refresh_token',
+      'rt',
+      expect.any(Object),
+    );
     expect(res.redirect).toHaveBeenCalledWith('https://app.example.com');
   });
 
@@ -58,7 +128,12 @@ describe('AuthController', () => {
     const { controller } = await makeController();
     const res = makeRes();
     controller.logout(res);
-    const cookieOpts = { httpOnly: true, secure: false, sameSite: 'lax', path: '/' };
+    const cookieOpts = {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
+    };
     expect(res.clearCookie).toHaveBeenCalledWith('access_token', cookieOpts);
     expect(res.clearCookie).toHaveBeenCalledWith('refresh_token', cookieOpts);
   });
@@ -73,13 +148,19 @@ describe('AuthController', () => {
   // Test 30 — TPP: conditional
   it('should throw UnauthorizedException on POST /auth/disconnect when secret is wrong', async () => {
     const { controller } = await makeController();
-    await expect(controller.disconnect({ userId: 'u1' }, 'wrong')).rejects.toThrow('Unauthorized');
+    await expect(
+      controller.disconnect({ userId: 'u1' }, 'wrong'),
+    ).rejects.toThrow('Unauthorized');
   });
 
   // T27 — TPP: variable (internal-sharing: avatarUrl from DB)
   it('me() should return id, email, name and avatarUrl fetched from UserRepository', async () => {
     const { controller } = await makeController(mockUser);
-    const result = await controller.me({ id: 'u1', email: 'a@b.com', name: 'Alice' });
+    const result = await controller.me({
+      id: 'u1',
+      email: 'a@b.com',
+      name: 'Alice',
+    });
     expect(result.id).toBe('u1');
     expect(result.name).toBe('Alice');
     expect(result.avatarUrl).toBe('https://avatar.png');
@@ -88,14 +169,22 @@ describe('AuthController', () => {
   // T28 — TPP: conditional (internal-sharing: avatarUrl fallback)
   it('me() should return avatarUrl as empty string when UserRepository.findById returns null', async () => {
     const { controller } = await makeController(null);
-    const result = await controller.me({ id: 'u1', email: 'a@b.com', name: 'Alice' });
+    const result = await controller.me({
+      id: 'u1',
+      email: 'a@b.com',
+      name: 'Alice',
+    });
     expect(result.avatarUrl).toBe('');
   });
 
   // Test 31 — TPP: constant (kept for compatibility check)
   it('should return id/email/name on GET /auth/me', async () => {
     const { controller } = await makeController();
-    const result = await controller.me({ id: 'u1', email: 'a@b.com', name: 'Alice' });
+    const result = await controller.me({
+      id: 'u1',
+      email: 'a@b.com',
+      name: 'Alice',
+    });
     expect(result.id).toBe('u1');
     expect(result.email).toBe('a@b.com');
   });

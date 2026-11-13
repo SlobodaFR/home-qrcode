@@ -6,22 +6,22 @@ Reviewed: 2026-07-20
 
 ## Spec Coverage
 
-| Criterion | Test(s) | Status |
-|---|---|---|
-| AC1 — qr_shares table schema + unique constraint + cascade | T15, T22, T23, T14 | ✅ |
-| AC2 — POST /api/qr/:id/shares (201, 401, 403, 404×2, 400, 409) | T2–T7, T30, T36 | ✅ |
-| AC3 — DELETE /api/qr/:id/shares/:shareId (204, 404, 401) | T8–T10, T31, T37 | ✅ |
-| AC4 — GET /api/users (200 array, 401) | T13, T29, T39 | ✅ |
-| AC5 — GET /api/qr/shared-with-me (200 flat, empty, 401, DESC order) | T11, T12, T20, T32, T38 | ✅ |
-| AC6 — GET /api/qr list embeds shares with recipientName | T33, T34 | ✅ |
-| AC6 — GET /api/qr/:id embeds shares with recipientName (non-empty) | T35 (empty only) | ❌ **GAP** |
-| AC7 — Cascade: shares deleted before QR | T14, T22 | ✅ |
-| AC8 — QrCard share panel (picker, submit btn, recipients, unshare btn) | T53–T56 | ✅ |
-| AC8 — User-picker excludes self (EC7) | — no test | ❌ **GAP** |
-| AC9 — Shared-with-me section (renders, hides, shared-by-name, no controls) | T59–T62 | ✅ |
-| AC10 — GET /api/auth/me returns avatarUrl (DB lookup + null fallback) | T27, T28 | ✅ |
-| AC11 — Tab navigation (tabs exist, QR default, links tab switches) | T50–T52 | ✅ |
-| AC12 — User avatar / initials / name in header | T57, T58 | ✅ |
+| Criterion                                                                  | Test(s)                 | Status     |
+| -------------------------------------------------------------------------- | ----------------------- | ---------- |
+| AC1 — qr_shares table schema + unique constraint + cascade                 | T15, T22, T23, T14      | ✅         |
+| AC2 — POST /api/qr/:id/shares (201, 401, 403, 404×2, 400, 409)             | T2–T7, T30, T36         | ✅         |
+| AC3 — DELETE /api/qr/:id/shares/:shareId (204, 404, 401)                   | T8–T10, T31, T37        | ✅         |
+| AC4 — GET /api/users (200 array, 401)                                      | T13, T29, T39           | ✅         |
+| AC5 — GET /api/qr/shared-with-me (200 flat, empty, 401, DESC order)        | T11, T12, T20, T32, T38 | ✅         |
+| AC6 — GET /api/qr list embeds shares with recipientName                    | T33, T34                | ✅         |
+| AC6 — GET /api/qr/:id embeds shares with recipientName (non-empty)         | T35 (empty only)        | ❌ **GAP** |
+| AC7 — Cascade: shares deleted before QR                                    | T14, T22                | ✅         |
+| AC8 — QrCard share panel (picker, submit btn, recipients, unshare btn)     | T53–T56                 | ✅         |
+| AC8 — User-picker excludes self (EC7)                                      | — no test               | ❌ **GAP** |
+| AC9 — Shared-with-me section (renders, hides, shared-by-name, no controls) | T59–T62                 | ✅         |
+| AC10 — GET /api/auth/me returns avatarUrl (DB lookup + null fallback)      | T27, T28                | ✅         |
+| AC11 — Tab navigation (tabs exist, QR default, links tab switches)         | T50–T52                 | ✅         |
+| AC12 — User avatar / initials / name in header                             | T57, T58                | ✅         |
 
 ---
 

@@ -93,14 +93,14 @@ E6. `GET /r/{id}` target URL is an HTTP (non-HTTPS) URL → still redirect; vali
 
 ## Open Questions
 
-*(none — all resolved)*
+_(none — all resolved)_
 
 ---
 
 ## Grill Log
 
-| Branch | Question | Resolution | Date |
-|---|---|---|---|
-| OQ1 | Scan counter: column on `qr_codes` vs. separate `scans` table? | **Column on `qr_codes`** — PRD says "compteur basique v1"; separate table adds migration cost with no v1 benefit | 2026-07-19 |
-| OQ2 | Increment timing: sync vs. async fire-and-forget? | **Async fire-and-forget** — 302 sent immediately, UPDATE runs in background; best-effort per AC6; guarantees < 100ms | 2026-07-19 |
-| OQ3 | `scanCount` in `GET /api/qr/:id` metadata? | **Yes** — AC14 already states this; additive change to `qr.controller.ts` response + `QrCode` entity | 2026-07-19 |
+| Branch | Question                                                       | Resolution                                                                                                           | Date       |
+| ------ | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------- |
+| OQ1    | Scan counter: column on `qr_codes` vs. separate `scans` table? | **Column on `qr_codes`** — PRD says "compteur basique v1"; separate table adds migration cost with no v1 benefit     | 2026-07-19 |
+| OQ2    | Increment timing: sync vs. async fire-and-forget?              | **Async fire-and-forget** — 302 sent immediately, UPDATE runs in background; best-effort per AC6; guarantees < 100ms | 2026-07-19 |
+| OQ3    | `scanCount` in `GET /api/qr/:id` metadata?                     | **Yes** — AC14 already states this; additive change to `qr.controller.ts` response + `QrCode` entity                 | 2026-07-19 |

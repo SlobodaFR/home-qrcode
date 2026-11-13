@@ -13,7 +13,9 @@ export function PublicQrPage() {
   if (state === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <span role="status" aria-label="Loading">Loading…</span>
+        <span role="status" aria-label="Loading">
+          Loading…
+        </span>
       </div>
     );
   }

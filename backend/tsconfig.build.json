@@ -8,9 +8,6 @@
     "vitest.config.mts"
   ],
   "compilerOptions": {
-    "types": [
-      "node",
-      "multer"
-    ]
+    "types": ["node", "multer"]
   }
 }

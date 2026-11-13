@@ -55,7 +55,7 @@ frontend/src/
 **`usePublicQr(id)` hook state**:
 
 ```ts
-type State = 'loading' | 'found' | 'notFound' | 'error'
+type State = 'loading' | 'found' | 'notFound' | 'error';
 ```
 
 - On mount: `fetch('/api/qr/${id}/meta')`.
@@ -66,12 +66,12 @@ type State = 'loading' | 'found' | 'notFound' | 'error'
 
 **`PublicQrPage` render tree** (states map 1:1 to AC7–AC10):
 
-| State | Renders |
-|---|---|
-| `loading` | spinner / skeleton |
-| `found` | `<img>` + Download PNG `<a>` + Download SVG `<a>` |
-| `notFound` | 404 view |
-| `error` | "QR temporarily unavailable" view |
+| State      | Renders                                           |
+| ---------- | ------------------------------------------------- |
+| `loading`  | spinner / skeleton                                |
+| `found`    | `<img>` + Download PNG `<a>` + Download SVG `<a>` |
+| `notFound` | 404 view                                          |
+| `error`    | "QR temporarily unavailable" view                 |
 
 ---
 
@@ -92,7 +92,9 @@ No new DTO needed — no request body, no response fields beyond status.
 
 ```ts
 // infrastructure/api/qr.client.ts
-export async function fetchQrMeta(id: string): Promise<{ status: 200 | 404 | 'error' }>
+export async function fetchQrMeta(
+  id: string,
+): Promise<{ status: 200 | 404 | 'error' }>;
 ```
 
 Uses `fetch`, returns a discriminated status rather than throwing — hook decides rendering.
@@ -104,7 +106,7 @@ Uses `fetch`, returns a discriminated status rather than throwing — hook decid
 export function usePublicQr(id: string): {
   state: 'loading' | 'found' | 'notFound' | 'error';
   onImageError: () => void;
-}
+};
 ```
 
 `onImageError` is passed to `<img onError={onImageError}>` — transitions `'found'` → `'error'`.
@@ -121,12 +123,12 @@ No changes. `QrRepository.findById(id)` already exists and is used by the proxy 
 
 ### New third-party libraries — **signed off**
 
-| Package | Version | Where | Why |
-|---|---|---|---|
-| `react-router-dom` | `^7.0.0` | `dependencies` | SPA routing for `/q/:id` and all future pages. Runtime — needed in browser. |
-| `@testing-library/react` | `^16.0.0` | `devDependencies` | Component + hook testing (render, renderHook, assertions). Required for TDD discipline per CLAUDE.md. |
-| `@testing-library/user-event` | `^14.0.0` | `devDependencies` | Simulates user interactions (click on download buttons). |
-| `jsdom` | `^26.0.0` | `devDependencies` | Vitest DOM environment for component tests (`environment: 'jsdom'` in vitest config). |
+| Package                       | Version   | Where             | Why                                                                                                   |
+| ----------------------------- | --------- | ----------------- | ----------------------------------------------------------------------------------------------------- |
+| `react-router-dom`            | `^7.0.0`  | `dependencies`    | SPA routing for `/q/:id` and all future pages. Runtime — needed in browser.                           |
+| `@testing-library/react`      | `^16.0.0` | `devDependencies` | Component + hook testing (render, renderHook, assertions). Required for TDD discipline per CLAUDE.md. |
+| `@testing-library/user-event` | `^14.0.0` | `devDependencies` | Simulates user interactions (click on download buttons).                                              |
+| `jsdom`                       | `^26.0.0` | `devDependencies` | Vitest DOM environment for component tests (`environment: 'jsdom'` in vitest config).                 |
 
 No new backend dependencies.
 
@@ -153,20 +155,20 @@ Rejected — violates AC12 ("404 state triggered by API response, not by checkin
 
 ## Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|
-| React Router v7 API surface unfamiliar | Low | Medium | Use `<BrowserRouter>` + `<Routes>` — stable, well-documented, no new concepts |
-| NestJS route conflict `:id` vs `:id/meta` | Low | High | Same pattern as existing `:id/png` and `:id/svg` — already proven in tests |
-| `<img>` CORS on `/api/qr/:id/png` | Low | High | Same-origin (SPA served from same NestJS instance) — no CORS issue |
-| `download` attribute on `<a>` doesn't force download for inline Content-Disposition | Low | Low | HTML `download` attribute overrides Content-Disposition in all modern browsers for same-origin |
-| Frontend vitest coverage gap | ~~Medium~~ Resolved | — | `@testing-library/react` + `jsdom` added to devDependencies. Component + hook tests covered under TDD. |
+| Risk                                                                                | Likelihood          | Impact | Mitigation                                                                                             |
+| ----------------------------------------------------------------------------------- | ------------------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| React Router v7 API surface unfamiliar                                              | Low                 | Medium | Use `<BrowserRouter>` + `<Routes>` — stable, well-documented, no new concepts                          |
+| NestJS route conflict `:id` vs `:id/meta`                                           | Low                 | High   | Same pattern as existing `:id/png` and `:id/svg` — already proven in tests                             |
+| `<img>` CORS on `/api/qr/:id/png`                                                   | Low                 | High   | Same-origin (SPA served from same NestJS instance) — no CORS issue                                     |
+| `download` attribute on `<a>` doesn't force download for inline Content-Disposition | Low                 | Low    | HTML `download` attribute overrides Content-Disposition in all modern browsers for same-origin         |
+| Frontend vitest coverage gap                                                        | ~~Medium~~ Resolved | —      | `@testing-library/react` + `jsdom` added to devDependencies. Component + hook tests covered under TDD. |
 
 ---
 
 ## Grill Log
 
-| # | Decision | Resolution | Date |
-|---|---|---|---|
-| JC1 | `<BrowserRouter>` vs `createBrowserRouter` | **`<BrowserRouter>`** — no data loading in this feature; migration is trivial when the first loader is needed. | 2026-07-19 |
-| JC2 | `fetchQrMeta` discriminated status vs throw | **Discriminated status** — 404 is a normal business state, not an exception. Explicit, no try/catch, easier to test. | 2026-07-19 |
-| Risk | `@testing-library/react` not installed | **Install now** — `@testing-library/react` + `@testing-library/user-event` + `jsdom` added as devDependencies. CLAUDE.md TDD discipline requires component tests. | 2026-07-19 |
+| #    | Decision                                    | Resolution                                                                                                                                                        | Date       |
+| ---- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| JC1  | `<BrowserRouter>` vs `createBrowserRouter`  | **`<BrowserRouter>`** — no data loading in this feature; migration is trivial when the first loader is needed.                                                    | 2026-07-19 |
+| JC2  | `fetchQrMeta` discriminated status vs throw | **Discriminated status** — 404 is a normal business state, not an exception. Explicit, no try/catch, easier to test.                                              | 2026-07-19 |
+| Risk | `@testing-library/react` not installed      | **Install now** — `@testing-library/react` + `@testing-library/user-event` + `jsdom` added as devDependencies. CLAUDE.md TDD discipline requires component tests. | 2026-07-19 |

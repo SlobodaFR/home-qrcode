@@ -17,11 +17,7 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "strict": true,
-    "types": [
-      "node",
-      "multer",
-      "vitest/globals"
-    ],
+    "types": ["node", "multer", "vitest/globals"],
     "esModuleInterop": true
   }
 }

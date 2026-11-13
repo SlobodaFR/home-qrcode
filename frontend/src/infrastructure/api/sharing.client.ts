@@ -14,7 +14,10 @@ export interface SharedQrItem {
   sharedBy: { id: string; name: string };
 }
 
-export async function shareQr(qrId: string, recipientId: string): Promise<ShareItem> {
+export async function shareQr(
+  qrId: string,
+  recipientId: string,
+): Promise<ShareItem> {
   const res = await fetch(`/api/qr/${qrId}/shares`, {
     method: 'POST',
     credentials: 'include',
@@ -26,7 +29,10 @@ export async function shareQr(qrId: string, recipientId: string): Promise<ShareI
 }
 
 export async function unshareQr(qrId: string, shareId: string): Promise<void> {
-  const res = await fetch(`/api/qr/${qrId}/shares/${shareId}`, { method: 'DELETE', credentials: 'include' });
+  const res = await fetch(`/api/qr/${qrId}/shares/${shareId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
   if (!res.ok) throw new Error(`unshareQr failed: ${res.status}`);
 }
 

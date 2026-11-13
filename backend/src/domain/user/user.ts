@@ -23,13 +23,27 @@ export class User {
     return new User(props);
   }
 
-  get id(): string { return this.props.id; }
-  get email(): string { return this.props.email; }
-  get name(): string { return this.props.name; }
-  get avatarUrl(): string { return this.props.avatarUrl; }
-  get createdAt(): Date { return this.props.createdAt; }
+  get id(): string {
+    return this.props.id;
+  }
+  get email(): string {
+    return this.props.email;
+  }
+  get name(): string {
+    return this.props.name;
+  }
+  get avatarUrl(): string {
+    return this.props.avatarUrl;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
 
-  withProfile(profile: { email: string; name: string; avatarUrl: string }): User {
+  withProfile(profile: {
+    email: string;
+    name: string;
+    avatarUrl: string;
+  }): User {
     return new User({ ...this.props, ...profile });
   }
 }

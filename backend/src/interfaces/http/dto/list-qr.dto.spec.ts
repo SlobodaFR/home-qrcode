@@ -18,18 +18,18 @@ describe('ListQrDto', () => {
   // Test 22 — TPP: conditional
   it('should fail validation for page < 1', async () => {
     const errors = await validate(make({ page: 0 }));
-    expect(errors.some(e => e.property === 'page')).toBe(true);
+    expect(errors.some((e) => e.property === 'page')).toBe(true);
   });
 
   // Test 23 — TPP: conditional
   it('should fail validation for limit = 0', async () => {
     const errors = await validate(make({ limit: 0 }));
-    expect(errors.some(e => e.property === 'limit')).toBe(true);
+    expect(errors.some((e) => e.property === 'limit')).toBe(true);
   });
 
   // Test 24 — TPP: conditional
   it('should fail validation for limit > 100', async () => {
     const errors = await validate(make({ limit: 101 }));
-    expect(errors.some(e => e.property === 'limit')).toBe(true);
+    expect(errors.some((e) => e.property === 'limit')).toBe(true);
   });
 });

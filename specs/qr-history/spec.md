@@ -94,17 +94,17 @@ E6. QR code with content of 81+ chars → truncated to 80 chars + `…`.
 
 ## Open Questions
 
-*(none — all resolved)*
+_(none — all resolved)_
 
 ---
 
 ## Grill Log
 
-| Branch | Question | Resolution | Date |
-|---|---|---|---|
-| OQ1 | MinIO delete: parallel vs sequential? | **Parallel** — `Promise.all([delete png, delete svg])`, no ordering constraint | 2026-07-19 |
-| OQ2 | `QrStoragePort` delete method: `delete(id)` vs `deletePng/deleteSvg`? | **`delete(id)` unique** — encapsulates two-key structure; use case shouldn't know file layout | 2026-07-19 |
-| OQ3 | Content truncation: controller vs domain? | **Controller `toResponse()`** — pure presentation concern, no domain invariant | 2026-07-19 |
-| Gap | Delete operation order (MinIO vs DB)? | **MinIO first (best-effort), DB second (mandatory)** — orphaned files preferred over broken DB entries | 2026-07-19 |
-| Gap | `GET /r/{id}` after delete → 404? | **Yes, AC17 added** — `RedirectUseCase.findById` returns null → NotFoundException | 2026-07-19 |
-| Gap | `QrRepository.findByUserId` not in current interface? | New method `findAllByUserId(userId, page, limit)` needed — to be designed in /plan | 2026-07-19 |
+| Branch | Question                                                              | Resolution                                                                                             | Date       |
+| ------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------- |
+| OQ1    | MinIO delete: parallel vs sequential?                                 | **Parallel** — `Promise.all([delete png, delete svg])`, no ordering constraint                         | 2026-07-19 |
+| OQ2    | `QrStoragePort` delete method: `delete(id)` vs `deletePng/deleteSvg`? | **`delete(id)` unique** — encapsulates two-key structure; use case shouldn't know file layout          | 2026-07-19 |
+| OQ3    | Content truncation: controller vs domain?                             | **Controller `toResponse()`** — pure presentation concern, no domain invariant                         | 2026-07-19 |
+| Gap    | Delete operation order (MinIO vs DB)?                                 | **MinIO first (best-effort), DB second (mandatory)** — orphaned files preferred over broken DB entries | 2026-07-19 |
+| Gap    | `GET /r/{id}` after delete → 404?                                     | **Yes, AC17 added** — `RedirectUseCase.findById` returns null → NotFoundException                      | 2026-07-19 |
+| Gap    | `QrRepository.findByUserId` not in current interface?                 | New method `findAllByUserId(userId, page, limit)` needed — to be designed in /plan                     | 2026-07-19 |

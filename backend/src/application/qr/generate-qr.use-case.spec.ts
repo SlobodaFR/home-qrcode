@@ -1,6 +1,9 @@
 import type { Mock, Mocked } from 'vitest';
 import { QrCode } from '../../domain/qr/qr-code';
-import { QrImageGenerator, QrOptions } from '../../domain/qr/qr-image-generator';
+import {
+  QrImageGenerator,
+  QrOptions,
+} from '../../domain/qr/qr-image-generator';
 import { QrRepository } from '../../domain/qr/qr.repository';
 import { QrStoragePort } from '../../domain/qr/qr-storage.port';
 import { GenerateQrCommand, GenerateQrUseCase } from './generate-qr.use-case';
@@ -9,24 +12,30 @@ import { encodeEmail, encodeVcard, encodeWifi } from './qr-content.encoder';
 const mockPng = Buffer.from('png');
 const mockSvg = '<svg/>';
 
-const makeGenerator = (): Mocked<QrImageGenerator> =>
-  ({ generate: vi.fn().mockResolvedValue({ png: mockPng, svg: mockSvg }) });
+const makeGenerator = (): Mocked<QrImageGenerator> => ({
+  generate: vi.fn().mockResolvedValue({ png: mockPng, svg: mockSvg }),
+});
 
-const makeStorage = (): Mocked<QrStoragePort> =>
-  ({
-    uploadPng: vi.fn().mockResolvedValue(undefined),
-    uploadSvg: vi.fn().mockResolvedValue(undefined),
-    uploadLogo: vi.fn().mockResolvedValue(undefined),
-    streamPng: vi.fn(),
-    streamSvg: vi.fn(),
-    streamLogo: vi.fn(),
-    exists: vi.fn(),
-    delete: vi.fn().mockResolvedValue(undefined),
-  });
+const makeStorage = (): Mocked<QrStoragePort> => ({
+  uploadPng: vi.fn().mockResolvedValue(undefined),
+  uploadSvg: vi.fn().mockResolvedValue(undefined),
+  uploadLogo: vi.fn().mockResolvedValue(undefined),
+  streamPng: vi.fn(),
+  streamSvg: vi.fn(),
+  streamLogo: vi.fn(),
+  exists: vi.fn(),
+  delete: vi.fn().mockResolvedValue(undefined),
+});
 
-const makeRepo = (): Mocked<QrRepository> =>
-  ({ findById: vi.fn(), findByIdAndUserId: vi.fn(), findAllByUserId: vi.fn(),
-  findAllLinksByUserId: vi.fn(), save: vi.fn().mockResolvedValue(undefined), deleteById: vi.fn(), incrementScanCount: vi.fn().mockResolvedValue(undefined) });
+const makeRepo = (): Mocked<QrRepository> => ({
+  findById: vi.fn(),
+  findByIdAndUserId: vi.fn(),
+  findAllByUserId: vi.fn(),
+  findAllLinksByUserId: vi.fn(),
+  save: vi.fn().mockResolvedValue(undefined),
+  deleteById: vi.fn(),
+  incrementScanCount: vi.fn().mockResolvedValue(undefined),
+});
 
 const baseCmd: GenerateQrCommand = {
   userId: 'user-1',
@@ -45,7 +54,12 @@ describe('GenerateQrUseCase', () => {
     const generator = makeGenerator();
     const uc = new GenerateQrUseCase(generator, makeStorage(), makeRepo());
     await uc.execute(baseCmd);
-    const opts: QrOptions = { size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' };
+    const opts: QrOptions = {
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
+    };
     expect(generator.generate).toHaveBeenCalledWith('Hello world', opts);
   });
 
@@ -53,8 +67,14 @@ describe('GenerateQrUseCase', () => {
   it('should call generator with {frontendUrl}/r/{id} for contentType "url", not target URL', async () => {
     const generator = makeGenerator();
     const uc = new GenerateQrUseCase(generator, makeStorage(), makeRepo());
-    const result = await uc.execute({ ...baseCmd, contentType: 'url', content: 'https://target.com' });
-    const callArg = ((generator.generate as Mock).mock.calls[0] as unknown[])[0] as string;
+    const result = await uc.execute({
+      ...baseCmd,
+      contentType: 'url',
+      content: 'https://target.com',
+    });
+    const callArg = (
+      (generator.generate as Mock).mock.calls[0] as unknown[]
+    )[0] as string;
     expect(callArg).toMatch(/^https:\/\/qrcode\.example\.com\/r\/.+$/);
     expect(callArg).not.toContain('target.com');
     expect(result.qr.content).toBe('https://target.com');
@@ -82,7 +102,11 @@ describe('GenerateQrUseCase', () => {
 
   // Test 7 — TPP: constant
   it('should return the saved QrCode', async () => {
-    const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), makeRepo());
+    const uc = new GenerateQrUseCase(
+      makeGenerator(),
+      makeStorage(),
+      makeRepo(),
+    );
     const result = await uc.execute(baseCmd);
     expect(result.qr).toBeInstanceOf(QrCode);
     expect(result.qr.id).toMatch(/^[0-9a-f-]{36}$/);
@@ -101,7 +125,9 @@ describe('GenerateQrUseCase', () => {
   // Test 9 — TPP: conditional
   it('should propagate error and not call repository.save if uploadSvg throws', async () => {
     const storage = makeStorage();
-    (storage.uploadSvg as Mock).mockRejectedValue(new Error('svg upload error'));
+    (storage.uploadSvg as Mock).mockRejectedValue(
+      new Error('svg upload error'),
+    );
     const repo = makeRepo();
     const uc = new GenerateQrUseCase(makeGenerator(), storage, repo);
     await expect(uc.execute(baseCmd)).rejects.toThrow('svg upload error');
@@ -113,15 +139,26 @@ describe('GenerateQrUseCase', () => {
     const generator = makeGenerator();
     const repo = makeRepo();
     const wifiCmd: GenerateQrCommand = {
-      userId: 'user-1', contentType: 'wifi',
+      userId: 'user-1',
+      contentType: 'wifi',
       wifi: { ssid: 'HomeNet', security: 'WPA', password: 'pass123' },
-      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
       frontendUrl: 'https://qrcode.example.com',
     };
     const uc = new GenerateQrUseCase(generator, makeStorage(), repo);
     const result = await uc.execute(wifiCmd);
-    const expectedEncoded = encodeWifi({ ssid: 'HomeNet', security: 'WPA', password: 'pass123' });
-    expect(generator.generate).toHaveBeenCalledWith(expectedEncoded, expect.any(Object));
+    const expectedEncoded = encodeWifi({
+      ssid: 'HomeNet',
+      security: 'WPA',
+      password: 'pass123',
+    });
+    expect(generator.generate).toHaveBeenCalledWith(
+      expectedEncoded,
+      expect.any(Object),
+    );
     expect(result.qr.content).toBe('HomeNet');
     expect(result.qr.contentType).toBe('wifi');
   });
@@ -131,15 +168,25 @@ describe('GenerateQrUseCase', () => {
     const generator = makeGenerator();
     const repo = makeRepo();
     const emailCmd: GenerateQrCommand = {
-      userId: 'user-1', contentType: 'email',
+      userId: 'user-1',
+      contentType: 'email',
       emailFields: { to: 'user@example.com', subject: 'Hello' },
-      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
       frontendUrl: 'https://qrcode.example.com',
     };
     const uc = new GenerateQrUseCase(generator, makeStorage(), repo);
     const result = await uc.execute(emailCmd);
-    const expectedEncoded = encodeEmail({ to: 'user@example.com', subject: 'Hello' });
-    expect(generator.generate).toHaveBeenCalledWith(expectedEncoded, expect.any(Object));
+    const expectedEncoded = encodeEmail({
+      to: 'user@example.com',
+      subject: 'Hello',
+    });
+    expect(generator.generate).toHaveBeenCalledWith(
+      expectedEncoded,
+      expect.any(Object),
+    );
     expect(result.qr.content).toBe('user@example.com');
     expect(result.qr.contentType).toBe('email');
   });
@@ -149,31 +196,56 @@ describe('GenerateQrUseCase', () => {
     const generator = makeGenerator();
     const repo = makeRepo();
     const vcardCmd: GenerateQrCommand = {
-      userId: 'user-1', contentType: 'vcard',
+      userId: 'user-1',
+      contentType: 'vcard',
       vcard: { name: 'Jane Doe', phone: '+33612345678' },
-      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
       frontendUrl: 'https://qrcode.example.com',
     };
     const uc = new GenerateQrUseCase(generator, makeStorage(), repo);
     const result = await uc.execute(vcardCmd);
-    const expectedEncoded = encodeVcard({ name: 'Jane Doe', phone: '+33612345678' });
-    expect(generator.generate).toHaveBeenCalledWith(expectedEncoded, expect.any(Object));
+    const expectedEncoded = encodeVcard({
+      name: 'Jane Doe',
+      phone: '+33612345678',
+    });
+    expect(generator.generate).toHaveBeenCalledWith(
+      expectedEncoded,
+      expect.any(Object),
+    );
     expect(result.qr.content).toBe('Jane Doe');
     expect(result.qr.contentType).toBe('vcard');
   });
 
   // Logo-overlay: Test 7 — TPP: variable
   it('URL type: saved qr.encodedContent should equal {frontendUrl}/r/{id}', async () => {
-    const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), makeRepo());
-    const result = await uc.execute({ ...baseCmd, contentType: 'url', content: 'https://target.com' });
-    expect(result.qr.encodedContent).toMatch(/^https:\/\/qrcode\.example\.com\/r\/.+$/);
+    const uc = new GenerateQrUseCase(
+      makeGenerator(),
+      makeStorage(),
+      makeRepo(),
+    );
+    const result = await uc.execute({
+      ...baseCmd,
+      contentType: 'url',
+      content: 'https://target.com',
+    });
+    expect(result.qr.encodedContent).toMatch(
+      /^https:\/\/qrcode\.example\.com\/r\/.+$/,
+    );
   });
 
   // Logo-overlay: Test 8 — TPP: variable
   it('Wifi type: saved qr.encodedContent should equal the encoded wifi string', async () => {
-    const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), makeRepo());
+    const uc = new GenerateQrUseCase(
+      makeGenerator(),
+      makeStorage(),
+      makeRepo(),
+    );
     const result = await uc.execute({
-      ...baseCmd, contentType: 'wifi',
+      ...baseCmd,
+      contentType: 'wifi',
       wifi: { ssid: 'HomeNet', security: 'WPA', password: 'pass123' },
     });
     expect(result.qr.encodedContent).toBe('WIFI:T:WPA;S:HomeNet;P:pass123;;');
@@ -181,7 +253,11 @@ describe('GenerateQrUseCase', () => {
 
   // Logo-overlay: Test 9 — TPP: constant
   it('Any type: saved qr.hasLogo should be false', async () => {
-    const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), makeRepo());
+    const uc = new GenerateQrUseCase(
+      makeGenerator(),
+      makeStorage(),
+      makeRepo(),
+    );
     const result = await uc.execute(baseCmd);
     expect(result.qr.hasLogo).toBe(false);
   });
@@ -191,7 +267,9 @@ describe('GenerateQrUseCase', () => {
     const repo = makeRepo();
     const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), repo);
     await uc.execute(baseCmd);
-    expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ source: 'qr' }));
+    expect(repo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'qr' }),
+    );
   });
 
   // link-expiration: Test 15 — TPP: constant
@@ -199,7 +277,9 @@ describe('GenerateQrUseCase', () => {
     const repo = makeRepo();
     const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), repo);
     await uc.execute(baseCmd);
-    expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ expiresAt: null }));
+    expect(repo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ expiresAt: null }),
+    );
   });
 
   // link-expiration: Test 16 — TPP: variable
@@ -208,6 +288,8 @@ describe('GenerateQrUseCase', () => {
     const uc = new GenerateQrUseCase(makeGenerator(), makeStorage(), repo);
     const expiry = new Date('2026-08-25T23:59:59.000Z');
     await uc.execute({ ...baseCmd, expiresAt: expiry });
-    expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ expiresAt: expiry }));
+    expect(repo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ expiresAt: expiry }),
+    );
   });
 });

@@ -18,7 +18,10 @@ function ensureDistFixture(): void {
   }
   const indexPath = path.join(DIST_PATH, 'index.html');
   if (!fs.existsSync(indexPath)) {
-    fs.writeFileSync(indexPath, '<!doctype html><html><body>test-spa</body></html>');
+    fs.writeFileSync(
+      indexPath,
+      '<!doctype html><html><body>test-spa</body></html>',
+    );
   }
 }
 
@@ -45,18 +48,26 @@ describe('AppModule', () => {
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api', { exclude: ['r/:id', 'q/:id'] });
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     app.use(cookieParser());
 
     // ServeStaticModule uses NoopLoader in @nestjs/testing (HTTP adapter not ready
     // during onModuleInit at compile time). Register static middleware manually here
     // before init() so it runs before NestJS routes — same order as in production.
     app.use(express.static(DIST_PATH));
-    app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-      if (req.path.startsWith('/api')) return next();
-      if (req.path.startsWith('/r/')) return next();
-      res.sendFile(path.join(DIST_PATH, 'index.html'));
-    });
+    app.use(
+      (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        if (req.path.startsWith('/api')) return next();
+        if (req.path.startsWith('/r/')) return next();
+        res.sendFile(path.join(DIST_PATH, 'index.html'));
+      },
+    );
 
     await app.init();
   });
@@ -149,7 +160,9 @@ describe('AppModule', () => {
 
   // Test 41 — GET /api/qr/:id/png unknown id → 404 (public route)
   it('should return 404 on GET /api/qr/nonexistent/png (public route, missing QR)', async () => {
-    const res = await request(app.getHttpServer()).get('/api/qr/nonexistent/png');
+    const res = await request(app.getHttpServer()).get(
+      '/api/qr/nonexistent/png',
+    );
     expect(res.status).toBe(404);
   });
 
@@ -157,9 +170,15 @@ describe('AppModule', () => {
   it('should return 302 with Location header on GET /r/{id} for a url-type QR', async () => {
     const qrRepo = app.get(QrRepository);
     const qr = QrCode.create({
-      id: 'e2e-redirect-1', userId: 'user-e2e', contentType: 'url',
-      content: 'https://target.sloboda.fr', size: 1024, fgColor: '#000000',
-      bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+      id: 'e2e-redirect-1',
+      userId: 'user-e2e',
+      contentType: 'url',
+      content: 'https://target.sloboda.fr',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
+      createdAt: new Date(),
     });
     await qrRepo.save(qr);
     const res = await request(app.getHttpServer()).get('/r/e2e-redirect-1');
@@ -177,13 +196,18 @@ describe('AppModule', () => {
   it('should return 302 without auth cookies on GET /r/{id} (public route)', async () => {
     const qrRepo = app.get(QrRepository);
     const qr = QrCode.create({
-      id: 'e2e-redirect-2', userId: 'user-e2e', contentType: 'url',
-      content: 'https://public.sloboda.fr', size: 1024, fgColor: '#000000',
-      bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+      id: 'e2e-redirect-2',
+      userId: 'user-e2e',
+      contentType: 'url',
+      content: 'https://public.sloboda.fr',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
+      createdAt: new Date(),
     });
     await qrRepo.save(qr);
-    const res = await request(app.getHttpServer())
-      .get('/r/e2e-redirect-2');
+    const res = await request(app.getHttpServer()).get('/r/e2e-redirect-2');
     expect(res.status).toBe(302);
   });
 
@@ -211,13 +235,21 @@ describe('AppModule', () => {
   it('should return 404 on GET /r/{id} after QR is deleted', async () => {
     const qrRepo = app.get(QrRepository);
     const qr = QrCode.create({
-      id: 'e2e-delete-redirect', userId: 'user-e2e', contentType: 'url',
-      content: 'https://delete-test.sloboda.fr', size: 1024, fgColor: '#000000',
-      bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+      id: 'e2e-delete-redirect',
+      userId: 'user-e2e',
+      contentType: 'url',
+      content: 'https://delete-test.sloboda.fr',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
+      createdAt: new Date(),
     });
     await qrRepo.save(qr);
     await qrRepo.deleteById('e2e-delete-redirect', 'user-e2e');
-    const res = await request(app.getHttpServer()).get('/r/e2e-delete-redirect');
+    const res = await request(app.getHttpServer()).get(
+      '/r/e2e-delete-redirect',
+    );
     expect(res.status).toBe(404);
   });
 
@@ -225,21 +257,32 @@ describe('AppModule', () => {
   it('should return 404 on GET /api/qr/:id/png after QR is deleted', async () => {
     const qrRepo = app.get(QrRepository);
     const qr = QrCode.create({
-      id: 'e2e-delete-png', userId: 'user-e2e', contentType: 'url',
-      content: 'https://delete-png-test.sloboda.fr', size: 1024, fgColor: '#000000',
-      bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+      id: 'e2e-delete-png',
+      userId: 'user-e2e',
+      contentType: 'url',
+      content: 'https://delete-png-test.sloboda.fr',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
+      createdAt: new Date(),
     });
     await qrRepo.save(qr);
     await qrRepo.deleteById('e2e-delete-png', 'user-e2e');
-    const res = await request(app.getHttpServer()).get('/api/qr/e2e-delete-png/png');
+    const res = await request(app.getHttpServer()).get(
+      '/api/qr/e2e-delete-png/png',
+    );
     expect(res.status).toBe(404);
   });
 
   // Test 39 (extended-content-types) — POST /api/qr with valid wifi payload → 201
   it('should return 401 on POST /api/qr with wifi payload without auth (validates auth gate still applies)', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/api/qr')
-      .send({ contentType: 'wifi', ssid: 'HomeNet', security: 'WPA', password: 'secret' });
+    const res = await request(app.getHttpServer()).post('/api/qr').send({
+      contentType: 'wifi',
+      ssid: 'HomeNet',
+      security: 'WPA',
+      password: 'secret',
+    });
     expect(res.status).toBe(401);
   });
 
@@ -273,24 +316,36 @@ describe('AppModule', () => {
   it('should return 200 on GET /api/qr/:id/meta without auth for existing QR', async () => {
     const qrRepo = app.get(QrRepository);
     const qr = QrCode.create({
-      id: 'e2e-meta-1', userId: 'user-e2e', contentType: 'url',
-      content: 'https://meta-test.sloboda.fr', size: 1024, fgColor: '#000000',
-      bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+      id: 'e2e-meta-1',
+      userId: 'user-e2e',
+      contentType: 'url',
+      content: 'https://meta-test.sloboda.fr',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
+      createdAt: new Date(),
     });
     await qrRepo.save(qr);
-    const res = await request(app.getHttpServer()).get('/api/qr/e2e-meta-1/meta');
+    const res = await request(app.getHttpServer()).get(
+      '/api/qr/e2e-meta-1/meta',
+    );
     expect(res.status).toBe(200);
   });
 
   // Test 4 (public-qr-page) — GET /api/qr/:id/meta for unknown id → 404
   it('should return 404 on GET /api/qr/unknown/meta', async () => {
-    const res = await request(app.getHttpServer()).get('/api/qr/nonexistent-meta/meta');
+    const res = await request(app.getHttpServer()).get(
+      '/api/qr/nonexistent-meta/meta',
+    );
     expect(res.status).toBe(404);
   });
 
   // Test 5 (public-qr-page) — GET /api/qr/:id/meta body is {}
   it('should return body {} on GET /api/qr/:id/meta for existing QR', async () => {
-    const res = await request(app.getHttpServer()).get('/api/qr/e2e-meta-1/meta');
+    const res = await request(app.getHttpServer()).get(
+      '/api/qr/e2e-meta-1/meta',
+    );
     expect(res.status).toBe(200);
     expect(res.body).toEqual({});
   });
@@ -299,13 +354,18 @@ describe('AppModule', () => {
   it('should return 401 on POST /api/qr/:id/logo without auth cookies', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/qr/some-id/logo')
-      .attach('logo', Buffer.from('fake'), { filename: 'logo.png', contentType: 'image/png' });
+      .attach('logo', Buffer.from('fake'), {
+        filename: 'logo.png',
+        contentType: 'image/png',
+      });
     expect(res.status).toBe(401);
   });
 
   // Logo-overlay: Test 26 — GET /api/qr/:id/logo unknown id → 404 (public route)
   it('should return 404 on GET /api/qr/nonexistent/logo (public route, no logo)', async () => {
-    const res = await request(app.getHttpServer()).get('/api/qr/nonexistent/logo');
+    const res = await request(app.getHttpServer()).get(
+      '/api/qr/nonexistent/logo',
+    );
     expect(res.status).toBe(404);
   });
 
@@ -349,9 +409,16 @@ describe('AppModule', () => {
   it('should return 302 to target URL on GET /r/:id for a shortlink', async () => {
     const qrRepo = app.get(QrRepository);
     const link = QrCode.create({
-      id: 'e2e-shortlink-1', userId: 'user-e2e', contentType: 'url',
-      content: 'https://shortlink-target.com', source: 'shortlink',
-      size: 0, fgColor: '', bgColor: '', errorCorrection: 'M', createdAt: new Date(),
+      id: 'e2e-shortlink-1',
+      userId: 'user-e2e',
+      contentType: 'url',
+      content: 'https://shortlink-target.com',
+      source: 'shortlink',
+      size: 0,
+      fgColor: '',
+      bgColor: '',
+      errorCorrection: 'M',
+      createdAt: new Date(),
     });
     await qrRepo.save(link);
     const res = await request(app.getHttpServer()).get('/r/e2e-shortlink-1');
@@ -380,10 +447,17 @@ describe('AppModule', () => {
     const qrRepo = app.get(QrRepository);
     const pastExpiry = new Date(Date.now() - 86_400_000);
     const link = QrCode.create({
-      id: 'e2e-expired-1', userId: 'user-e2e', contentType: 'url',
-      content: 'https://expired-target.com', source: 'shortlink',
-      size: 0, fgColor: '', bgColor: '', errorCorrection: 'M',
-      createdAt: new Date(), expiresAt: pastExpiry,
+      id: 'e2e-expired-1',
+      userId: 'user-e2e',
+      contentType: 'url',
+      content: 'https://expired-target.com',
+      source: 'shortlink',
+      size: 0,
+      fgColor: '',
+      bgColor: '',
+      errorCorrection: 'M',
+      createdAt: new Date(),
+      expiresAt: pastExpiry,
     });
     await qrRepo.save(link);
     const res = await request(app.getHttpServer()).get('/r/e2e-expired-1');
@@ -400,13 +474,17 @@ describe('AppModule', () => {
 
   // internal-sharing: T37 — DELETE /api/qr/:id/shares/:shareId without auth → 401
   it('should return 401 on DELETE /api/qr/:id/shares/:shareId without auth cookies', async () => {
-    const res = await request(app.getHttpServer()).delete('/api/qr/some-id/shares/share-1');
+    const res = await request(app.getHttpServer()).delete(
+      '/api/qr/some-id/shares/share-1',
+    );
     expect(res.status).toBe(401);
   });
 
   // internal-sharing: T38 — GET /api/qr/shared-with-me without auth → 401
   it('should return 401 on GET /api/qr/shared-with-me without auth cookies', async () => {
-    const res = await request(app.getHttpServer()).get('/api/qr/shared-with-me');
+    const res = await request(app.getHttpServer()).get(
+      '/api/qr/shared-with-me',
+    );
     expect(res.status).toBe(401);
   });
 
@@ -421,10 +499,17 @@ describe('AppModule', () => {
     const qrRepo = app.get(QrRepository);
     const futureExpiry = new Date(Date.now() + 86_400_000);
     const link = QrCode.create({
-      id: 'e2e-active-1', userId: 'user-e2e', contentType: 'url',
-      content: 'https://active-target.com', source: 'shortlink',
-      size: 0, fgColor: '', bgColor: '', errorCorrection: 'M',
-      createdAt: new Date(), expiresAt: futureExpiry,
+      id: 'e2e-active-1',
+      userId: 'user-e2e',
+      contentType: 'url',
+      content: 'https://active-target.com',
+      source: 'shortlink',
+      size: 0,
+      fgColor: '',
+      bgColor: '',
+      errorCorrection: 'M',
+      createdAt: new Date(),
+      expiresAt: futureExpiry,
     });
     await qrRepo.save(link);
     const res = await request(app.getHttpServer()).get('/r/e2e-active-1');

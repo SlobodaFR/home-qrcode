@@ -5,6 +5,7 @@
 Unauthenticated public page at `{FRONTEND_URL}/q/{id}` that displays a QR code image and provides PNG + SVG download buttons. No metadata shown beyond the image — minimal, privacy-safe. Accessible to anyone with the link. If the QR does not exist or has been deleted, the page shows a 404 error view. If the QR exists but the image fails to load (MinIO down), the page shows a generic error view distinct from 404.
 
 **Architecture:**
+
 - Backend: new `@Public()` endpoint `GET /api/qr/:id/meta` → 200 `{}` or 404. No new field exposed. Goes in existing `QrController`.
 - Frontend: install React Router v7 (first real frontend feature — foundation for all future pages). Route `/q/:id` → `PublicQrPage` component.
 - Downloads: HTML `<a download="qr-{id}.png">` attribute — no backend change needed (same-origin, overrides `Content-Disposition: inline`).
@@ -120,17 +121,17 @@ E7. **`/q/{id}/anything` (extra path segments)** — React Router does not match
 
 ## Open Questions
 
-*(none — all resolved)*
+_(none — all resolved)_
 
 ---
 
 ## Grill Log
 
-| # | Question | Resolution | Date |
-|---|---|---|---|
-| OQ1 | Metadata shown beyond image? | **Option A — Minimal**: image + 2 download buttons only, title "QR Code". No contentType, no date, no scan count. | 2026-07-19 |
-| OQ2 | Show redirect target URL for URL-type QR? | **No** — resolved by OQ1 (nothing about content shown). No privacy concern. | 2026-07-19 |
-| OQ3 | `/meta` exact fields? | **`{}`** — body irrelevant, only HTTP status (200/404) matters. Minimal exposure. | 2026-07-19 |
-| OQ4 | MinIO down: "unavailable" vs 404? | **Option A — Generic error** distinct from 404. `/meta` 200 + img onerror → "temporarily unavailable". | 2026-07-19 |
-| OQ5 | Open Graph tags v1? | **Out of scope v1** — SSR/per-id HTML too costly for cosmetic benefit. | 2026-07-19 |
-| Gap | React Router needed? | **Option A — React Router v7** installed now. First frontend feature; history + generate pages coming in v1. | 2026-07-19 |
+| #   | Question                                  | Resolution                                                                                                        | Date       |
+| --- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| OQ1 | Metadata shown beyond image?              | **Option A — Minimal**: image + 2 download buttons only, title "QR Code". No contentType, no date, no scan count. | 2026-07-19 |
+| OQ2 | Show redirect target URL for URL-type QR? | **No** — resolved by OQ1 (nothing about content shown). No privacy concern.                                       | 2026-07-19 |
+| OQ3 | `/meta` exact fields?                     | **`{}`** — body irrelevant, only HTTP status (200/404) matters. Minimal exposure.                                 | 2026-07-19 |
+| OQ4 | MinIO down: "unavailable" vs 404?         | **Option A — Generic error** distinct from 404. `/meta` 200 + img onerror → "temporarily unavailable".            | 2026-07-19 |
+| OQ5 | Open Graph tags v1?                       | **Out of scope v1** — SSR/per-id HTML too costly for cosmetic benefit.                                            | 2026-07-19 |
+| Gap | React Router needed?                      | **Option A — React Router v7** installed now. First frontend feature; history + generate pages coming in v1.      | 2026-07-19 |

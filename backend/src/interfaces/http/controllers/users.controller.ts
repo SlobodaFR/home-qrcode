@@ -8,6 +8,11 @@ export class UsersController {
   @Get()
   async list() {
     const { users } = await this.listUsers.execute();
-    return users.map((u) => ({ id: u.id, name: u.name, email: u.email, avatarUrl: u.avatarUrl }));
+    return users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      avatarUrl: u.avatarUrl,
+    }));
   }
 }

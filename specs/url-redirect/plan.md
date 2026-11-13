@@ -11,6 +11,7 @@ Feature adds two concerns to the existing structure:
 3. **Scan counter** — additive change to `domain/qr/qr-code.ts`, `qr-code.orm-entity.ts`, `qr.repository.ts`, and `typeorm-qr.repository.ts`. No new layer; existing infrastructure extended.
 
 Layer placement:
+
 ```
 domain/qr/              ← QrCode (+ scanCount getter + withContent()), QrRepository (+ incrementScanCount)
 application/qr/         ← EditTargetUrlUseCase
@@ -55,8 +56,12 @@ Implementation uses TypeORM `repository.increment({ id }, 'scanCount', 1)` — a
 ### Use case — `RedirectUseCase`
 
 ```typescript
-interface RedirectCommand { id: string; }
-interface RedirectResult { targetUrl: string; }
+interface RedirectCommand {
+  id: string;
+}
+interface RedirectResult {
+  targetUrl: string;
+}
 
 // Logic:
 // 1. qrRepository.findById(id) → null → throw NotFoundException
@@ -73,7 +78,9 @@ interface EditTargetUrlCommand {
   userId: string;
   content: string;
 }
-interface EditTargetUrlResult { qr: QrCode; }
+interface EditTargetUrlResult {
+  qr: QrCode;
+}
 
 // Logic:
 // 1. findByIdAndUserId(id, userId) → null → throw NotFoundException
@@ -123,6 +130,7 @@ scanCount!: number;
 ## Dependencies
 
 No new third-party libraries. All dependencies already in place:
+
 - `typeorm` — `repository.increment()` for atomic scan count update
 - `@nestjs/common` — `UnprocessableEntityException` (HTTP 422)
 
@@ -131,36 +139,41 @@ No new third-party libraries. All dependencies already in place:
 ## Alternatives Considered
 
 ### A. Sync scan increment vs. async fire-and-forget
+
 Resolved in grill (OQ2): **async**. Sync would work (SQLite write < 1ms) but async is the agreed approach: 302 sent immediately, increment runs in background. Error is swallowed (logged if needed) to avoid increment failure blocking the redirect.
 
 ### B. Separate `scans` table
+
 Resolved in grill (OQ1): **column on `qr_codes`**. No v1 benefit from a separate table; column is zero-join on redirect.
 
 ### C. PATCH endpoint in `RedirectController` instead of `QrController`
+
 Rejected: `PATCH /api/qr/:id` is modifying a `QrCode` resource. Its controller is `QrController`. Adding it to `RedirectController` would split a resource across two controllers, breaking REST convention. The `url-redirect` feature tag is about the purpose, not the HTTP location.
 
 ### D. `updateContent(id, userId, content)` method on `QrRepository`
+
 Rejected in favor of `withContent()` + `save()`: keeps the repository interface lean (no partial-update methods that would need to return the full entity anyway), and the immutable entity pattern (`withContent()` returning a new `QrCode`) is consistent with the domain model.
 
 ### E. `RedirectUseCase` inlined in `RedirectController`
+
 Rejected: all business logic belongs in application layer (CLAUDE.md convention). The redirect logic (find → type check → increment → return URL) has enough conditions to warrant a use case, and it makes unit testing the logic without NestJS overhead trivial.
 
 ---
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| `incrementScanCount` fire-and-forget swallows errors silently | Catch and log the error (no throw); counter accuracy is best-effort per AC6 |
-| `withContent()` doesn't preserve `scanCount` → zero-resets counter on edit | Must pass all existing props (including `scanCount`) when constructing the new entity in `withContent()` |
-| `save()` in TypeOrmQrRepository currently omits `scanCount` → writes 0 on every save | Must update `save()` to include `scanCount: qr.scanCount` |
+| Risk                                                                                 | Mitigation                                                                                               |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `incrementScanCount` fire-and-forget swallows errors silently                        | Catch and log the error (no throw); counter accuracy is best-effort per AC6                              |
+| `withContent()` doesn't preserve `scanCount` → zero-resets counter on edit           | Must pass all existing props (including `scanCount`) when constructing the new entity in `withContent()` |
+| `save()` in TypeOrmQrRepository currently omits `scanCount` → writes 0 on every save | Must update `save()` to include `scanCount: qr.scanCount`                                                |
 
 ---
 
 ## Grill Log
 
-| JC | Decision | Resolution | Date |
-|---|---|---|---|
-| JC1 | `RedirectUseCase` vs. inline controller logic | **Keep use case** — consistency with `GenerateQrUseCase` pattern; testable without NestJS; 3-line logic doesn't disqualify it | 2026-07-19 |
-| JC2 | `RedirectModule` imports `QrModule` for `QrRepository` | **Standard NestJS cross-module import** — `QrModule` already exports `QrRepository`; duplication alternative rejected | 2026-07-19 |
-| JC3 | 422 vs. 400 for PATCH on text-type QR | **422 Unprocessable Entity** — semantically valid request but meaningless operation for the resource's content type | 2026-07-19 |
+| JC  | Decision                                               | Resolution                                                                                                                    | Date       |
+| --- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| JC1 | `RedirectUseCase` vs. inline controller logic          | **Keep use case** — consistency with `GenerateQrUseCase` pattern; testable without NestJS; 3-line logic doesn't disqualify it | 2026-07-19 |
+| JC2 | `RedirectModule` imports `QrModule` for `QrRepository` | **Standard NestJS cross-module import** — `QrModule` already exports `QrRepository`; duplication alternative rejected         | 2026-07-19 |
+| JC3 | 422 vs. 400 for PATCH on text-type QR                  | **422 Unprocessable Entity** — semantically valid request but meaningless operation for the resource's content type           | 2026-07-19 |

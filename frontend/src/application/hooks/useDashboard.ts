@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CreateQrPayload, QrItem, attachLogo as attachLogoClient, createQrCode, deleteQrCode, listQrCodes, setQrExpiration } from '../../infrastructure/api/qr-auth.client';
-import { shareQr as shareQrClient, unshareQr as unshareQrClient } from '../../infrastructure/api/sharing.client';
+import {
+  CreateQrPayload,
+  QrItem,
+  attachLogo as attachLogoClient,
+  createQrCode,
+  deleteQrCode,
+  listQrCodes,
+  setQrExpiration,
+} from '../../infrastructure/api/qr-auth.client';
+import {
+  shareQr as shareQrClient,
+  unshareQr as unshareQrClient,
+} from '../../infrastructure/api/sharing.client';
 
 type DashboardState = 'loading' | 'ready' | 'error';
 
@@ -53,24 +64,45 @@ export function useDashboard(): DashboardHook {
     setItems((prev) => prev.map((q) => (q.id === id ? updated : q)));
   }, []);
 
-  const setExpiration = useCallback(async (id: string, expiresAt: string | null) => {
-    const updated = await setQrExpiration(id, expiresAt);
-    setItems((prev) => prev.map((q) => (q.id === id ? updated : q)));
-  }, []);
+  const setExpiration = useCallback(
+    async (id: string, expiresAt: string | null) => {
+      const updated = await setQrExpiration(id, expiresAt);
+      setItems((prev) => prev.map((q) => (q.id === id ? updated : q)));
+    },
+    [],
+  );
 
   const share = useCallback(async (qrId: string, recipientId: string) => {
     const newShare = await shareQrClient(qrId, recipientId);
-    setItems((prev) => prev.map((q) =>
-      q.id === qrId ? { ...q, shares: [...q.shares, { ...newShare, recipientName: '' }] } : q,
-    ));
+    setItems((prev) =>
+      prev.map((q) =>
+        q.id === qrId
+          ? { ...q, shares: [...q.shares, { ...newShare, recipientName: '' }] }
+          : q,
+      ),
+    );
   }, []);
 
   const unshare = useCallback(async (qrId: string, shareId: string) => {
     await unshareQrClient(qrId, shareId);
-    setItems((prev) => prev.map((q) =>
-      q.id === qrId ? { ...q, shares: q.shares.filter((s) => s.shareId !== shareId) } : q,
-    ));
+    setItems((prev) =>
+      prev.map((q) =>
+        q.id === qrId
+          ? { ...q, shares: q.shares.filter((s) => s.shareId !== shareId) }
+          : q,
+      ),
+    );
   }, []);
 
-  return { state, items, total, create, remove, attachLogo, setExpiration, share, unshare };
+  return {
+    state,
+    items,
+    total,
+    create,
+    remove,
+    attachLogo,
+    setExpiration,
+    share,
+    unshare,
+  };
 }

@@ -3,7 +3,9 @@ import { RevokedSessionRepository } from '../../domain/auth/revoked-session.repo
 
 @Injectable()
 export class HandleSessionRevokedUseCase {
-  constructor(private readonly revokedSessionRepository: RevokedSessionRepository) {}
+  constructor(
+    private readonly revokedSessionRepository: RevokedSessionRepository,
+  ) {}
 
   async execute(userId: string): Promise<void> {
     await this.revokedSessionRepository.markRevoked(userId, new Date());

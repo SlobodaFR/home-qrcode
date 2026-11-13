@@ -1,4 +1,21 @@
-import { Body, Controller, Delete, FileTypeValidator, Get, HttpCode, Inject, NotFoundException, Param, ParseFilePipe, Patch, Post, Query, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  FileTypeValidator,
+  Get,
+  HttpCode,
+  Inject,
+  NotFoundException,
+  Param,
+  ParseFilePipe,
+  Patch,
+  Post,
+  Query,
+  StreamableFile,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Readable } from 'stream';
 import { ConfigService } from '@nestjs/config';
@@ -17,7 +34,10 @@ import { QrRepository } from '../../../domain/qr/qr.repository';
 import { QrShareRepository } from '../../../domain/qr/qr-share.repository';
 import { QrStoragePort } from '../../../domain/qr/qr-storage.port';
 import { UserRepository } from '../../../domain/user/user.repository';
-import { CurrentUser, CurrentUserPayload } from '../decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../decorators/current-user.decorator';
 import { Public } from '../decorators/public.decorator';
 import { CreateQrDto } from '../dto/create-qr.dto';
 import { CreateShareDto } from '../dto/create-share.dto';
@@ -37,7 +57,8 @@ export class QrController {
     private readonly qrRepository: QrRepository,
     private readonly storage: QrStoragePort,
     private readonly config: ConfigService,
-    @Inject('SetExpirationUseCase') private readonly setExpirationUseCase: SetExpirationUseCase,
+    @Inject('SetExpirationUseCase')
+    private readonly setExpirationUseCase: SetExpirationUseCase,
     private readonly shareQr: ShareQrUseCase,
     private readonly unshareQr: UnshareQrUseCase,
     private readonly listSharedWithMe: ListSharedWithMeUseCase,
@@ -56,20 +77,32 @@ export class QrController {
   @Get('shared-with-me')
   async sharedWithMe(@CurrentUser() user: CurrentUserPayload) {
     const { items } = await this.listSharedWithMe.execute({ userId: user.id });
-    return items.map(({ qrCode, sharedBy }) => ({ ...toListItemResponse(qrCode), shares: [], sharedBy }));
+    return items.map(({ qrCode, sharedBy }) => ({
+      ...toListItemResponse(qrCode),
+      shares: [],
+      sharedBy,
+    }));
   }
 
   @Get()
   async list(@Query() dto: ListQrDto, @CurrentUser() user: CurrentUserPayload) {
-    const result = await this.listQr.execute({ userId: user.id, page: dto.page, limit: dto.limit });
+    const result = await this.listQr.execute({
+      userId: user.id,
+      page: dto.page,
+      limit: dto.limit,
+    });
     const qrIds = result.items.map((q) => q.id);
-    const shares = qrIds.length > 0 ? await this.qrShareRepository.findByQrIds(qrIds) : [];
+    const shares =
+      qrIds.length > 0 ? await this.qrShareRepository.findByQrIds(qrIds) : [];
     const sharesByQrId = groupSharesByQrId(shares);
     const users = shares.length > 0 ? await this.userRepository.findAll() : [];
     const userMap = new Map(users.map((u) => [u.id, u.name]));
     return {
       items: result.items.map((qr) =>
-        toListItemResponse(qr, (sharesByQrId.get(qr.id) ?? []).map((s) => toShareItem(s, userMap))),
+        toListItemResponse(
+          qr,
+          (sharesByQrId.get(qr.id) ?? []).map((s) => toShareItem(s, userMap)),
+        ),
       ),
       total: result.total,
       page: result.page,
@@ -79,13 +112,19 @@ export class QrController {
 
   @Delete(':id')
   @HttpCode(204)
-  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     await this.deleteQr.execute({ id, userId: user.id });
   }
 
   @Post()
   @HttpCode(201)
-  async create(@Body() dto: CreateQrDto, @CurrentUser() user: CurrentUserPayload) {
+  async create(
+    @Body() dto: CreateQrDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     const base = {
       userId: user.id,
       size: dto.size,
@@ -97,50 +136,122 @@ export class QrController {
     const expiresAt = dto.expiresAt ? parseExpiryDate(dto.expiresAt) : null;
     const { qr } = await this.generateQr.execute(
       dto.contentType === 'wifi'
-        ? { ...base, contentType: 'wifi', wifi: { ssid: dto.ssid!, security: dto.security!, password: dto.password }, expiresAt }
+        ? {
+            ...base,
+            contentType: 'wifi',
+            wifi: {
+              ssid: dto.ssid!,
+              security: dto.security!,
+              password: dto.password,
+            },
+            expiresAt,
+          }
         : dto.contentType === 'email'
-          ? { ...base, contentType: 'email', emailFields: { to: dto.to!, subject: dto.subject, body: dto.body }, expiresAt }
+          ? {
+              ...base,
+              contentType: 'email',
+              emailFields: {
+                to: dto.to!,
+                subject: dto.subject,
+                body: dto.body,
+              },
+              expiresAt,
+            }
           : dto.contentType === 'vcard'
-            ? { ...base, contentType: 'vcard', vcard: { name: dto.name!, phone: dto.phone, email: dto.vcardEmail, org: dto.org }, expiresAt }
-            : { ...base, contentType: dto.contentType, content: dto.content!, expiresAt },
+            ? {
+                ...base,
+                contentType: 'vcard',
+                vcard: {
+                  name: dto.name!,
+                  phone: dto.phone,
+                  email: dto.vcardEmail,
+                  org: dto.org,
+                },
+                expiresAt,
+              }
+            : {
+                ...base,
+                contentType: dto.contentType,
+                content: dto.content!,
+                expiresAt,
+              },
     );
     return toResponse(qr);
   }
 
   @Patch(':id/expiration')
-  async setExpiration(@Param('id') id: string, @Body() dto: SetExpirationDto, @CurrentUser() user: CurrentUserPayload) {
-    const expiresAt = dto.expiresAt !== null ? parseExpiryDate(dto.expiresAt) : null;
-    const { entity } = await this.setExpirationUseCase.execute({ id, userId: user.id, expiresAt });
+  async setExpiration(
+    @Param('id') id: string,
+    @Body() dto: SetExpirationDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    const expiresAt =
+      dto.expiresAt !== null ? parseExpiryDate(dto.expiresAt) : null;
+    const { entity } = await this.setExpirationUseCase.execute({
+      id,
+      userId: user.id,
+      expiresAt,
+    });
     return toResponse(entity);
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: EditTargetUrlDto, @CurrentUser() user: CurrentUserPayload) {
-    const { qr } = await this.editTargetUrl.execute({ id, userId: user.id, content: dto.content });
+  async update(
+    @Param('id') id: string,
+    @Body() dto: EditTargetUrlDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    const { qr } = await this.editTargetUrl.execute({
+      id,
+      userId: user.id,
+      content: dto.content,
+    });
     return toResponse(qr);
   }
 
   @Post(':id/shares')
   @HttpCode(201)
-  async createShare(@Param('id') id: string, @Body() dto: CreateShareDto, @CurrentUser() user: CurrentUserPayload) {
-    const { share } = await this.shareQr.execute({ qrId: id, ownerId: user.id, recipientId: dto.recipientId });
-    return { shareId: share.id, recipientId: share.recipientId, createdAt: share.createdAt };
+  async createShare(
+    @Param('id') id: string,
+    @Body() dto: CreateShareDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    const { share } = await this.shareQr.execute({
+      qrId: id,
+      ownerId: user.id,
+      recipientId: dto.recipientId,
+    });
+    return {
+      shareId: share.id,
+      recipientId: share.recipientId,
+      createdAt: share.createdAt,
+    };
   }
 
   @Delete(':id/shares/:shareId')
   @HttpCode(204)
-  async removeShare(@Param('id') id: string, @Param('shareId') shareId: string, @CurrentUser() user: CurrentUserPayload) {
+  async removeShare(
+    @Param('id') id: string,
+    @Param('shareId') shareId: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     await this.unshareQr.execute({ shareId, qrId: id, ownerId: user.id });
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     const qr = await this.qrRepository.findByIdAndUserId(id, user.id);
     if (!qr) throw new NotFoundException();
     const shares = await this.qrShareRepository.findByQrIds([id]);
     const users = shares.length > 0 ? await this.userRepository.findAll() : [];
     const userMap = new Map(users.map((u) => [u.id, u.name]));
-    return { ...toResponse(qr), shares: shares.map((s) => toShareItem(s, userMap)) };
+    return {
+      ...toResponse(qr),
+      shares: shares.map((s) => toShareItem(s, userMap)),
+    };
   }
 
   @Post(':id/logo')
@@ -150,9 +261,12 @@ export class QrController {
     @Param('id') id: string,
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new FileTypeValidator({ fileType: /^image\/(png|jpeg|webp)$/ })],
+        validators: [
+          new FileTypeValidator({ fileType: /^image\/(png|jpeg|webp)$/ }),
+        ],
       }),
-    ) logo: Express.Multer.File,
+    )
+    logo: Express.Multer.File,
     @CurrentUser() user: CurrentUserPayload,
   ) {
     const { qr } = await this.attachLogo.execute({
@@ -204,10 +318,18 @@ export class QrController {
   }
 }
 
-interface ShareItem { shareId: string; recipientId: string; recipientName: string; }
+interface ShareItem {
+  shareId: string;
+  recipientId: string;
+  recipientName: string;
+}
 
 function toShareItem(share: QrShare, userMap: Map<string, string>): ShareItem {
-  return { shareId: share.id, recipientId: share.recipientId, recipientName: userMap.get(share.recipientId) ?? '' };
+  return {
+    shareId: share.id,
+    recipientId: share.recipientId,
+    recipientName: userMap.get(share.recipientId) ?? '',
+  };
 }
 
 function groupSharesByQrId(shares: QrShare[]): Map<string, QrShare[]> {
@@ -221,7 +343,8 @@ function groupSharesByQrId(shares: QrShare[]): Map<string, QrShare[]> {
 }
 
 function toListItemResponse(qr: QrCode, shares: ShareItem[] = []) {
-  const content = qr.content.length > 80 ? qr.content.slice(0, 80) + '…' : qr.content;
+  const content =
+    qr.content.length > 80 ? qr.content.slice(0, 80) + '…' : qr.content;
   return {
     id: qr.id,
     userId: qr.userId,

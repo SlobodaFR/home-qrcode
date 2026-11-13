@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Not, Repository } from 'typeorm';
 import { QrCode } from '../../../domain/qr/qr-code';
-import { FindAllOptions, FindAllResult, QrRepository } from '../../../domain/qr/qr.repository';
+import {
+  FindAllOptions,
+  FindAllResult,
+  QrRepository,
+} from '../../../domain/qr/qr.repository';
 import { QrCodeOrmEntity } from '../entities/qr-code.orm-entity';
 
 @Injectable()
@@ -44,7 +48,10 @@ export class TypeOrmQrRepository extends QrRepository {
     });
   }
 
-  async findAllByUserId(userId: string, options: FindAllOptions): Promise<FindAllResult> {
+  async findAllByUserId(
+    userId: string,
+    options: FindAllOptions,
+  ): Promise<FindAllResult> {
     const [rows, total] = await this.repository.findAndCount({
       where: [
         { userId, source: IsNull() },
@@ -57,7 +64,10 @@ export class TypeOrmQrRepository extends QrRepository {
     return { items: rows.map(toDomain), total };
   }
 
-  async findAllLinksByUserId(userId: string, options: FindAllOptions): Promise<FindAllResult> {
+  async findAllLinksByUserId(
+    userId: string,
+    options: FindAllOptions,
+  ): Promise<FindAllResult> {
     const [rows, total] = await this.repository.findAndCount({
       where: { userId, source: 'shortlink' },
       order: { createdAt: 'DESC' },

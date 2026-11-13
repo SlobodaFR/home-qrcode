@@ -1,6 +1,11 @@
 import { QrcodeImageGenerator } from './qrcode-image-generator';
 
-const defaultOpts = { size: 256, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const };
+const defaultOpts = {
+  size: 256,
+  fgColor: '#000000',
+  bgColor: '#FFFFFF',
+  errorCorrection: 'M' as const,
+};
 
 describe('QrcodeImageGenerator', () => {
   const generator = new QrcodeImageGenerator();
@@ -16,7 +21,10 @@ describe('QrcodeImageGenerator', () => {
 
   // Test 11 — TPP: variable
   it('should produce SVG output that starts with an XML/SVG tag', async () => {
-    const { svg } = await generator.generate('https://example.com', defaultOpts);
+    const { svg } = await generator.generate(
+      'https://example.com',
+      defaultOpts,
+    );
     expect(svg.trimStart()).toMatch(/^(<\?xml|<svg)/);
   });
 });

@@ -7,6 +7,7 @@ Bootstrap the home-qrcode monorepo: npm workspaces, clean architecture folder st
 ## User Stories
 
 **As a developer,**
+
 - Given the repo is cloned, when I run `npm install` at root, then all workspace dependencies are installed.
 - Given deps installed, when I run `npm run dev:backend`, then NestJS dev server starts on port 3000.
 - Given deps installed, when I run `npm run dev:frontend`, then Vite dev server starts on port 5173.
@@ -14,6 +15,7 @@ Bootstrap the home-qrcode monorepo: npm workspaces, clean architecture folder st
 - Given deps installed, when I run `npm run build`, then frontend compiles to `frontend/dist/` and backend compiles to `backend/dist/`.
 
 **As ops,**
+
 - Given a built repo, when I run `docker build -t home-qrcode .`, then a single image is produced containing compiled backend + frontend static files.
 - Given the image running with valid env vars and `MINIO_BUCKET` set, when the container starts, then `docker-entrypoint.sh` attempts Litestream restore (`-if-replica-exists`), then starts Litestream replication wrapping NestJS.
 - Given `MINIO_BUCKET` is not set, when the container starts, then Litestream is skipped and NestJS starts directly (dev mode).
@@ -21,6 +23,7 @@ Bootstrap the home-qrcode monorepo: npm workspaces, clean architecture folder st
 - Given a valid container with MinIO, when I hit port 3000 on `/api/*`, then NestJS handles the request; when I hit `/`, then the frontend SPA is served.
 
 **As CI,**
+
 - Given a push or PR to `main`, when GitHub Actions runs `ci.yml`, then: install deps → lint backend → type-check frontend → run tests → build. Fails on any error.
 - Given a pull_request event, when `ci.yml` passes, then `docker-build-check` job builds Docker image without pushing.
 - Given a push to `main` or a published release, when `build-and-publish.yml` runs, then Docker image is built and pushed to GHCR with appropriate tags (sha, branch, semver, latest).
@@ -90,12 +93,12 @@ Bootstrap the home-qrcode monorepo: npm workspaces, clean architecture folder st
 
 ## Grill Log
 
-| Question | Resolution | Date |
-|---|---|---|
-| Node version | 26.3.0 (user confirmed, `.nvmrc` = `26.3.0`, Dockerfile uses `node:26-bookworm-slim`) | 2026-07-18 |
-| Litestream startup: MinIO unreachable | Abort — `set -e` + `litestream restore` failure exits container with non-zero code | 2026-07-18 |
-| NestJS static files | `ServeStaticModule` with `rootPath` pointing to `frontend/dist/`, global prefix `/api` | 2026-07-18 |
-| CI: Docker build | Yes, on PRs only in `ci.yml`; separate `build-and-publish.yml` pushes to GHCR; `deploy-vps.yml` deploys via SSH + 1Password. Mirrors home-budget exactly. | 2026-07-18 |
-| Litestream co-process | `litestream replicate -exec "$*" -config "$LITESTREAM_CONFIG"` — same as home-budget | 2026-07-18 |
-| New instance, no replica | `-if-replica-exists` flag: restore skipped silently if no replica in MinIO | 2026-07-18 |
-| Env var names | Match home-budget exactly: `MINIO_ACCESS_KEY_ID`, `MINIO_SECRET_ACCESS_KEY`, `MINIO_REPLICA_PATH`, `MINIO_REGION`, `DATABASE_PATH` | 2026-07-18 |
+| Question                              | Resolution                                                                                                                                                | Date       |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| Node version                          | 26.3.0 (user confirmed, `.nvmrc` = `26.3.0`, Dockerfile uses `node:26-bookworm-slim`)                                                                     | 2026-07-18 |
+| Litestream startup: MinIO unreachable | Abort — `set -e` + `litestream restore` failure exits container with non-zero code                                                                        | 2026-07-18 |
+| NestJS static files                   | `ServeStaticModule` with `rootPath` pointing to `frontend/dist/`, global prefix `/api`                                                                    | 2026-07-18 |
+| CI: Docker build                      | Yes, on PRs only in `ci.yml`; separate `build-and-publish.yml` pushes to GHCR; `deploy-vps.yml` deploys via SSH + 1Password. Mirrors home-budget exactly. | 2026-07-18 |
+| Litestream co-process                 | `litestream replicate -exec "$*" -config "$LITESTREAM_CONFIG"` — same as home-budget                                                                      | 2026-07-18 |
+| New instance, no replica              | `-if-replica-exists` flag: restore skipped silently if no replica in MinIO                                                                                | 2026-07-18 |
+| Env var names                         | Match home-budget exactly: `MINIO_ACCESS_KEY_ID`, `MINIO_SECRET_ACCESS_KEY`, `MINIO_REPLICA_PATH`, `MINIO_REGION`, `DATABASE_PATH`                        | 2026-07-18 |

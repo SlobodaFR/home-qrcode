@@ -1,5 +1,9 @@
 import type { Mock, Mocked } from 'vitest';
-import { ForbiddenException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { QrCode } from '../../../domain/qr/qr-code';
@@ -25,32 +29,116 @@ import { QrController } from './qr.controller';
 import { Readable } from 'stream';
 
 const mockQr = QrCode.create({
-  id: 'qr-1', userId: 'user-1', contentType: 'url', content: 'https://example.com',
-  size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M',
-  createdAt: new Date('2026-01-01'), scanCount: 3,
+  id: 'qr-1',
+  userId: 'user-1',
+  contentType: 'url',
+  content: 'https://example.com',
+  size: 1024,
+  fgColor: '#000000',
+  bgColor: '#FFFFFF',
+  errorCorrection: 'M',
+  createdAt: new Date('2026-01-01'),
+  scanCount: 3,
 });
 
-const mockShare = QrShare.create({ id: 'share-1', qrId: 'qr-1', ownerId: 'user-1', recipientId: 'user-2', createdAt: new Date('2026-01-01') });
-const mockRecipient = User.create({ id: 'user-2', email: 'b@c.com', name: 'Bob', avatarUrl: '', createdAt: new Date() });
+const mockShare = QrShare.create({
+  id: 'share-1',
+  qrId: 'qr-1',
+  ownerId: 'user-1',
+  recipientId: 'user-2',
+  createdAt: new Date('2026-01-01'),
+});
+const mockRecipient = User.create({
+  id: 'user-2',
+  email: 'b@c.com',
+  name: 'Bob',
+  avatarUrl: '',
+  createdAt: new Date(),
+});
 
 const makeController = async () => {
   const module = await Test.createTestingModule({
     controllers: [QrController],
     providers: [
-      { provide: GenerateQrUseCase, useValue: { execute: vi.fn().mockResolvedValue({ qr: mockQr }) } },
-      { provide: AttachLogoUseCase, useValue: { execute: vi.fn().mockResolvedValue({ qr: mockQr }) } },
-      { provide: EditTargetUrlUseCase, useValue: { execute: vi.fn().mockResolvedValue({ qr: mockQr }) } },
-      { provide: ListQrUseCase, useValue: { execute: vi.fn().mockResolvedValue({ items: [mockQr], total: 1, page: 1, limit: 20 }) } },
-      { provide: DeleteQrUseCase, useValue: { execute: vi.fn().mockResolvedValue(undefined) } },
-      { provide: QrRepository, useValue: { findById: vi.fn().mockResolvedValue(mockQr), findByIdAndUserId: vi.fn().mockResolvedValue(mockQr), findAllByUserId: vi.fn(), findAllLinksByUserId: vi.fn() } },
-      { provide: QrStoragePort, useValue: { streamPng: vi.fn().mockResolvedValue(Readable.from(['png'])), streamSvg: vi.fn().mockResolvedValue(Readable.from(['svg'])), streamLogo: vi.fn().mockResolvedValue(Readable.from(['logo'])), exists: vi.fn().mockResolvedValue(true) } },
-      { provide: ConfigService, useValue: { getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com'), get: vi.fn() } },
-      { provide: 'SetExpirationUseCase', useValue: { execute: vi.fn().mockResolvedValue({ entity: mockQr }) } },
-      { provide: ShareQrUseCase, useValue: { execute: vi.fn().mockResolvedValue({ share: mockShare }) } },
-      { provide: UnshareQrUseCase, useValue: { execute: vi.fn().mockResolvedValue(undefined) } },
-      { provide: ListSharedWithMeUseCase, useValue: { execute: vi.fn().mockResolvedValue({ items: [] }) } },
-      { provide: QrShareRepository, useValue: { findByQrIds: vi.fn().mockResolvedValue([]) } },
-      { provide: UserRepository, useValue: { findAll: vi.fn().mockResolvedValue([mockRecipient]), findById: vi.fn() } },
+      {
+        provide: GenerateQrUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue({ qr: mockQr }) },
+      },
+      {
+        provide: AttachLogoUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue({ qr: mockQr }) },
+      },
+      {
+        provide: EditTargetUrlUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue({ qr: mockQr }) },
+      },
+      {
+        provide: ListQrUseCase,
+        useValue: {
+          execute: vi.fn().mockResolvedValue({
+            items: [mockQr],
+            total: 1,
+            page: 1,
+            limit: 20,
+          }),
+        },
+      },
+      {
+        provide: DeleteQrUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue(undefined) },
+      },
+      {
+        provide: QrRepository,
+        useValue: {
+          findById: vi.fn().mockResolvedValue(mockQr),
+          findByIdAndUserId: vi.fn().mockResolvedValue(mockQr),
+          findAllByUserId: vi.fn(),
+          findAllLinksByUserId: vi.fn(),
+        },
+      },
+      {
+        provide: QrStoragePort,
+        useValue: {
+          streamPng: vi.fn().mockResolvedValue(Readable.from(['png'])),
+          streamSvg: vi.fn().mockResolvedValue(Readable.from(['svg'])),
+          streamLogo: vi.fn().mockResolvedValue(Readable.from(['logo'])),
+          exists: vi.fn().mockResolvedValue(true),
+        },
+      },
+      {
+        provide: ConfigService,
+        useValue: {
+          getOrThrow: vi.fn().mockReturnValue('https://qrcode.example.com'),
+          get: vi.fn(),
+        },
+      },
+      {
+        provide: 'SetExpirationUseCase',
+        useValue: { execute: vi.fn().mockResolvedValue({ entity: mockQr }) },
+      },
+      {
+        provide: ShareQrUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue({ share: mockShare }) },
+      },
+      {
+        provide: UnshareQrUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue(undefined) },
+      },
+      {
+        provide: ListSharedWithMeUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue({ items: [] }) },
+      },
+      {
+        provide: QrShareRepository,
+        useValue: { findByQrIds: vi.fn().mockResolvedValue([]) },
+      },
+      {
+        provide: UserRepository,
+        useValue: {
+          findAll: vi.fn().mockResolvedValue([mockRecipient]),
+          findById: vi.fn(),
+        },
+      },
     ],
   }).compile();
   return {
@@ -63,7 +151,9 @@ const makeController = async () => {
     storage: module.get<Mocked<QrStoragePort>>(QrStoragePort),
     shareUseCase: module.get<Mocked<ShareQrUseCase>>(ShareQrUseCase),
     unshareUseCase: module.get<Mocked<UnshareQrUseCase>>(UnshareQrUseCase),
-    listSharedWithMeUseCase: module.get<Mocked<ListSharedWithMeUseCase>>(ListSharedWithMeUseCase),
+    listSharedWithMeUseCase: module.get<Mocked<ListSharedWithMeUseCase>>(
+      ListSharedWithMeUseCase,
+    ),
     shareRepo: module.get<Mocked<QrShareRepository>>(QrShareRepository),
     userRepo: module.get<Mocked<UserRepository>>(UserRepository),
   };
@@ -75,17 +165,37 @@ describe('QrController', () => {
   // Test 33 — TPP: constant
   it('should return 201 with QrCode response shape on POST /api/qr', async () => {
     const { controller } = await makeController();
-    const dto = Object.assign(new CreateQrDto(), { contentType: 'url' as const, content: 'https://example.com', size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const });
+    const dto = Object.assign(new CreateQrDto(), {
+      contentType: 'url' as const,
+      content: 'https://example.com',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M' as const,
+    });
     const result = await controller.create(dto, mockUser);
-    expect(result).toMatchObject({ id: 'qr-1', pngUrl: '/api/qr/qr-1/png', svgUrl: '/api/qr/qr-1/svg' });
+    expect(result).toMatchObject({
+      id: 'qr-1',
+      pngUrl: '/api/qr/qr-1/png',
+      svgUrl: '/api/qr/qr-1/svg',
+    });
   });
 
   // Test 34 — TPP: variable
   it('should pass frontendUrl from ConfigService to GenerateQrUseCase command', async () => {
     const { controller, useCase } = await makeController();
-    const dto = Object.assign(new CreateQrDto(), { contentType: 'url' as const, content: 'https://example.com', size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const });
+    const dto = Object.assign(new CreateQrDto(), {
+      contentType: 'url' as const,
+      content: 'https://example.com',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M' as const,
+    });
     await controller.create(dto, mockUser);
-    expect(useCase.execute).toHaveBeenCalledWith(expect.objectContaining({ frontendUrl: 'https://qrcode.example.com' }));
+    expect(useCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ frontendUrl: 'https://qrcode.example.com' }),
+    );
   });
 
   // Test 35 — TPP: constant
@@ -99,40 +209,54 @@ describe('QrController', () => {
   it('should throw NotFoundException on GET /api/qr/:id when QR not found or not owned', async () => {
     const { controller, repo } = await makeController();
     (repo.findByIdAndUserId as Mock).mockResolvedValue(null);
-    await expect(controller.findOne('qr-999', mockUser)).rejects.toThrow(NotFoundException);
+    await expect(controller.findOne('qr-999', mockUser)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   // Test 37 — TPP: constant
   it('should return StreamableFile with image/png and correct Content-Disposition on GET /api/qr/:id/png', async () => {
     const { controller } = await makeController();
     const result = await controller.streamPng('qr-1');
-    expect(result.options).toMatchObject({ type: 'image/png', disposition: 'inline; filename="qr-qr-1.png"' });
+    expect(result.options).toMatchObject({
+      type: 'image/png',
+      disposition: 'inline; filename="qr-qr-1.png"',
+    });
   });
 
   // Test 38 — TPP: variable
   it('should return StreamableFile with image/svg+xml on GET /api/qr/:id/svg', async () => {
     const { controller } = await makeController();
     const result = await controller.streamSvg('qr-1');
-    expect(result.options).toMatchObject({ type: 'image/svg+xml', disposition: 'inline; filename="qr-qr-1.svg"' });
+    expect(result.options).toMatchObject({
+      type: 'image/svg+xml',
+      disposition: 'inline; filename="qr-qr-1.svg"',
+    });
   });
 
   // Test 39 — TPP: conditional
   it('should throw NotFoundException on GET /api/qr/:id/png when exists() returns false', async () => {
     const { controller, storage } = await makeController();
     (storage.exists as Mock).mockResolvedValue(false);
-    await expect(controller.streamPng('qr-1')).rejects.toThrow(NotFoundException);
+    await expect(controller.streamPng('qr-1')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('should throw NotFoundException on GET /api/qr/:id/png when QR not in DB', async () => {
     const { controller, repo } = await makeController();
     (repo.findById as Mock).mockResolvedValue(null);
-    await expect(controller.streamPng('nonexistent')).rejects.toThrow(NotFoundException);
+    await expect(controller.streamPng('nonexistent')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   // Test 21 — TPP: constant
   it('should return 200 with updated QrCode response including scanCount on PATCH /api/qr/:id', async () => {
     const { controller } = await makeController();
-    const dto = Object.assign(new EditTargetUrlDto(), { content: 'https://new.com' });
+    const dto = Object.assign(new EditTargetUrlDto(), {
+      content: 'https://new.com',
+    });
     const result = await controller.update('qr-1', dto, mockUser);
     expect(result).toMatchObject({ id: 'qr-1', scanCount: 3 });
   });
@@ -140,7 +264,14 @@ describe('QrController', () => {
   // Test 22 — TPP: variable
   it('toResponse() should include scanCount field', async () => {
     const { controller } = await makeController();
-    const dto = Object.assign(new CreateQrDto(), { contentType: 'url' as const, content: 'https://example.com', size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const });
+    const dto = Object.assign(new CreateQrDto(), {
+      contentType: 'url' as const,
+      content: 'https://example.com',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M' as const,
+    });
     const result = await controller.create(dto, mockUser);
     expect(result).toHaveProperty('scanCount');
     expect(result.scanCount).toBe(3);
@@ -150,16 +281,26 @@ describe('QrController', () => {
   it('should propagate NotFoundException from EditTargetUrlUseCase as 404 on PATCH', async () => {
     const { controller, editUseCase } = await makeController();
     (editUseCase.execute as Mock).mockRejectedValue(new NotFoundException());
-    const dto = Object.assign(new EditTargetUrlDto(), { content: 'https://x.com' });
-    await expect(controller.update('missing', dto, mockUser)).rejects.toThrow(NotFoundException);
+    const dto = Object.assign(new EditTargetUrlDto(), {
+      content: 'https://x.com',
+    });
+    await expect(controller.update('missing', dto, mockUser)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   // Test 24 — TPP: conditional
   it('should propagate UnprocessableEntityException from EditTargetUrlUseCase as 422 on PATCH', async () => {
     const { controller, editUseCase } = await makeController();
-    (editUseCase.execute as Mock).mockRejectedValue(new UnprocessableEntityException());
-    const dto = Object.assign(new EditTargetUrlDto(), { content: 'https://x.com' });
-    await expect(controller.update('qr-text', dto, mockUser)).rejects.toThrow(UnprocessableEntityException);
+    (editUseCase.execute as Mock).mockRejectedValue(
+      new UnprocessableEntityException(),
+    );
+    const dto = Object.assign(new EditTargetUrlDto(), {
+      content: 'https://x.com',
+    });
+    await expect(controller.update('qr-text', dto, mockUser)).rejects.toThrow(
+      UnprocessableEntityException,
+    );
   });
 
   // Test 25 — TPP: constant
@@ -175,11 +316,23 @@ describe('QrController', () => {
   it('toListItemResponse() should truncate content to 80 chars with ellipsis', async () => {
     const longContent = 'https://example.com/' + 'a'.repeat(100);
     const longQr = QrCode.create({
-      id: 'qr-long', userId: 'user-1', contentType: 'url', content: longContent,
-      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+      id: 'qr-long',
+      userId: 'user-1',
+      contentType: 'url',
+      content: longContent,
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M',
+      createdAt: new Date(),
     });
     const { controller, listUseCase } = await makeController();
-    (listUseCase.execute as Mock).mockResolvedValue({ items: [longQr], total: 1, page: 1, limit: 20 });
+    (listUseCase.execute as Mock).mockResolvedValue({
+      items: [longQr],
+      total: 1,
+      page: 1,
+      limit: 20,
+    });
     const dto = new ListQrDto();
     const result = await controller.list(dto, mockUser);
     expect(result.items[0].content).toHaveLength(81); // 80 chars + '…'
@@ -205,7 +358,9 @@ describe('QrController', () => {
   it('should propagate NotFoundException from DeleteQrUseCase as 404', async () => {
     const { controller, deleteUseCase } = await makeController();
     (deleteUseCase.execute as Mock).mockRejectedValue(new NotFoundException());
-    await expect(controller.remove('qr-999', mockUser)).rejects.toThrow(NotFoundException);
+    await expect(controller.remove('qr-999', mockUser)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   // Test 30 — TPP: variable
@@ -213,49 +368,78 @@ describe('QrController', () => {
     const { controller, listUseCase } = await makeController();
     const dto = new ListQrDto();
     await controller.list(dto, mockUser);
-    expect(listUseCase.execute).toHaveBeenCalledWith(expect.objectContaining({ userId: 'user-1' }));
+    expect(listUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'user-1' }),
+    );
   });
 
   // Test 36 (extended-content-types) — TPP: conditional
   it('should pass wifi fields through to GenerateQrUseCase command', async () => {
     const { controller, useCase } = await makeController();
     const dto = Object.assign(new CreateQrDto(), {
-      contentType: 'wifi' as const, ssid: 'HomeNet', security: 'WPA' as const, password: 'pass',
-      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const,
+      contentType: 'wifi' as const,
+      ssid: 'HomeNet',
+      security: 'WPA' as const,
+      password: 'pass',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M' as const,
     });
     await controller.create(dto, mockUser);
-    expect(useCase.execute).toHaveBeenCalledWith(expect.objectContaining({
-      contentType: 'wifi',
-      wifi: { ssid: 'HomeNet', security: 'WPA', password: 'pass' },
-    }));
+    expect(useCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: 'wifi',
+        wifi: { ssid: 'HomeNet', security: 'WPA', password: 'pass' },
+      }),
+    );
   });
 
   // Test 37 — TPP: variable
   it('should pass email fields through to GenerateQrUseCase command', async () => {
     const { controller, useCase } = await makeController();
     const dto = Object.assign(new CreateQrDto(), {
-      contentType: 'email' as const, to: 'user@example.com', subject: 'Hi',
-      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const,
+      contentType: 'email' as const,
+      to: 'user@example.com',
+      subject: 'Hi',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M' as const,
     });
     await controller.create(dto, mockUser);
-    expect(useCase.execute).toHaveBeenCalledWith(expect.objectContaining({
-      contentType: 'email',
-      emailFields: { to: 'user@example.com', subject: 'Hi', body: undefined },
-    }));
+    expect(useCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: 'email',
+        emailFields: { to: 'user@example.com', subject: 'Hi', body: undefined },
+      }),
+    );
   });
 
   // Test 38 — TPP: variable
   it('should pass vcard fields through to GenerateQrUseCase command', async () => {
     const { controller, useCase } = await makeController();
     const dto = Object.assign(new CreateQrDto(), {
-      contentType: 'vcard' as const, name: 'Jane Doe', phone: '+33612345678',
-      size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const,
+      contentType: 'vcard' as const,
+      name: 'Jane Doe',
+      phone: '+33612345678',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M' as const,
     });
     await controller.create(dto, mockUser);
-    expect(useCase.execute).toHaveBeenCalledWith(expect.objectContaining({
-      contentType: 'vcard',
-      vcard: { name: 'Jane Doe', phone: '+33612345678', email: undefined, org: undefined },
-    }));
+    expect(useCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: 'vcard',
+        vcard: {
+          name: 'Jane Doe',
+          phone: '+33612345678',
+          email: undefined,
+          org: undefined,
+        },
+      }),
+    );
   });
 
   // Test 1 (public-qr-page) — TPP: constant
@@ -269,13 +453,19 @@ describe('QrController', () => {
   it('should throw NotFoundException on GET /api/qr/:id/meta when QR not found', async () => {
     const { controller, repo } = await makeController();
     (repo.findById as Mock).mockResolvedValue(null);
-    await expect(controller.getMeta('unknown')).rejects.toThrow(NotFoundException);
+    await expect(controller.getMeta('unknown')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   // link-expiration: Test 30 — TPP: constant
   it('PATCH :id/expiration should call SetExpirationUseCase with Date parsed from dto.expiresAt', async () => {
     const expiry = new Date('2026-08-25T23:59:59.000Z');
-    const setExpirationUseCase = { execute: vi.fn().mockResolvedValue({ entity: mockQr.withExpiration(expiry) }) };
+    const setExpirationUseCase = {
+      execute: vi
+        .fn()
+        .mockResolvedValue({ entity: mockQr.withExpiration(expiry) }),
+    };
     const module = await Test.createTestingModule({
       controllers: [QrController],
       providers: [
@@ -284,29 +474,52 @@ describe('QrController', () => {
         { provide: EditTargetUrlUseCase, useValue: { execute: vi.fn() } },
         { provide: ListQrUseCase, useValue: { execute: vi.fn() } },
         { provide: DeleteQrUseCase, useValue: { execute: vi.fn() } },
-        { provide: QrRepository, useValue: { findById: vi.fn(), findByIdAndUserId: vi.fn(), findAllByUserId: vi.fn(), findAllLinksByUserId: vi.fn() } },
+        {
+          provide: QrRepository,
+          useValue: {
+            findById: vi.fn(),
+            findByIdAndUserId: vi.fn(),
+            findAllByUserId: vi.fn(),
+            findAllLinksByUserId: vi.fn(),
+          },
+        },
         { provide: QrStoragePort, useValue: {} },
-        { provide: ConfigService, useValue: { getOrThrow: vi.fn(), get: vi.fn() } },
+        {
+          provide: ConfigService,
+          useValue: { getOrThrow: vi.fn(), get: vi.fn() },
+        },
         { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
         { provide: ShareQrUseCase, useValue: { execute: vi.fn() } },
         { provide: UnshareQrUseCase, useValue: { execute: vi.fn() } },
         { provide: ListSharedWithMeUseCase, useValue: { execute: vi.fn() } },
-        { provide: QrShareRepository, useValue: { findByQrIds: vi.fn().mockResolvedValue([]) } },
-        { provide: UserRepository, useValue: { findAll: vi.fn().mockResolvedValue([]) } },
+        {
+          provide: QrShareRepository,
+          useValue: { findByQrIds: vi.fn().mockResolvedValue([]) },
+        },
+        {
+          provide: UserRepository,
+          useValue: { findAll: vi.fn().mockResolvedValue([]) },
+        },
       ],
     }).compile();
     const controller = module.get(QrController);
     const { SetExpirationDto } = await import('../dto/set-expiration.dto');
-    const dto = Object.assign(new SetExpirationDto(), { expiresAt: '2026-08-25' });
+    const dto = Object.assign(new SetExpirationDto(), {
+      expiresAt: '2026-08-25',
+    });
     await controller.setExpiration('qr-1', dto, mockUser);
     expect(setExpirationUseCase.execute).toHaveBeenCalledWith({
-      id: 'qr-1', userId: 'user-1', expiresAt: new Date('2026-08-25T23:59:59.000Z'),
+      id: 'qr-1',
+      userId: 'user-1',
+      expiresAt: new Date('2026-08-25T23:59:59.000Z'),
     });
   });
 
   // link-expiration: Test 31 — TPP: conditional
   it('PATCH :id/expiration with null should call SetExpirationUseCase with null', async () => {
-    const setExpirationUseCase = { execute: vi.fn().mockResolvedValue({ entity: mockQr }) };
+    const setExpirationUseCase = {
+      execute: vi.fn().mockResolvedValue({ entity: mockQr }),
+    };
     const module = await Test.createTestingModule({
       controllers: [QrController],
       providers: [
@@ -315,15 +528,32 @@ describe('QrController', () => {
         { provide: EditTargetUrlUseCase, useValue: { execute: vi.fn() } },
         { provide: ListQrUseCase, useValue: { execute: vi.fn() } },
         { provide: DeleteQrUseCase, useValue: { execute: vi.fn() } },
-        { provide: QrRepository, useValue: { findById: vi.fn(), findByIdAndUserId: vi.fn(), findAllByUserId: vi.fn(), findAllLinksByUserId: vi.fn() } },
+        {
+          provide: QrRepository,
+          useValue: {
+            findById: vi.fn(),
+            findByIdAndUserId: vi.fn(),
+            findAllByUserId: vi.fn(),
+            findAllLinksByUserId: vi.fn(),
+          },
+        },
         { provide: QrStoragePort, useValue: {} },
-        { provide: ConfigService, useValue: { getOrThrow: vi.fn(), get: vi.fn() } },
+        {
+          provide: ConfigService,
+          useValue: { getOrThrow: vi.fn(), get: vi.fn() },
+        },
         { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
         { provide: ShareQrUseCase, useValue: { execute: vi.fn() } },
         { provide: UnshareQrUseCase, useValue: { execute: vi.fn() } },
         { provide: ListSharedWithMeUseCase, useValue: { execute: vi.fn() } },
-        { provide: QrShareRepository, useValue: { findByQrIds: vi.fn().mockResolvedValue([]) } },
-        { provide: UserRepository, useValue: { findAll: vi.fn().mockResolvedValue([]) } },
+        {
+          provide: QrShareRepository,
+          useValue: { findByQrIds: vi.fn().mockResolvedValue([]) },
+        },
+        {
+          provide: UserRepository,
+          useValue: { findAll: vi.fn().mockResolvedValue([]) },
+        },
       ],
     }).compile();
     const controller = module.get(QrController);
@@ -331,7 +561,9 @@ describe('QrController', () => {
     const dto = Object.assign(new SetExpirationDto(), { expiresAt: null });
     await controller.setExpiration('qr-1', dto, mockUser);
     expect(setExpirationUseCase.execute).toHaveBeenCalledWith({
-      id: 'qr-1', userId: 'user-1', expiresAt: null,
+      id: 'qr-1',
+      userId: 'user-1',
+      expiresAt: null,
     });
   });
 
@@ -346,7 +578,14 @@ describe('QrController', () => {
   // link-expiration: Test 33 — TPP: variable
   it('POST / create response should include expiresAt field', async () => {
     const { controller } = await makeController();
-    const dto = Object.assign(new CreateQrDto(), { contentType: 'url' as const, content: 'https://example.com', size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M' as const });
+    const dto = Object.assign(new CreateQrDto(), {
+      contentType: 'url' as const,
+      content: 'https://example.com',
+      size: 1024,
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      errorCorrection: 'M' as const,
+    });
     const result = await controller.create(dto, mockUser);
     expect(result).toHaveProperty('expiresAt');
     expect(result.expiresAt).toBeNull();
@@ -355,9 +594,15 @@ describe('QrController', () => {
   // T30 — TPP: constant
   it('POST /api/qr/:id/shares should call ShareQrUseCase with qrId, ownerId, recipientId and return 201 with {shareId, recipientId, createdAt}', async () => {
     const { controller, shareUseCase } = await makeController();
-    const dto = Object.assign(Object.create(Object.prototype), { recipientId: 'user-2' }) as CreateShareDto;
+    const dto = Object.assign(Object.create(Object.prototype), {
+      recipientId: 'user-2',
+    }) as CreateShareDto;
     const result = await controller.createShare('qr-1', dto, mockUser);
-    expect(shareUseCase.execute).toHaveBeenCalledWith({ qrId: 'qr-1', ownerId: 'user-1', recipientId: 'user-2' });
+    expect(shareUseCase.execute).toHaveBeenCalledWith({
+      qrId: 'qr-1',
+      ownerId: 'user-1',
+      recipientId: 'user-2',
+    });
     expect(result).toMatchObject({ shareId: 'share-1', recipientId: 'user-2' });
     expect(result.createdAt).toBeDefined();
   });
@@ -366,15 +611,23 @@ describe('QrController', () => {
   it('POST /api/qr/:id/shares should propagate ForbiddenException from ShareQrUseCase as 403', async () => {
     const { controller, shareUseCase } = await makeController();
     shareUseCase.execute.mockRejectedValue(new ForbiddenException());
-    const dto = Object.assign(Object.create(Object.prototype), { recipientId: 'user-2' }) as CreateShareDto;
-    await expect(controller.createShare('qr-1', dto, mockUser)).rejects.toThrow(ForbiddenException);
+    const dto = Object.assign(Object.create(Object.prototype), {
+      recipientId: 'user-2',
+    }) as CreateShareDto;
+    await expect(controller.createShare('qr-1', dto, mockUser)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   // T31 — TPP: constant
   it('DELETE /api/qr/:id/shares/:shareId should call UnshareQrUseCase with shareId, qrId, ownerId and return 204', async () => {
     const { controller, unshareUseCase } = await makeController();
     await controller.removeShare('qr-1', 'share-1', mockUser);
-    expect(unshareUseCase.execute).toHaveBeenCalledWith({ shareId: 'share-1', qrId: 'qr-1', ownerId: 'user-1' });
+    expect(unshareUseCase.execute).toHaveBeenCalledWith({
+      shareId: 'share-1',
+      qrId: 'qr-1',
+      ownerId: 'user-1',
+    });
   });
 
   // T32 — TPP: constant
@@ -384,9 +637,14 @@ describe('QrController', () => {
       items: [{ qrCode: mockQr, sharedBy: { id: 'user-1', name: 'Alice' } }],
     });
     const result = await controller.sharedWithMe(mockUser);
-    expect(listSharedWithMeUseCase.execute).toHaveBeenCalledWith({ userId: 'user-1' });
+    expect(listSharedWithMeUseCase.execute).toHaveBeenCalledWith({
+      userId: 'user-1',
+    });
     expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({ id: 'qr-1', sharedBy: { id: 'user-1', name: 'Alice' } });
+    expect(result[0]).toMatchObject({
+      id: 'qr-1',
+      sharedBy: { id: 'user-1', name: 'Alice' },
+    });
   });
 
   // T33 — TPP: variable
@@ -403,7 +661,9 @@ describe('QrController', () => {
     shareRepo.findByQrIds.mockResolvedValue([mockShare]);
     userRepo.findAll.mockResolvedValue([mockRecipient]);
     const result = await controller.list(new ListQrDto(), mockUser);
-    expect(result.items[0].shares).toEqual([{ shareId: 'share-1', recipientId: 'user-2', recipientName: 'Bob' }]);
+    expect(result.items[0].shares).toEqual([
+      { shareId: 'share-1', recipientId: 'user-2', recipientName: 'Bob' },
+    ]);
   });
 
   // T35 — TPP: variable
@@ -420,6 +680,8 @@ describe('QrController', () => {
     shareRepo.findByQrIds.mockResolvedValue([mockShare]);
     userRepo.findAll.mockResolvedValue([mockRecipient]);
     const result = await controller.findOne('qr-1', mockUser);
-    expect(result.shares).toEqual([{ shareId: 'share-1', recipientId: 'user-2', recipientName: 'Bob' }]);
+    expect(result.shares).toEqual([
+      { shareId: 'share-1', recipientId: 'user-2', recipientName: 'Bob' },
+    ]);
   });
 });

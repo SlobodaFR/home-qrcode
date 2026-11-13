@@ -6,5 +6,8 @@ export interface QrOptions {
 }
 
 export abstract class QrImageGenerator {
-  abstract generate(encodedContent: string, options: QrOptions): Promise<{ png: Buffer; svg: string }>;
+  abstract generate(
+    encodedContent: string,
+    options: QrOptions,
+  ): Promise<{ png: Buffer; svg: string }>;
 }

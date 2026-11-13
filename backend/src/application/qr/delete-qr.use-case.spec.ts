@@ -7,17 +7,31 @@ import { QrStoragePort } from '../../domain/qr/qr-storage.port';
 import { DeleteQrUseCase } from './delete-qr.use-case';
 
 const urlQr = QrCode.create({
-  id: 'qr-1', userId: 'user-1', contentType: 'url', content: 'https://x.com',
-  size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+  id: 'qr-1',
+  userId: 'user-1',
+  contentType: 'url',
+  content: 'https://x.com',
+  size: 1024,
+  fgColor: '#000000',
+  bgColor: '#FFFFFF',
+  errorCorrection: 'M',
+  createdAt: new Date(),
 });
 
 const makeShareRepo = (): Mocked<QrShareRepository> => ({
-  save: vi.fn(), findById: vi.fn(), findByQrAndRecipient: vi.fn(),
-  findByQrIds: vi.fn(), findWithQrByRecipientId: vi.fn(),
-  deleteById: vi.fn(), deleteByQrId: vi.fn().mockResolvedValue(undefined),
+  save: vi.fn(),
+  findById: vi.fn(),
+  findByQrAndRecipient: vi.fn(),
+  findByQrIds: vi.fn(),
+  findWithQrByRecipientId: vi.fn(),
+  deleteById: vi.fn(),
+  deleteByQrId: vi.fn().mockResolvedValue(undefined),
 });
 
-const makeRepo = (qr: QrCode | null, deleteResult = true): Mocked<QrRepository> => ({
+const makeRepo = (
+  qr: QrCode | null,
+  deleteResult = true,
+): Mocked<QrRepository> => ({
   findById: vi.fn(),
   findByIdAndUserId: vi.fn().mockResolvedValue(qr),
   findAllByUserId: vi.fn(),
@@ -28,8 +42,12 @@ const makeRepo = (qr: QrCode | null, deleteResult = true): Mocked<QrRepository> 
 });
 
 const makeStorage = (): Mocked<QrStoragePort> => ({
-  uploadPng: vi.fn(), uploadSvg: vi.fn(), uploadLogo: vi.fn(),
-  streamPng: vi.fn(), streamSvg: vi.fn(), streamLogo: vi.fn(),
+  uploadPng: vi.fn(),
+  uploadSvg: vi.fn(),
+  uploadLogo: vi.fn(),
+  streamPng: vi.fn(),
+  streamSvg: vi.fn(),
+  streamLogo: vi.fn(),
   exists: vi.fn(),
   delete: vi.fn().mockResolvedValue(undefined),
 });
@@ -41,18 +59,31 @@ describe('DeleteQrUseCase', () => {
     const storage = makeStorage();
     const shareRepo = makeShareRepo();
     const deleteOrder: string[] = [];
-    (shareRepo.deleteByQrId as Mock).mockImplementation(async () => { deleteOrder.push('shares'); });
-    (repo.deleteById as Mock).mockImplementation(async () => { deleteOrder.push('qr'); return true; });
-    await new DeleteQrUseCase(repo, storage, shareRepo).execute({ id: 'qr-1', userId: 'user-1' });
+    (shareRepo.deleteByQrId as Mock).mockImplementation(async () => {
+      deleteOrder.push('shares');
+    });
+    (repo.deleteById as Mock).mockImplementation(async () => {
+      deleteOrder.push('qr');
+      return true;
+    });
+    await new DeleteQrUseCase(repo, storage, shareRepo).execute({
+      id: 'qr-1',
+      userId: 'user-1',
+    });
     expect(shareRepo.deleteByQrId).toHaveBeenCalledWith('qr-1');
-    expect(deleteOrder.indexOf('shares')).toBeLessThan(deleteOrder.indexOf('qr'));
+    expect(deleteOrder.indexOf('shares')).toBeLessThan(
+      deleteOrder.indexOf('qr'),
+    );
   });
 
   // Test 15 — TPP: constant
   it('should call storage.delete and then repository.deleteById', async () => {
     const repo = makeRepo(urlQr);
     const storage = makeStorage();
-    await new DeleteQrUseCase(repo, storage, makeShareRepo()).execute({ id: 'qr-1', userId: 'user-1' });
+    await new DeleteQrUseCase(repo, storage, makeShareRepo()).execute({
+      id: 'qr-1',
+      userId: 'user-1',
+    });
     await Promise.resolve(); // drain void
     expect(storage.delete).toHaveBeenCalledWith('qr-1');
     expect(repo.deleteById).toHaveBeenCalledWith('qr-1', 'user-1');
@@ -63,9 +94,18 @@ describe('DeleteQrUseCase', () => {
     const order: string[] = [];
     const repo = makeRepo(urlQr);
     const storage = makeStorage();
-    (storage.delete as Mock).mockImplementation(() => { order.push('storage'); return Promise.resolve(); });
-    (repo.deleteById as Mock).mockImplementation(async () => { order.push('db'); return true; });
-    await new DeleteQrUseCase(repo, storage, makeShareRepo()).execute({ id: 'qr-1', userId: 'user-1' });
+    (storage.delete as Mock).mockImplementation(() => {
+      order.push('storage');
+      return Promise.resolve();
+    });
+    (repo.deleteById as Mock).mockImplementation(async () => {
+      order.push('db');
+      return true;
+    });
+    await new DeleteQrUseCase(repo, storage, makeShareRepo()).execute({
+      id: 'qr-1',
+      userId: 'user-1',
+    });
     await Promise.resolve();
     expect(order).toContain('storage');
     expect(order).toContain('db');
@@ -74,14 +114,22 @@ describe('DeleteQrUseCase', () => {
   // Test 17 — TPP: conditional
   it('should throw NotFoundException when findByIdAndUserId returns null', async () => {
     await expect(
-      new DeleteQrUseCase(makeRepo(null), makeStorage(), makeShareRepo()).execute({ id: 'x', userId: 'u' })
+      new DeleteQrUseCase(
+        makeRepo(null),
+        makeStorage(),
+        makeShareRepo(),
+      ).execute({ id: 'x', userId: 'u' }),
     ).rejects.toThrow(NotFoundException);
   });
 
   // Test 18 — TPP: conditional
   it('should throw NotFoundException when deleteById returns false (race)', async () => {
     await expect(
-      new DeleteQrUseCase(makeRepo(urlQr, false), makeStorage(), makeShareRepo()).execute({ id: 'qr-1', userId: 'user-1' })
+      new DeleteQrUseCase(
+        makeRepo(urlQr, false),
+        makeStorage(),
+        makeShareRepo(),
+      ).execute({ id: 'qr-1', userId: 'user-1' }),
     ).rejects.toThrow(NotFoundException);
   });
 });

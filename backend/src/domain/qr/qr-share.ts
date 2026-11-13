@@ -13,9 +13,19 @@ export class QrShare {
     return new QrShare(props);
   }
 
-  get id(): string { return this.props.id; }
-  get qrId(): string { return this.props.qrId; }
-  get ownerId(): string { return this.props.ownerId; }
-  get recipientId(): string { return this.props.recipientId; }
-  get createdAt(): Date { return this.props.createdAt; }
+  get id(): string {
+    return this.props.id;
+  }
+  get qrId(): string {
+    return this.props.qrId;
+  }
+  get ownerId(): string {
+    return this.props.ownerId;
+  }
+  get recipientId(): string {
+    return this.props.recipientId;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
 }

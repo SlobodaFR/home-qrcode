@@ -39,12 +39,14 @@ And `/r/{id}` returns 302 again.
 ## Acceptance Criteria
 
 ### AC1 — Data model
+
 - Given the app starts with an existing database,
   Then `qr_codes` gains a nullable `expires_at` column (`DATETIME`, UTC, nullable).
 - Given an existing row with no `expires_at`,
   Then it defaults to `NULL` (never expires — backward compatible with all existing QR codes and shortlinks).
 
 ### AC2 — `GET /r/{id}` expiry check in `RedirectUseCase`
+
 - Given `findById` returns a record where `expiresAt` is non-null and `expiresAt <= serverNow (UTC)`,
   When `RedirectUseCase.execute()` is called,
   Then it throws `GoneException` (HTTP 410).
@@ -58,6 +60,7 @@ And `/r/{id}` returns 302 again.
 - Performance: expiry check is in-memory after single DB lookup — no extra query. `/r/{id}` still < 100ms.
 
 ### AC3 — Optional `expiresAt` at creation
+
 - Given an authenticated user posts `POST /api/qr` with an optional `expiresAt: "YYYY-MM-DD"` field,
   Then the QR record is created with `expires_at = YYYY-MM-DDT23:59:59.000Z` (UTC).
 - Given an authenticated user posts `POST /api/links` with an optional `expiresAt: "YYYY-MM-DD"` field,
@@ -71,6 +74,7 @@ And `/r/{id}` returns 302 again.
 - Response shapes for `POST /api/qr` and `POST /api/links` include `expiresAt: string | null` (ISO 8601 UTC string or null).
 
 ### AC4 — Dedicated expiration endpoint
+
 - `PATCH /api/qr/:id/expiration` (authenticated, owner only) accepts `{ expiresAt: "YYYY-MM-DD" | null }`.
 - `PATCH /api/links/:id/expiration` (authenticated, owner only) accepts `{ expiresAt: "YYYY-MM-DD" | null }`.
 - Both share a single `SetExpirationUseCase` (`{ id, userId, expiresAt: Date | null }`).
@@ -81,12 +85,14 @@ And `/r/{id}` returns 302 again.
 - `null` body value clears expiration (never expires again).
 
 ### AC5 — List responses include `expiresAt`
+
 - Given an authenticated user calls `GET /api/qr`,
   Then each item includes `expiresAt: string | null` (ISO 8601 or null).
 - Given an authenticated user calls `GET /api/links`,
   Then each item includes `expiresAt: string | null` (ISO 8601 or null).
 
 ### AC6 — Dashboard UI
+
 - Given a QR card or link card with `expiresAt` in the future,
   Then the card shows the expiry date (e.g. "Expire le 25 août 2026").
 - Given a QR card or link card with `expiresAt` in the past,
@@ -110,49 +116,57 @@ And `/r/{id}` returns 302 again.
 ## Edge Cases
 
 ### EC1 — Clock skew
+
 Server clock is authoritative. `expiresAt <= serverNow (UTC)` → 410. No client-clock reliance.
 
 ### EC2 — Past date at creation
+
 Given `expiresAt` is a valid past date string,
 Then the record is created; `GET /r/{id}` immediately returns 410. Not a 400 error.
 
 ### EC3 — Edit target URL on an expired record
+
 Given I own an expired redirect and call `PATCH /api/qr/:id` or `PATCH /api/links/:id`,
 Then the URL update succeeds (no expiry check in EditTargetUrlUseCase or EditLinkUseCase).
 The record remains expired until expiry is separately cleared.
 
 ### EC4 — Delete expired record
+
 Given an expired record,
 When it is deleted,
 Then existing delete flow (DB + MinIO cleanup) applies unchanged. `/r/{id}` returns 404 (row gone) not 410.
 
 ### EC5 — `/q/{id}` public QR page
+
 Given a QR code's `expiresAt` is in the past,
 When anyone visits `/q/{id}`,
 Then the SPA renders normally (it is a static page; expiry only gates `/r/{id}`).
 The QR image on that page encodes `/r/{id}`, which will 410 on scan — the user sees the consequence there.
 
 ### EC6 — Non-URL contentType with `expiresAt` set
+
 Given a QR record with `contentType != 'url'` (Wi-Fi, vCard, etc.) has `expires_at` set,
 When `RedirectUseCase` is called (which can't happen — non-URL types return 404 before expiry check),
 Then behavior is moot. Expiry check in `RedirectUseCase` occurs only after the `contentType !== 'url'` guard passes.
 `SetExpirationUseCase` may set `expires_at` on non-url records without error (no guard; column is nullable for all rows).
 
 ### EC7 — Timezone and storage
+
 Given `expiresAt: "2026-08-25"` arrives from the API,
 Then the backend stores `2026-08-25T23:59:59.000Z` (end-of-day UTC).
 The API always returns ISO 8601 UTC string (e.g. `"2026-08-25T23:59:59.000Z"`).
 Frontend displays in user's local timezone via `Intl.DateTimeFormat`.
 
 ### EC8 — Concurrent set + redirect
+
 Last PATCH wins. No locking required (SQLite serializes writes).
 
 ## Grill Log
 
-| # | Question | Resolution |
-|---|---|---|
+| #   | Question                                                    | Resolution                                                                                                                                      |
+| --- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | OQ1 | Dedicated `PATCH /expiration` vs. fold into existing PATCH? | Dedicated — `PATCH /api/qr/:id/expiration` + `PATCH /api/links/:id/expiration`, sharing `SetExpirationUseCase`. Keeps existing use cases clean. |
-| OQ2 | Expiration on QR codes AND shortlinks, or shortlinks only? | Both — they share `RedirectUseCase` and `qr_codes` table. Same column applies to both. |
-| OQ3 | Past date at creation → 400 or accept? | Accept — 410 immediately, valid behavior, no reason to block. |
-| OQ4 | Date-only or date+time input? | Date-only (`YYYY-MM-DD`), stored as `T23:59:59.000Z` UTC. `<input type="date" />` in UI. |
-| OQ5 | `/q/{id}` returns 410 when expired? | No — SPA route, expiry gate is `/r/{id}` only. `/q/{id}` renders normally. |
+| OQ2 | Expiration on QR codes AND shortlinks, or shortlinks only?  | Both — they share `RedirectUseCase` and `qr_codes` table. Same column applies to both.                                                          |
+| OQ3 | Past date at creation → 400 or accept?                      | Accept — 410 immediately, valid behavior, no reason to block.                                                                                   |
+| OQ4 | Date-only or date+time input?                               | Date-only (`YYYY-MM-DD`), stored as `T23:59:59.000Z` UTC. `<input type="date" />` in UI.                                                        |
+| OQ5 | `/q/{id}` returns 410 when expired?                         | No — SPA route, expiry gate is `/r/{id}` only. `/q/{id}` renders normally.                                                                      |

@@ -3,7 +3,14 @@ import { QrCode } from '../../domain/qr/qr-code';
 import { QrImageGenerator } from '../../domain/qr/qr-image-generator';
 import { QrRepository } from '../../domain/qr/qr.repository';
 import { QrStoragePort } from '../../domain/qr/qr-storage.port';
-import { EmailFields, VcardFields, WifiFields, encodeEmail, encodeVcard, encodeWifi } from './qr-content.encoder';
+import {
+  EmailFields,
+  VcardFields,
+  WifiFields,
+  encodeEmail,
+  encodeVcard,
+  encodeWifi,
+} from './qr-content.encoder';
 
 type DisplayOptions = {
   size: number;
@@ -12,7 +19,11 @@ type DisplayOptions = {
   errorCorrection: 'L' | 'M' | 'Q' | 'H';
 };
 
-type BaseCmd = { userId: string; frontendUrl: string; expiresAt?: Date | null } & DisplayOptions;
+type BaseCmd = {
+  userId: string;
+  frontendUrl: string;
+  expiresAt?: Date | null;
+} & DisplayOptions;
 
 export type GenerateQrCommand =
   | (BaseCmd & { contentType: 'url'; content: string })

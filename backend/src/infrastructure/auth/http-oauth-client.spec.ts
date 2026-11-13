@@ -17,7 +17,9 @@ describe('HttpOAuthClient', () => {
   it('should build an authorizeUrl containing client_id and redirect_uri', () => {
     const client = new HttpOAuthClient(makeConfig());
     const url = new URL(client.authorizeUrl('https://app/callback'));
-    expect(url.origin + url.pathname).toBe('https://auth.example.com/authorize');
+    expect(url.origin + url.pathname).toBe(
+      'https://auth.example.com/authorize',
+    );
     expect(url.searchParams.get('client_id')).toBe('client-id');
     expect(url.searchParams.get('redirect_uri')).toBe('https://app/callback');
   });
@@ -26,6 +28,8 @@ describe('HttpOAuthClient', () => {
   it('should throw when the token endpoint returns a non-2xx response', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 400 });
     const client = new HttpOAuthClient(makeConfig());
-    await expect(client.exchangeCode('bad-code', 'https://app/callback')).rejects.toThrow('Token request failed');
+    await expect(
+      client.exchangeCode('bad-code', 'https://app/callback'),
+    ).rejects.toThrow('Token request failed');
   });
 });

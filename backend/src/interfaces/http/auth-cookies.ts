@@ -7,17 +7,30 @@ export const REFRESH_TOKEN_COOKIE_NAME = 'refresh_token';
 
 const REFRESH_TOKEN_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
-export function setAuthCookies(response: Response, tokens: TokenPair, config: ConfigService): void {
+export function setAuthCookies(
+  response: Response,
+  tokens: TokenPair,
+  config: ConfigService,
+): void {
   const secure = config.get<string>('NODE_ENV') === 'production';
   response.cookie(ACCESS_TOKEN_COOKIE_NAME, tokens.accessToken, {
-    httpOnly: true, secure, sameSite: 'lax', maxAge: tokens.expiresIn * 1000,
+    httpOnly: true,
+    secure,
+    sameSite: 'lax',
+    maxAge: tokens.expiresIn * 1000,
   });
   response.cookie(REFRESH_TOKEN_COOKIE_NAME, tokens.refreshToken, {
-    httpOnly: true, secure, sameSite: 'lax', maxAge: REFRESH_TOKEN_MAX_AGE_MS,
+    httpOnly: true,
+    secure,
+    sameSite: 'lax',
+    maxAge: REFRESH_TOKEN_MAX_AGE_MS,
   });
 }
 
-export function clearAuthCookies(response: Response, config: ConfigService): void {
+export function clearAuthCookies(
+  response: Response,
+  config: ConfigService,
+): void {
   const secure = config.get<string>('NODE_ENV') === 'production';
   const opts = { httpOnly: true, secure, sameSite: 'lax' as const, path: '/' };
   response.clearCookie(ACCESS_TOKEN_COOKIE_NAME, opts);

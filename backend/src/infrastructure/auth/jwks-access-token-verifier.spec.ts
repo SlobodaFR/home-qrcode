@@ -8,10 +8,14 @@ const mockJose = vi.mocked(jose);
 
 describe('JwksAccessTokenVerifier', () => {
   const makeConfig = () =>
-    ({ getOrThrow: vi.fn().mockReturnValue('https://auth.example.com') }) as unknown as ConfigService;
+    ({
+      getOrThrow: vi.fn().mockReturnValue('https://auth.example.com'),
+    }) as unknown as ConfigService;
 
   beforeEach(() => {
-    mockJose.createRemoteJWKSet.mockReturnValue(vi.fn() as unknown as ReturnType<typeof jose.createRemoteJWKSet>);
+    mockJose.createRemoteJWKSet.mockReturnValue(
+      vi.fn() as unknown as ReturnType<typeof jose.createRemoteJWKSet>,
+    );
   });
 
   // Test 9 — TPP: constant
@@ -24,7 +28,10 @@ describe('JwksAccessTokenVerifier', () => {
 
   // Test 10 — TPP: conditional
   it('should return null when required claims are absent from payload', async () => {
-    mockJose.jwtVerify.mockResolvedValue({ payload: { sub: 'u1' }, protectedHeader: {} } as unknown as Awaited<ReturnType<typeof jose.jwtVerify>>);
+    mockJose.jwtVerify.mockResolvedValue({
+      payload: { sub: 'u1' },
+      protectedHeader: {},
+    } as unknown as Awaited<ReturnType<typeof jose.jwtVerify>>);
     const verifier = new JwksAccessTokenVerifier(makeConfig());
     const result = await verifier.verify('token-missing-claims');
     expect(result).toBeNull();

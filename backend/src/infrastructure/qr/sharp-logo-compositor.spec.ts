@@ -3,8 +3,15 @@ import { SharpLogoCompositor } from './sharp-logo-compositor';
 
 async function makePng(width: number, height: number): Promise<Buffer> {
   return sharp({
-    create: { width, height, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
-  }).png().toBuffer();
+    create: {
+      width,
+      height,
+      channels: 4,
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
+    },
+  })
+    .png()
+    .toBuffer();
 }
 
 describe('SharpLogoCompositor', () => {

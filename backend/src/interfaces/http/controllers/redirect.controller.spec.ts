@@ -8,7 +8,14 @@ const makeController = async () => {
   const module = await Test.createTestingModule({
     controllers: [RedirectController],
     providers: [
-      { provide: RedirectUseCase, useValue: { execute: vi.fn().mockResolvedValue({ targetUrl: 'https://target.com' }) } },
+      {
+        provide: RedirectUseCase,
+        useValue: {
+          execute: vi
+            .fn()
+            .mockResolvedValue({ targetUrl: 'https://target.com' }),
+        },
+      },
     ],
   }).compile();
   return {
@@ -27,7 +34,10 @@ describe('RedirectController', () => {
 
   // Test 26 — TPP: constant
   it('should have @Public() (route accessible without auth)', async () => {
-    const metadata: unknown = Reflect.getMetadata('isPublic', RedirectController.prototype.redirect);
+    const metadata: unknown = Reflect.getMetadata(
+      'isPublic',
+      RedirectController.prototype.redirect,
+    );
     expect(metadata).toBe(true);
   });
 
@@ -35,6 +45,8 @@ describe('RedirectController', () => {
   it('should propagate NotFoundException from use case as 404', async () => {
     const { controller, useCase } = await makeController();
     (useCase.execute as Mock).mockRejectedValue(new NotFoundException());
-    await expect(controller.redirect('missing')).rejects.toThrow(NotFoundException);
+    await expect(controller.redirect('missing')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

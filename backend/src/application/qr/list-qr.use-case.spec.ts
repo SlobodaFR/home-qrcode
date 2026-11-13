@@ -4,8 +4,15 @@ import { QrRepository } from '../../domain/qr/qr.repository';
 import { ListQrUseCase } from './list-qr.use-case';
 
 const qr = QrCode.create({
-  id: 'qr-1', userId: 'u1', contentType: 'url', content: 'https://x.com',
-  size: 1024, fgColor: '#000000', bgColor: '#FFFFFF', errorCorrection: 'M', createdAt: new Date(),
+  id: 'qr-1',
+  userId: 'u1',
+  contentType: 'url',
+  content: 'https://x.com',
+  size: 1024,
+  fgColor: '#000000',
+  bgColor: '#FFFFFF',
+  errorCorrection: 'M',
+  createdAt: new Date(),
 });
 
 const makeRepo = (): Mocked<QrRepository> => ({
@@ -33,6 +40,9 @@ describe('ListQrUseCase', () => {
   it('should pass correct page and limit to repository', async () => {
     const repo = makeRepo();
     await new ListQrUseCase(repo).execute({ userId: 'u1', page: 3, limit: 10 });
-    expect(repo.findAllByUserId).toHaveBeenCalledWith('u1', { page: 3, limit: 10 });
+    expect(repo.findAllByUserId).toHaveBeenCalledWith('u1', {
+      page: 3,
+      limit: 10,
+    });
   });
 });

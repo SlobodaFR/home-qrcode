@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { LogoCompositorPort } from '../../domain/qr/logo-compositor.port';
 import { QrCode } from '../../domain/qr/qr-code';
 import { QrImageGenerator } from '../../domain/qr/qr-image-generator';
@@ -33,7 +38,9 @@ export class AttachLogoUseCase {
 
     const encodedContent = this.resolveEncodedContent(qr, cmd.frontendUrl);
 
-    const effectiveCorrection = (['L', 'M'] as const).includes(qr.errorCorrection as 'L' | 'M')
+    const effectiveCorrection = (['L', 'M'] as const).includes(
+      qr.errorCorrection as 'L' | 'M',
+    )
       ? ('Q' as const)
       : qr.errorCorrection;
 

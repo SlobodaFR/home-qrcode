@@ -6,27 +6,27 @@ Feature lives entirely within the existing `QrModule` bounded context. No new mo
 
 ### New files
 
-| Layer | File | Purpose |
-|---|---|---|
-| `domain/qr/` | `logo-compositor.port.ts` | Abstract port — composites logo onto QR PNG |
-| `application/qr/` | `attach-logo.use-case.ts` | Orchestrates regenerate → composite → upload → persist |
-| `infrastructure/qr/` | `sharp-logo-compositor.ts` | `sharp` implementation of `LogoCompositorPort` |
+| Layer                | File                       | Purpose                                                |
+| -------------------- | -------------------------- | ------------------------------------------------------ |
+| `domain/qr/`         | `logo-compositor.port.ts`  | Abstract port — composites logo onto QR PNG            |
+| `application/qr/`    | `attach-logo.use-case.ts`  | Orchestrates regenerate → composite → upload → persist |
+| `infrastructure/qr/` | `sharp-logo-compositor.ts` | `sharp` implementation of `LogoCompositorPort`         |
 
 ### Modified files
 
-| File | Change |
-|---|---|
-| `domain/qr/qr-code.ts` | Add `encodedContent`, `hasLogo`, `logoMimeType`; add `withLogo()` method and `logoUrl` getter |
-| `domain/qr/qr-storage.port.ts` | Add abstract `uploadLogo`, `streamLogo`; semantic enrichment of `delete` (logo included) |
-| `infrastructure/qr/minio-qr-storage.ts` | Implement `uploadLogo`, `streamLogo`; extend `delete` to include logo key |
-| `infrastructure/persistence/entities/qr-code.orm-entity.ts` | Add `encodedContent`, `hasLogo`, `logoMimeType` columns |
-| `infrastructure/persistence/repositories/typeorm-qr.repository.ts` | Map new fields in `toDomain` and `save` |
-| `application/qr/generate-qr.use-case.ts` | Pass `encodedContent` and `hasLogo: false` to `QrCode.create()` |
-| `interfaces/http/controllers/qr.controller.ts` | Add `attachLogo` endpoint; add `streamLogo` endpoint; add `hasLogo`/`logoMimeType` to `toResponse` |
-| `interfaces/http/qr.module.ts` | Register `LogoCompositorPort → SharpLogoCompositor`, `AttachLogoUseCase` |
-| `frontend/src/infrastructure/api/qr-auth.client.ts` | Add `attachLogo(id, file)`, extend `QrItem` with `hasLogo`, `logoMimeType` |
-| `frontend/src/application/hooks/useDashboard.ts` | Add `attachLogo` |
-| `frontend/src/presentation/pages/DashboardPage.tsx` | Add logo upload button on `QrCard`; add correction-level notice in `CreateForm` |
+| File                                                               | Change                                                                                             |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `domain/qr/qr-code.ts`                                             | Add `encodedContent`, `hasLogo`, `logoMimeType`; add `withLogo()` method and `logoUrl` getter      |
+| `domain/qr/qr-storage.port.ts`                                     | Add abstract `uploadLogo`, `streamLogo`; semantic enrichment of `delete` (logo included)           |
+| `infrastructure/qr/minio-qr-storage.ts`                            | Implement `uploadLogo`, `streamLogo`; extend `delete` to include logo key                          |
+| `infrastructure/persistence/entities/qr-code.orm-entity.ts`        | Add `encodedContent`, `hasLogo`, `logoMimeType` columns                                            |
+| `infrastructure/persistence/repositories/typeorm-qr.repository.ts` | Map new fields in `toDomain` and `save`                                                            |
+| `application/qr/generate-qr.use-case.ts`                           | Pass `encodedContent` and `hasLogo: false` to `QrCode.create()`                                    |
+| `interfaces/http/controllers/qr.controller.ts`                     | Add `attachLogo` endpoint; add `streamLogo` endpoint; add `hasLogo`/`logoMimeType` to `toResponse` |
+| `interfaces/http/qr.module.ts`                                     | Register `LogoCompositorPort → SharpLogoCompositor`, `AttachLogoUseCase`                           |
+| `frontend/src/infrastructure/api/qr-auth.client.ts`                | Add `attachLogo(id, file)`, extend `QrItem` with `hasLogo`, `logoMimeType`                         |
+| `frontend/src/application/hooks/useDashboard.ts`                   | Add `attachLogo`                                                                                   |
+| `frontend/src/presentation/pages/DashboardPage.tsx`                | Add logo upload button on `QrCard`; add correction-level notice in `CreateForm`                    |
 
 ### Layer discipline
 
@@ -93,18 +93,18 @@ abstract streamLogo(id: string): Promise<NodeJS.ReadableStream>;
 
 ### MinIO keys
 
-| Asset | Key |
-|---|---|
-| PNG | `{assetsPath}/{id}/qr.png` (unchanged) |
-| SVG | `{assetsPath}/{id}/qr.svg` (unchanged) |
-| Logo | `{assetsPath}/{id}/logo` (no extension — Content-Type stored as MinIO metadata) |
+| Asset | Key                                                                             |
+| ----- | ------------------------------------------------------------------------------- |
+| PNG   | `{assetsPath}/{id}/qr.png` (unchanged)                                          |
+| SVG   | `{assetsPath}/{id}/qr.svg` (unchanged)                                          |
+| Logo  | `{assetsPath}/{id}/logo` (no extension — Content-Type stored as MinIO metadata) |
 
 ### New API endpoints
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/api/qr/:id/logo` | JWT | Attach logo (multipart, `logo` field, max 2 MB) |
-| `GET` | `/api/qr/:id/logo` | `@Public()` | Stream logo bytes |
+| Method | Path               | Auth        | Description                                     |
+| ------ | ------------------ | ----------- | ----------------------------------------------- |
+| `POST` | `/api/qr/:id/logo` | JWT         | Attach logo (multipart, `logo` field, max 2 MB) |
+| `GET`  | `/api/qr/:id/logo` | `@Public()` | Stream logo bytes                               |
 
 `POST /api/qr/:id/logo` uses `@UseInterceptors(FileInterceptor('logo', { limits: { fileSize: 2_097_152 } }))` with `ParseFilePipe` + `FileTypeValidator` at the HTTP boundary:
 
@@ -145,11 +145,11 @@ logoMimeType: string | null;
 
 ### `qr_codes` table — new columns
 
-| Column | Type | Nullable | Default | Notes |
-|---|---|---|---|---|
-| `encoded_content` | TEXT | YES | NULL | Null for records created before this feature |
-| `has_logo` | BOOLEAN | NO | FALSE | |
-| `logo_mime_type` | TEXT | YES | NULL | e.g. `image/png` |
+| Column            | Type    | Nullable | Default | Notes                                        |
+| ----------------- | ------- | -------- | ------- | -------------------------------------------- |
+| `encoded_content` | TEXT    | YES      | NULL    | Null for records created before this feature |
+| `has_logo`        | BOOLEAN | NO       | FALSE   |                                              |
+| `logo_mime_type`  | TEXT    | YES      | NULL    | e.g. `image/png`                             |
 
 No DDL migration file. SQLite `synchronize: true` adds columns automatically.
 
@@ -174,16 +174,16 @@ logoMimeType!: string | null;
 
 ### New — production
 
-| Package | Version | Reason |
-|---|---|---|
+| Package | Version | Reason                                                                                                                                                                                         |
+| ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `sharp` | `^0.34` | PNG compositing. Prebuilt binaries for linux-x64 / linux-arm64 on `node:26-bookworm-slim`. No Dockerfile changes needed — existing `python3 make g++` build tools cover native build fallback. |
 
 ### New — devDependencies
 
-| Package | Version | Reason |
-|---|---|---|
-| `@types/sharp` | `^0.31` | TypeScript types for `sharp` |
-| `@types/multer` | `^1.4` | `Express.Multer.File` type for `FileInterceptor` (`@nestjs/platform-express` bundles `multer` at runtime but does not install types) |
+| Package         | Version | Reason                                                                                                                               |
+| --------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `@types/sharp`  | `^0.31` | TypeScript types for `sharp`                                                                                                         |
+| `@types/multer` | `^1.4`  | `Express.Multer.File` type for `FileInterceptor` (`@nestjs/platform-express` bundles `multer` at runtime but does not install types) |
 
 ### No new runtime deps for frontend
 
@@ -192,36 +192,42 @@ Logo attach uses `FormData` + `fetch` — no new library.
 ## Alternatives Considered
 
 ### Alt 1 — Inline multipart on `POST /api/qr` (rejected)
+
 Attaching the logo at creation time via multipart would require `@Transform(() => Number)` on all numeric DTO fields (`size`) since form fields arrive as strings. The existing `CreateQrDto` is tested; mutating it to handle both JSON and multipart risks breaking the 52 passing DTO tests. **Separate post-creation endpoint keeps `POST /api/qr` as pure JSON. Zero regression risk.** (Spec OQ1.)
 
 ### Alt 2 — Composite onto existing PNG without correction level change (rejected)
+
 Compositing a logo onto a QR generated at L or M would occlude ~9% of the module area. L provides only 7% error correction capacity — the result would be unreadable. PNG must be regenerated at the effective correction level. (Spec OQ5.)
 
 ### Alt 3 — Separate `generatePng()` method on `QrImageGenerator` (rejected)
+
 `AttachLogoUseCase` only needs the PNG output; the SVG regenerated by `generate()` is discarded. A dedicated `generatePng()` would avoid the wasted SVG pass. Rejected: SVG generation is synchronous and fast (`qrcode.toString` with `type: 'svg'`); the API change across domain, application, infrastructure, and tests adds more complexity than the performance gain justifies for a personal app. Judgment call.
 
 ### Alt 4 — Store logo MinIO key with extension (`logo.png`, `logo.jpg`) (rejected)
+
 Key `{assetsPath}/{id}/logo.{ext}` would require storing the ext (or deriving it from `logoMimeType`) when deleting or streaming. Key `{assetsPath}/{id}/logo` (no extension) is simpler: the object exists or it doesn't, and the Content-Type is stored as MinIO metadata. Same information, one fewer derivation step. `logoMimeType` stored in DB already handles the Content-Type header in the proxy route.
 
 ### Alt 5 — `LogoCompositorPort` in `application` layer (rejected)
+
 CLAUDE.md says "application — use cases, ports" which technically permits it. But `QrImageGenerator` and `QrStoragePort` — both equally non-domain — live in `domain/qr/`. Consistency with the established convention wins. Mixing port location would require explaining the split. Judgment call.
 
 ### Alt 6 — Store full structured fields (ssid, password, etc.) for regeneration (rejected)
+
 Would solve the `encodedContent` backward compat problem for wifi/email/vcard without needing a reconstruction formula, but would mean storing wifi passwords and email bodies in plaintext in a second column alongside the existing `content` summary. `encodedContent` stores the same data (the password is already implicitly in the QR image), so the privacy delta is zero. `encodedContent` is simpler (one column covers all types) and is directly usable by `QrImageGenerator` without re-encoding. (Spec implied gap X.)
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| `sharp` native binary mismatch on ARM64 (e.g. M-series Mac dev vs linux/arm64 container) | `sharp` ships separate prebuilts per platform; `npm install` downloads the correct one. Dev machine and container both handled automatically. |
-| SVG left stale after logo attach (PNG regenerated, SVG not) | By design (Option A). SVG is the clean logo-free vector — both download links remain visible. When `hasLogo: true`, SVG link is labelled "SVG (sans logo)" in the frontend to prevent confusion. |
-| Partial MinIO state on failed attach (logo uploaded, PNG overwrite fails) | Orphaned logo key in MinIO. Acceptable for a personal app — no user-visible corruption (DB not updated, `hasLogo` stays false). Can be cleaned up manually or by a future maintenance job. |
-| `encodedContent` null for old wifi/email/vcard QRs | Returns 422 with clear message. User must recreate. No silent failure. |
-| `sharp` adds ~10 MB to Docker image | Acceptable for a personal app. Prebuilt binaries are self-contained. |
+| Risk                                                                                     | Mitigation                                                                                                                                                                                       |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `sharp` native binary mismatch on ARM64 (e.g. M-series Mac dev vs linux/arm64 container) | `sharp` ships separate prebuilts per platform; `npm install` downloads the correct one. Dev machine and container both handled automatically.                                                    |
+| SVG left stale after logo attach (PNG regenerated, SVG not)                              | By design (Option A). SVG is the clean logo-free vector — both download links remain visible. When `hasLogo: true`, SVG link is labelled "SVG (sans logo)" in the frontend to prevent confusion. |
+| Partial MinIO state on failed attach (logo uploaded, PNG overwrite fails)                | Orphaned logo key in MinIO. Acceptable for a personal app — no user-visible corruption (DB not updated, `hasLogo` stays false). Can be cleaned up manually or by a future maintenance job.       |
+| `encodedContent` null for old wifi/email/vcard QRs                                       | Returns 422 with clear message. User must recreate. No silent failure.                                                                                                                           |
+| `sharp` adds ~10 MB to Docker image                                                      | Acceptable for a personal app. Prebuilt binaries are self-contained.                                                                                                                             |
 
 ## Grill Log
 
-| # | Decision | Resolution |
-|---|---|---|
-| G1 | SVG behavior after logo attach — keep both links, hide SVG, or regenerate SVG at Q? | **Option A**: keep both links; label SVG as "SVG (sans logo)" when `hasLogo: true`. SVG is a useful clean vector artifact. |
-| G2 | MIME validation location — use case vs HTTP boundary | Moved to controller via `ParseFilePipe` + `FileTypeValidator`. CLAUDE.md: "DTOs validated at the HTTP boundary only." Use case receives pre-validated input. |
+| #   | Decision                                                                            | Resolution                                                                                                                                                   |
+| --- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| G1  | SVG behavior after logo attach — keep both links, hide SVG, or regenerate SVG at Q? | **Option A**: keep both links; label SVG as "SVG (sans logo)" when `hasLogo: true`. SVG is a useful clean vector artifact.                                   |
+| G2  | MIME validation location — use case vs HTTP boundary                                | Moved to controller via `ParseFilePipe` + `FileTypeValidator`. CLAUDE.md: "DTOs validated at the HTTP boundary only." Use case receives pre-validated input. |

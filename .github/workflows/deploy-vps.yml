@@ -2,7 +2,7 @@ name: Deploy to VPS
 
 on:
   workflow_run:
-    workflows: ["Build & Publish"]
+    workflows: ['Build & Publish']
     types: [completed]
     branches: [main]
 

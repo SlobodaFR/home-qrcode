@@ -67,6 +67,7 @@ presentation/pages/DashboardPage.tsx   ← tabs, user header, QrCard share panel
 ### Domain
 
 **`QrShare` entity** (`domain/qr/qr-share.ts`)
+
 ```typescript
 interface QrShareProps {
   id: string;
@@ -76,16 +77,17 @@ interface QrShareProps {
   createdAt: Date;
 }
 class QrShare {
-  static create(props: QrShareProps): QrShare
-  get id(): string
-  get qrId(): string
-  get ownerId(): string
-  get recipientId(): string
-  get createdAt(): Date
+  static create(props: QrShareProps): QrShare;
+  get id(): string;
+  get qrId(): string;
+  get ownerId(): string;
+  get recipientId(): string;
+  get createdAt(): Date;
 }
 ```
 
 **`QrShareRepository`** (`domain/qr/qr-share.repository.ts`)
+
 ```typescript
 abstract class QrShareRepository {
   abstract save(share: QrShare): Promise<void>;
@@ -93,13 +95,16 @@ abstract class QrShareRepository {
   // IN query — caller must guard against empty array (SQLite IN() invalid)
   abstract findByQrIds(qrIds: string[]): Promise<QrShare[]>;
   // JOIN qr_shares + qr_codes; ordered by share.createdAt DESC
-  abstract findWithQrByRecipientId(recipientId: string): Promise<{ share: QrShare; qrCode: QrCode }[]>;
+  abstract findWithQrByRecipientId(
+    recipientId: string,
+  ): Promise<{ share: QrShare; qrCode: QrCode }[]>;
   abstract deleteById(shareId: string): Promise<void>;
   abstract deleteByQrId(qrId: string): Promise<void>;
 }
 ```
 
 **`UserRepository` addition** (`domain/user/user.repository.ts`)
+
 ```typescript
 abstract findAll(): Promise<User[]>;
 ```
@@ -107,11 +112,20 @@ abstract findAll(): Promise<User[]>;
 ### Application use cases
 
 **`ShareQrUseCase`** — `application/sharing/share-qr.use-case.ts`
+
 ```typescript
-interface ShareQrCommand { qrId: string; ownerId: string; recipientId: string; }
-interface ShareQrResult { share: QrShare; }
+interface ShareQrCommand {
+  qrId: string;
+  ownerId: string;
+  recipientId: string;
+}
+interface ShareQrResult {
+  share: QrShare;
+}
 ```
+
 Execution steps (in order — order matters for correct status codes):
+
 1. `qrRepository.findById(qrId)` → `NotFoundException` if null
 2. `qr.userId !== ownerId` → `ForbiddenException`
 3. `ownerId === recipientId` → `BadRequestException`
@@ -123,21 +137,38 @@ Execution steps (in order — order matters for correct status codes):
 > Needs `findByQrAndRecipient` (not in interface above) — add: `abstract findByQrAndRecipient(qrId: string, recipientId: string): Promise<QrShare | null>`.
 
 **`UnshareQrUseCase`** — `application/sharing/unshare-qr.use-case.ts`
+
 ```typescript
-interface UnshareQrCommand { shareId: string; qrId: string; ownerId: string; }
+interface UnshareQrCommand {
+  shareId: string;
+  qrId: string;
+  ownerId: string;
+}
 ```
+
 Execution steps:
+
 1. `qrShareRepository.findById(shareId)` → `NotFoundException` if null
 2. `share.qrId !== qrId || share.ownerId !== ownerId` → `NotFoundException` (no existence leak)
 3. `qrShareRepository.deleteById(shareId)`
 
 **`ListSharedWithMeUseCase`** — `application/sharing/list-shared-with-me.use-case.ts`
+
 ```typescript
-interface ListSharedWithMeCommand { userId: string; }
-interface SharedWithMeItem { qrCode: QrCode; sharedBy: { id: string; name: string }; }
-interface ListSharedWithMeResult { items: SharedWithMeItem[]; }
+interface ListSharedWithMeCommand {
+  userId: string;
+}
+interface SharedWithMeItem {
+  qrCode: QrCode;
+  sharedBy: { id: string; name: string };
+}
+interface ListSharedWithMeResult {
+  items: SharedWithMeItem[];
+}
 ```
+
 Execution steps:
+
 1. `qrShareRepository.findWithQrByRecipientId(userId)` → `[{share, qrCode}]` ordered by share.createdAt DESC
 2. `userRepository.findAll()` → all users in a Map keyed by `id`
 3. Merge: `{ qrCode, sharedBy: { id: share.ownerId, name: ownerMap.get(share.ownerId)?.name ?? '' } }`
@@ -145,24 +176,28 @@ Execution steps:
 > `findAll()` for owner names — simpler than N `findById` calls; household size makes it O(1) in practice.
 
 **`ListUsersUseCase`** — `application/users/list-users.use-case.ts`
+
 ```typescript
-interface ListUsersResult { users: User[]; }
+interface ListUsersResult {
+  users: User[];
+}
 // Steps: userRepository.findAll()
 ```
 
 ### API endpoints (new / changed)
 
-| Method | Path | Auth | Notes |
-|---|---|---|---|
-| `POST` | `/api/qr/:id/shares` | required | Body: `{ recipientId }`. Returns 201 `{ shareId, recipientId, createdAt }` |
-| `DELETE` | `/api/qr/:id/shares/:shareId` | required | Returns 204 |
-| `GET` | `/api/qr/shared-with-me` | required | Flat `SharedQrItem[]`. **Declared before `@Get(':id')` in controller.** |
-| `GET` | `/api/users` | required | Returns `{ id, name, email, avatarUrl }[]` |
-| `GET` | `/api/auth/me` | required | Now returns `{ id, email, name, avatarUrl }`. If DB lookup returns null (wiped DB edge case), falls back to JWT payload with `avatarUrl: ''` — no 500. |
+| Method   | Path                          | Auth     | Notes                                                                                                                                                  |
+| -------- | ----------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST`   | `/api/qr/:id/shares`          | required | Body: `{ recipientId }`. Returns 201 `{ shareId, recipientId, createdAt }`                                                                             |
+| `DELETE` | `/api/qr/:id/shares/:shareId` | required | Returns 204                                                                                                                                            |
+| `GET`    | `/api/qr/shared-with-me`      | required | Flat `SharedQrItem[]`. **Declared before `@Get(':id')` in controller.**                                                                                |
+| `GET`    | `/api/users`                  | required | Returns `{ id, name, email, avatarUrl }[]`                                                                                                             |
+| `GET`    | `/api/auth/me`                | required | Now returns `{ id, email, name, avatarUrl }`. If DB lookup returns null (wiped DB edge case), falls back to JWT payload with `avatarUrl: ''` — no 500. |
 
 **`GET /api/qr` and `GET /api/qr/:id` response change:** each item gains `shares: [{ shareId, recipientId, recipientName }]`.
 
 Controller logic for embedding shares in list:
+
 ```typescript
 const { items } = await this.listQr.execute(...);
 const qrIds = items.map(q => q.id);
@@ -178,6 +213,7 @@ const sharesByQrId = groupBy(allShares, s => s.qrId); // group in-memory
 ### DTO
 
 **`CreateShareDto`** (`interfaces/http/dto/create-share.dto.ts`)
+
 ```typescript
 class CreateShareDto {
   @IsString() @IsNotEmpty() recipientId: string;
@@ -188,23 +224,39 @@ class CreateShareDto {
 
 ```typescript
 // qr-auth.client.ts
-interface ShareItem { shareId: string; recipientId: string; recipientName: string; }
-interface QrItem { /* existing */ shares: ShareItem[]; }  // ADDED
+interface ShareItem {
+  shareId: string;
+  recipientId: string;
+  recipientName: string;
+}
+interface QrItem {
+  /* existing */ shares: ShareItem[];
+} // ADDED
 
 // sharing.client.ts
-interface SharedQrItem extends QrItem { sharedBy: { id: string; name: string }; }
-function shareQr(qrId: string, recipientId: string): Promise<{ shareId: string; recipientId: string; createdAt: string }>
-function unshareQr(qrId: string, shareId: string): Promise<void>
-function listSharedWithMe(): Promise<SharedQrItem[]>
+interface SharedQrItem extends QrItem {
+  sharedBy: { id: string; name: string };
+}
+function shareQr(
+  qrId: string,
+  recipientId: string,
+): Promise<{ shareId: string; recipientId: string; createdAt: string }>;
+function unshareQr(qrId: string, shareId: string): Promise<void>;
+function listSharedWithMe(): Promise<SharedQrItem[]>;
 
 // users.client.ts
-interface UserItem { id: string; name: string; email: string; avatarUrl: string; }
-function listUsers(): Promise<UserItem[]>
-function fetchCurrentUser(): Promise<UserItem>  // GET /api/auth/me
+interface UserItem {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string;
+}
+function listUsers(): Promise<UserItem[]>;
+function fetchCurrentUser(): Promise<UserItem>; // GET /api/auth/me
 
 // useDashboard.ts additions
-share: (qrId: string, recipientId: string) => Promise<void>   // updates items[].shares in state
-unshare: (qrId: string, shareId: string) => Promise<void>     // updates items[].shares in state
+share: (qrId: string, recipientId: string) => Promise<void>; // updates items[].shares in state
+unshare: (qrId: string, shareId: string) => Promise<void>; // updates items[].shares in state
 ```
 
 ---
@@ -239,6 +291,7 @@ TypeORM ORM entity registered via `TypeOrmModule.forFeature([QrShareOrmEntity])`
 ## Dependencies
 
 **No new npm packages.** All functionality uses existing stack:
+
 - TypeORM (`IN` query for `findByQrIds`, JOIN for `findWithQrByRecipientId`, `@Unique` decorator)
 - `@nestjs/common` exceptions (`ForbiddenException`, `ConflictException`, `BadRequestException`)
 - `class-validator` for `CreateShareDto`
@@ -279,26 +332,26 @@ Rejected without: `DELETE /api/qr/WRONG-QR-ID/shares/VALID-SHARE-ID` would silen
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
+| Risk                                                                                     | Mitigation                                                                                                                   |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `QrItem` type change (`shares: ShareItem[]`) breaks all existing test mocks (~20+ files) | Systematic `replace_all` pass adding `shares: []` to mock factories — same operation as `expiresAt: null` in link-expiration |
-| `@Get('shared-with-me')` declared after `@Get(':id')` → route swallowed | Unit test asserts the literal route returns non-404; integration test confirms |
-| `findByQrIds([])` with empty page → SQLite `IN ()` syntax error | Controller guards: `if (qrIds.length === 0) return []` before calling the repo |
-| `AuthController.me()` becomes async | Update existing test; add assertion for `avatarUrl` in response |
-| `DeleteQrUseCase` grows: new `QrShareRepository` dependency | Existing unit tests need `QrShareRepository` mock; `deleteByQrId` must be called before `deleteById` |
-| TypeORM `@Unique(['qrId', 'recipientId'])` not applied until `synchronize: true` runs | Integration test verifies duplicate insert raises conflict |
+| `@Get('shared-with-me')` declared after `@Get(':id')` → route swallowed                  | Unit test asserts the literal route returns non-404; integration test confirms                                               |
+| `findByQrIds([])` with empty page → SQLite `IN ()` syntax error                          | Controller guards: `if (qrIds.length === 0) return []` before calling the repo                                               |
+| `AuthController.me()` becomes async                                                      | Update existing test; add assertion for `avatarUrl` in response                                                              |
+| `DeleteQrUseCase` grows: new `QrShareRepository` dependency                              | Existing unit tests need `QrShareRepository` mock; `deleteByQrId` must be called before `deleteById`                         |
+| TypeORM `@Unique(['qrId', 'recipientId'])` not applied until `synchronize: true` runs    | Integration test verifies duplicate insert raises conflict                                                                   |
 
 ---
 
 ## Grill Log
 
-| Decision | Resolution | Date |
-|---|---|---|
-| `UsersModule`: import `AuthModule` vs re-bind locally | Re-bind locally — matches `LinksModule` pattern; no cross-module coupling | 2026-07-20 |
-| `UnshareQrCommand` missing `qrId` | Added `qrId` to command; use case validates `share.qrId === qrId` before delete | 2026-07-20 |
-| `findByQrIds([])` empty array guard | Caller guards: skip call if `qrIds.length === 0`; noted in contract | 2026-07-20 |
-| `SharingModule` vs keep in `QrModule` | Keep in `QrModule` — sharing routes on `QrController`, splitting controllers is confusing | 2026-07-20 |
-| `QrShareRepository.findByQrAndRecipient` gap | Added to interface for duplicate check in `ShareQrUseCase` | 2026-07-20 |
-| `AuthController.me()` null DB result fallback | Graceful fallback: return JWT payload + `avatarUrl: ''`. No 500. | 2026-07-20 |
-| Owner names in `ListSharedWithMeUseCase` | Use `findAll()` (household-scale, added anyway for `GET /api/users`) — no N+1 | 2026-07-20 |
-| `shares: []` on shared-with-me items | Intentional: recipients have no share-management context; noted in contracts | 2026-07-20 |
+| Decision                                              | Resolution                                                                                | Date       |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------- |
+| `UsersModule`: import `AuthModule` vs re-bind locally | Re-bind locally — matches `LinksModule` pattern; no cross-module coupling                 | 2026-07-20 |
+| `UnshareQrCommand` missing `qrId`                     | Added `qrId` to command; use case validates `share.qrId === qrId` before delete           | 2026-07-20 |
+| `findByQrIds([])` empty array guard                   | Caller guards: skip call if `qrIds.length === 0`; noted in contract                       | 2026-07-20 |
+| `SharingModule` vs keep in `QrModule`                 | Keep in `QrModule` — sharing routes on `QrController`, splitting controllers is confusing | 2026-07-20 |
+| `QrShareRepository.findByQrAndRecipient` gap          | Added to interface for duplicate check in `ShareQrUseCase`                                | 2026-07-20 |
+| `AuthController.me()` null DB result fallback         | Graceful fallback: return JWT payload + `avatarUrl: ''`. No 500.                          | 2026-07-20 |
+| Owner names in `ListSharedWithMeUseCase`              | Use `findAll()` (household-scale, added anyway for `GET /api/users`) — no N+1             | 2026-07-20 |
+| `shares: []` on shared-with-me items                  | Intentional: recipients have no share-management context; noted in contracts              | 2026-07-20 |

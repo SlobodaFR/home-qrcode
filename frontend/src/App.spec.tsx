@@ -26,7 +26,9 @@ describe('AppRoutes', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    await vi.waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/api/auth/login'));
+    await vi.waitFor(() =>
+      expect(replaceMock).toHaveBeenCalledWith('/api/auth/login'),
+    );
   });
 
   it('should render DashboardPage when authenticated at /', async () => {
@@ -36,7 +38,9 @@ describe('AppRoutes', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    await vi.waitFor(() => expect(screen.getByText('DashboardPage')).toBeTruthy());
+    await vi.waitFor(() =>
+      expect(screen.getByText('DashboardPage')).toBeTruthy(),
+    );
   });
 
   // Test 24 — TPP: constant
