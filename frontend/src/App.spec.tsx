@@ -20,7 +20,7 @@ Object.defineProperty(window, 'location', {
 
 describe('AppRoutes', () => {
   it('should redirect to /api/auth/login when unauthenticated at /', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401 });
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401 });
     render(
       <MemoryRouter initialEntries={['/']}>
         <AppRoutes />
@@ -30,7 +30,7 @@ describe('AppRoutes', () => {
   });
 
   it('should render DashboardPage when authenticated at /', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true });
     render(
       <MemoryRouter initialEntries={['/']}>
         <AppRoutes />
