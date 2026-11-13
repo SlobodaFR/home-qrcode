@@ -27,9 +27,8 @@ jobs:
       - name: Format
         run: npm run format:check
 
-      - name: Type-check frontend
-        run: npx tsc -b --noEmit
-        working-directory: frontend
+      - name: Type-check
+        run: npm run typecheck
 
       - name: Run tests
         run: npm test
