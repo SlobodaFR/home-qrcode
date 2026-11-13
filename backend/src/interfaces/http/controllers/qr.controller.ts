@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, NotFoundException, Param, Patch, Post, Query, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, FileTypeValidator, Get, HttpCode, Inject, NotFoundException, Param, ParseFilePipe, Patch, Post, Query, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Readable } from 'stream';
 import { ConfigService } from '@nestjs/config';
@@ -24,7 +24,6 @@ import { CreateShareDto } from '../dto/create-share.dto';
 import { EditTargetUrlDto } from '../dto/edit-target-url.dto';
 import { ListQrDto } from '../dto/list-qr.dto';
 import { SetExpirationDto } from '../dto/set-expiration.dto';
-import { FileTypeValidator, ParseFilePipe } from '@nestjs/common';
 import { parseExpiryDate } from '../utils/parse-expiry-date';
 
 @Controller('qr')

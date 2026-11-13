@@ -2,12 +2,14 @@ import type { Mocked } from 'vitest';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { AccessTokenPayload } from '../../../domain/auth/access-token-payload';
 import { AccessTokenVerifier } from '../../../domain/auth/access-token-verifier';
 import { OAuthClient, TokenPair } from '../../../domain/auth/oauth-client';
 import { RevokedSessionRepository } from '../../../domain/auth/revoked-session.repository';
-import { ACCESS_TOKEN_COOKIE_NAME, AuthenticatedRequest, JwtAuthGuard, REFRESH_TOKEN_COOKIE_NAME } from './jwt-auth.guard';
+import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from '../auth-cookies';
+import { AuthenticatedRequest } from '../decorators/current-user.decorator';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 const validPayload: AccessTokenPayload = { sub: 'u1', email: 'a@b.com', name: 'A', issuedAt: new Date('2026-01-01') };
 const validTokens: TokenPair = { accessToken: 'new-at', refreshToken: 'new-rt', expiresIn: 3600 };

@@ -26,8 +26,8 @@ describe('User', () => {
 
   // Test 3 — TPP: conditional
   it('should throw when email format is invalid', () => {
-    expect(() => User.create({ ...validProps, email: 'not-an-email' })).toThrow();
-    expect(() => User.create({ ...validProps, email: '' })).toThrow();
+    expect(() => User.create({ ...validProps, email: 'not-an-email' })).toThrow('Invalid email address');
+    expect(() => User.create({ ...validProps, email: '' })).toThrow('Invalid email address');
   });
 
   // Test 4 — TPP: variable

@@ -22,7 +22,7 @@ describe('shareQr', () => {
 
   it('should throw when response is not ok', async () => {
     mockFetch({}, false);
-    await expect(shareQr('qr-1', 'user-2')).rejects.toThrow();
+    await expect(shareQr('qr-1', 'user-2')).rejects.toThrow('shareQr failed');
   });
 });
 
@@ -39,7 +39,7 @@ describe('unshareQr', () => {
 
   it('should throw when response is not ok', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
-    await expect(unshareQr('qr-1', 'share-1')).rejects.toThrow();
+    await expect(unshareQr('qr-1', 'share-1')).rejects.toThrow('unshareQr failed');
   });
 });
 

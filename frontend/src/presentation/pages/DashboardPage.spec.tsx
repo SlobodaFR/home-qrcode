@@ -119,7 +119,7 @@ describe('QrCard logo-overlay', () => {
     render(<DashboardPage />);
     fireEvent.click(screen.getByRole('button', { name: /ajouter un logo/i }));
     const oversized = new File([new ArrayBuffer(2_097_153)], 'big.png', { type: 'image/png' });
-    const input = screen.getByTestId('logo-file-input') as HTMLInputElement;
+    const input = screen.getByTestId<HTMLInputElement>('logo-file-input');
     fireEvent.change(input, { target: { files: [oversized] } });
     await waitFor(() => expect(screen.getByText(/2\s*MB/i)).toBeTruthy());
     expect(mockAttachLogo).not.toHaveBeenCalled();
@@ -132,7 +132,7 @@ describe('QrCard logo-overlay', () => {
       create: mockCreate, remove: mockRemove, attachLogo: mockAttachLogo, setExpiration: mockSetExpiration, share: mockShare, unshare: mockUnshare,
     });
     render(<DashboardPage />);
-    const logoImg = screen.getByAltText(/logo/i) as HTMLImageElement;
+    const logoImg = screen.getByAltText<HTMLImageElement>(/logo/i);
     expect(logoImg.src).toContain('/api/qr/qr-logo/logo');
   });
 });
@@ -527,7 +527,7 @@ describe('internal-sharing UI (T50-T62)', () => {
     mockShare.mockResolvedValue(undefined);
     render(<DashboardPage />);
     await waitFor(() => {
-      const picker = screen.getByTestId('share-user-picker') as HTMLSelectElement;
+      const picker = screen.getByTestId<HTMLSelectElement>('share-user-picker');
       expect(picker.options.length).toBeGreaterThan(1);
     });
     fireEvent.change(screen.getByTestId('share-user-picker'), { target: { value: 'user-2' } });
@@ -562,7 +562,7 @@ describe('internal-sharing UI (T50-T62)', () => {
     });
     render(<DashboardPage />);
     await waitFor(() => {
-      const picker = screen.getByTestId('share-user-picker') as HTMLSelectElement;
+      const picker = screen.getByTestId<HTMLSelectElement>('share-user-picker');
       const optionValues = Array.from(picker.options).map((o) => o.value);
       expect(optionValues).not.toContain('u-1');
       expect(optionValues).toContain('user-2');

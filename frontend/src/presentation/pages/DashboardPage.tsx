@@ -3,11 +3,10 @@ import { useDashboard } from '../../application/hooks/useDashboard';
 import { useCurrentUser } from '../../application/hooks/useCurrentUser';
 import { useSharedWithMe } from '../../application/hooks/useSharedWithMe';
 import { useLinks } from '../../application/hooks/useLinks';
-import { listUsers } from '../../infrastructure/api/users.client';
 import { CreateQrPayload, QrItem } from '../../infrastructure/api/qr-auth.client';
 import { SharedQrItem } from '../../infrastructure/api/sharing.client';
 import { ShortLinkItem } from '../../infrastructure/api/links.client';
-import { UserItem } from '../../infrastructure/api/users.client';
+import { listUsers, UserItem } from '../../infrastructure/api/users.client';
 
 type ContentType = 'url' | 'text' | 'wifi' | 'email' | 'vcard';
 type ActiveTab = 'qr' | 'links';
@@ -16,10 +15,14 @@ function initials(name: string): string {
   return name.split(' ').map((w) => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 2);
 }
 
+function isExpired(expiresAt: string): boolean {
+  return new Date(expiresAt) <= new Date();
+}
+
 function QrCard({ qr, users, onDelete, onAttachLogo, onSetExpiration, onShare, onUnshare }: {
   qr: QrItem;
   users: UserItem[];
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
   onAttachLogo: (id: string, file: File) => Promise<void>;
   onSetExpiration: (id: string, expiresAt: string | null) => Promise<void>;
   onShare: (qrId: string, recipientId: string) => Promise<void>;
@@ -34,7 +37,7 @@ function QrCard({ qr, users, onDelete, onAttachLogo, onSetExpiration, onShare, o
 
   async function handleDelete() {
     setDeleting(true);
-    try { onDelete(qr.id); } finally { setDeleting(false); }
+    try { await onDelete(qr.id); } finally { setDeleting(false); }
   }
 
   async function handleLogoChange(e: ChangeEvent<HTMLInputElement>) {
@@ -80,10 +83,10 @@ function QrCard({ qr, users, onDelete, onAttachLogo, onSetExpiration, onShare, o
           <p className="text-xs text-gray-400">
             {new Date(qr.createdAt).toLocaleDateString('fr-FR')} · {qr.scanCount} scan{qr.scanCount !== 1 ? 's' : ''}
           </p>
-          {qr.expiresAt && new Date(qr.expiresAt) > new Date() && (
+          {qr.expiresAt && !isExpired(qr.expiresAt) && (
             <p className="text-xs text-amber-600">Expire le {new Date(qr.expiresAt).toLocaleDateString('fr-FR')}</p>
           )}
-          {qr.expiresAt && new Date(qr.expiresAt) <= new Date() && (
+          {qr.expiresAt && isExpired(qr.expiresAt) && (
             <span className="text-xs font-medium text-red-600">Expiré</span>
           )}
           <div className="flex gap-2 items-center">
@@ -395,10 +398,10 @@ function LinkCard({ link, onEdit, onRemove, onSetExpiration }: {
           <span className="text-sm font-medium text-blue-600 truncate">{link.shortUrl}</span>
           <span className="text-xs text-gray-400 truncate">{link.url}</span>
           <span className="text-xs text-gray-400">{link.scanCount} scan{link.scanCount !== 1 ? 's' : ''}</span>
-          {link.expiresAt && new Date(link.expiresAt) > new Date() && (
+          {link.expiresAt && !isExpired(link.expiresAt) && (
             <span className="text-xs text-amber-600">Expire le {new Date(link.expiresAt).toLocaleDateString('fr-FR')}</span>
           )}
-          {link.expiresAt && new Date(link.expiresAt) <= new Date() && (
+          {link.expiresAt && isExpired(link.expiresAt) && (
             <span className="text-xs font-medium text-red-600">Expiré</span>
           )}
           <div className="flex gap-2 items-center">

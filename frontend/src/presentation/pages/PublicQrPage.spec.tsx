@@ -22,7 +22,7 @@ describe('PublicQrPage', () => {
   it('should show QR image with src /api/qr/:id/png when state is found', () => {
     mockHook.mockReturnValue({ state: 'found', onImageError: noop });
     render(<PublicQrPage />);
-    const img = screen.getByRole('img') as HTMLImageElement;
+    const img = screen.getByRole<HTMLImageElement>('img');
     expect(img.src).toContain('/api/qr/qr-test-id/png');
   });
 
@@ -30,7 +30,7 @@ describe('PublicQrPage', () => {
   it('should show Download PNG anchor with correct href and download attribute when found', () => {
     mockHook.mockReturnValue({ state: 'found', onImageError: noop });
     render(<PublicQrPage />);
-    const link = screen.getByRole('link', { name: /download png/i }) as HTMLAnchorElement;
+    const link = screen.getByRole<HTMLAnchorElement>('link', { name: /download png/i });
     expect(link.href).toContain('/api/qr/qr-test-id/png');
     expect(link.download).toBe('qr-qr-test-id.png');
   });
@@ -39,7 +39,7 @@ describe('PublicQrPage', () => {
   it('should show Download SVG anchor with correct href and download attribute when found', () => {
     mockHook.mockReturnValue({ state: 'found', onImageError: noop });
     render(<PublicQrPage />);
-    const link = screen.getByRole('link', { name: /download svg/i }) as HTMLAnchorElement;
+    const link = screen.getByRole<HTMLAnchorElement>('link', { name: /download svg/i });
     expect(link.href).toContain('/api/qr/qr-test-id/svg');
     expect(link.download).toBe('qr-qr-test-id.svg');
   });

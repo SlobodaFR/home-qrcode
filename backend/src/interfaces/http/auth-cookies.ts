@@ -1,7 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { TokenPair } from '../../domain/auth/oauth-client';
-import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from './guards/jwt-auth.guard';
+
+export const ACCESS_TOKEN_COOKIE_NAME = 'access_token';
+export const REFRESH_TOKEN_COOKIE_NAME = 'refresh_token';
 
 const REFRESH_TOKEN_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
