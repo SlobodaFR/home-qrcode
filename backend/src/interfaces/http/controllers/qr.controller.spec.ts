@@ -27,6 +27,7 @@ import { EditTargetUrlDto } from '../dto/edit-target-url.dto';
 import { ListQrDto } from '../dto/list-qr.dto';
 import { QrController } from './qr.controller';
 import { Readable } from 'stream';
+import { SetExpirationDto } from '../dto/set-expiration.dto';
 
 const mockQr = QrCode.create({
   id: 'qr-1',
@@ -503,7 +504,6 @@ describe('QrController', () => {
       ],
     }).compile();
     const controller = module.get(QrController);
-    const { SetExpirationDto } = await import('../dto/set-expiration.dto');
     const dto = Object.assign(new SetExpirationDto(), {
       expiresAt: '2026-08-25',
     });
@@ -557,7 +557,6 @@ describe('QrController', () => {
       ],
     }).compile();
     const controller = module.get(QrController);
-    const { SetExpirationDto } = await import('../dto/set-expiration.dto');
     const dto = Object.assign(new SetExpirationDto(), { expiresAt: null });
     await controller.setExpiration('qr-1', dto, mockUser);
     expect(setExpirationUseCase.execute).toHaveBeenCalledWith({
