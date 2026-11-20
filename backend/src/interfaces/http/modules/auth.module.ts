@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -8,6 +9,7 @@ import { OAuthClient } from '../../../domain/auth/oauth-client';
 import { RevokedSessionRepository } from '../../../domain/auth/revoked-session.repository';
 import { UserRepository } from '../../../domain/user/user.repository';
 import { HttpOAuthClient } from '../../../infrastructure/auth/http-oauth-client';
+import { SingleFlightOAuthClient } from '../../../infrastructure/auth/single-flight-oauth-client';
 import { JwksAccessTokenVerifier } from '../../../infrastructure/auth/jwks-access-token-verifier';
 import { RevokedSessionOrmEntity } from '../../../infrastructure/persistence/entities/revoked-session.orm-entity';
 import { UserOrmEntity } from '../../../infrastructure/persistence/entities/user.orm-entity';
@@ -25,7 +27,12 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
       provide: RevokedSessionRepository,
       useClass: TypeOrmRevokedSessionRepository,
     },
-    { provide: OAuthClient, useClass: HttpOAuthClient },
+    {
+      provide: OAuthClient,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        new SingleFlightOAuthClient(new HttpOAuthClient(config)),
+    },
     { provide: AccessTokenVerifier, useClass: JwksAccessTokenVerifier },
     HandleOAuthCallbackUseCase,
     HandleSessionRevokedUseCase,
