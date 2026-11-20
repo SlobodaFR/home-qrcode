@@ -24,8 +24,16 @@
   "engines": {
     "node": ">=26.0.0"
   },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,json,md,yml,yaml,css,html}": [
+      "oxfmt --no-error-on-unmatched-pattern"
+    ]
+  },
   "devDependencies": {
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
     "husky": "9.1.7",
+    "lint-staged": "^16.4.0",
     "oxfmt": "^0.78.0",
     "oxlint": "^1.93.0",
     "oxlint-tsgolint": "^7.0.2007"
