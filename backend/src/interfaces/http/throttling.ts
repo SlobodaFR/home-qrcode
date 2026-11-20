@@ -8,8 +8,11 @@ import { minutes, ThrottlerModuleOptions } from '@nestjs/throttler';
  *   bypass it.
  * - Budgets are per route and per IP, not one global budget per IP.
  * - In-memory storage: counters reset on restart, fine for a single instance.
- * - Public scan routes (GET /r/:id, GET /q/:id) are marked @SkipThrottle():
- *   a printed QR code can be scanned by many people behind one shared IP.
+ * - Marked @SkipThrottle(): the public scan redirect (GET /r/:id: a printed QR
+ *   code can be scanned by many people behind one shared IP), the read-only QR
+ *   image/meta routes (the dashboard loads one image per card, and the budget is
+ *   per route, not per QR id) and the secret-gated home-auth webhook. The SPA
+ *   (including /q/:id) is served by ServeStatic middleware, which guards never see.
  */
 export const THROTTLE_ERROR_MESSAGE = 'Too many requests, try again later.';
 

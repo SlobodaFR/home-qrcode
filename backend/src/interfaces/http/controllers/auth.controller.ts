@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { HandleOAuthCallbackUseCase } from '../../../application/auth/handle-oauth-callback.use-case';
 import { HandleSessionRevokedUseCase } from '../../../application/auth/handle-session-revoked.use-case';
@@ -73,7 +73,10 @@ export class AuthController {
     };
   }
 
+  // Server-to-server webhook from home-auth, already gated by a shared secret:
+  // a burst of session revocations must never be answered with 429.
   @Public()
+  @SkipThrottle()
   @Post('disconnect')
   @HttpCode(204)
   async disconnect(

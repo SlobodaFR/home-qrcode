@@ -1,4 +1,4 @@
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import {
   Body,
   Controller,
@@ -70,6 +70,7 @@ export class QrController {
 
   @Public()
   @Get(':id/meta')
+  @SkipThrottle()
   async getMeta(@Param('id') id: string): Promise<Record<string, never>> {
     const qr = await this.qrRepository.findById(id);
     if (!qr) throw new NotFoundException();
@@ -285,6 +286,7 @@ export class QrController {
 
   @Public()
   @Get(':id/logo')
+  @SkipThrottle()
   async streamLogo(@Param('id') id: string): Promise<StreamableFile> {
     const qr = await this.qrRepository.findById(id);
     if (!qr || !qr.hasLogo) throw new NotFoundException();
@@ -297,6 +299,7 @@ export class QrController {
 
   @Public()
   @Get(':id/png')
+  @SkipThrottle()
   async streamPng(@Param('id') id: string): Promise<StreamableFile> {
     const qr = await this.qrRepository.findById(id);
     if (!qr) throw new NotFoundException();
@@ -310,6 +313,7 @@ export class QrController {
 
   @Public()
   @Get(':id/svg')
+  @SkipThrottle()
   async streamSvg(@Param('id') id: string): Promise<StreamableFile> {
     const qr = await this.qrRepository.findById(id);
     if (!qr) throw new NotFoundException();
