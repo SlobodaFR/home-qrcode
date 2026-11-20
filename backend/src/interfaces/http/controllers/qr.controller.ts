@@ -1,3 +1,4 @@
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import {
   Body,
   Controller,
@@ -44,6 +45,7 @@ import { CreateShareDto } from '../dto/create-share.dto';
 import { EditTargetUrlDto } from '../dto/edit-target-url.dto';
 import { ListQrDto } from '../dto/list-qr.dto';
 import { SetExpirationDto } from '../dto/set-expiration.dto';
+import { EXPENSIVE_ROUTE_THROTTLE } from '../throttling';
 import { parseExpiryDate } from '../utils/parse-expiry-date';
 
 @Controller('qr')
@@ -68,6 +70,7 @@ export class QrController {
 
   @Public()
   @Get(':id/meta')
+  @SkipThrottle()
   async getMeta(@Param('id') id: string): Promise<Record<string, never>> {
     const qr = await this.qrRepository.findById(id);
     if (!qr) throw new NotFoundException();
@@ -120,6 +123,7 @@ export class QrController {
   }
 
   @Post()
+  @Throttle(EXPENSIVE_ROUTE_THROTTLE)
   @HttpCode(201)
   async create(
     @Body() dto: CreateQrDto,
@@ -255,6 +259,7 @@ export class QrController {
   }
 
   @Post(':id/logo')
+  @Throttle(EXPENSIVE_ROUTE_THROTTLE)
   @HttpCode(200)
   @UseInterceptors(FileInterceptor('logo', { limits: { fileSize: 2_097_152 } }))
   async attachLogoEndpoint(
@@ -281,6 +286,7 @@ export class QrController {
 
   @Public()
   @Get(':id/logo')
+  @SkipThrottle()
   async streamLogo(@Param('id') id: string): Promise<StreamableFile> {
     const qr = await this.qrRepository.findById(id);
     if (!qr || !qr.hasLogo) throw new NotFoundException();
@@ -293,6 +299,7 @@ export class QrController {
 
   @Public()
   @Get(':id/png')
+  @SkipThrottle()
   async streamPng(@Param('id') id: string): Promise<StreamableFile> {
     const qr = await this.qrRepository.findById(id);
     if (!qr) throw new NotFoundException();
@@ -306,6 +313,7 @@ export class QrController {
 
   @Public()
   @Get(':id/svg')
+  @SkipThrottle()
   async streamSvg(@Param('id') id: string): Promise<StreamableFile> {
     const qr = await this.qrRepository.findById(id);
     if (!qr) throw new NotFoundException();
