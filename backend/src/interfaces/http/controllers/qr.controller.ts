@@ -1,3 +1,4 @@
+import { Throttle } from '@nestjs/throttler';
 import {
   Body,
   Controller,
@@ -44,6 +45,7 @@ import { CreateShareDto } from '../dto/create-share.dto';
 import { EditTargetUrlDto } from '../dto/edit-target-url.dto';
 import { ListQrDto } from '../dto/list-qr.dto';
 import { SetExpirationDto } from '../dto/set-expiration.dto';
+import { EXPENSIVE_ROUTE_THROTTLE } from '../throttling';
 import { parseExpiryDate } from '../utils/parse-expiry-date';
 
 @Controller('qr')
@@ -120,6 +122,7 @@ export class QrController {
   }
 
   @Post()
+  @Throttle(EXPENSIVE_ROUTE_THROTTLE)
   @HttpCode(201)
   async create(
     @Body() dto: CreateQrDto,
@@ -255,6 +258,7 @@ export class QrController {
   }
 
   @Post(':id/logo')
+  @Throttle(EXPENSIVE_ROUTE_THROTTLE)
   @HttpCode(200)
   @UseInterceptors(FileInterceptor('logo', { limits: { fileSize: 2_097_152 } }))
   async attachLogoEndpoint(

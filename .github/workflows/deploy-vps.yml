@@ -87,6 +87,7 @@ jobs:
             cat > /opt/qrcode/deploy/.env <<EOF
             NODE_ENV=production
             PORT=3000
+            TRUST_PROXY_HOPS=1
             AUTH_BASE_URL=$AUTH_BASE_URL
             AUTH_CLIENT_ID=$AUTH_CLIENT_ID
             AUTH_CLIENT_SECRET=$AUTH_CLIENT_SECRET
