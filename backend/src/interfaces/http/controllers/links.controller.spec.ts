@@ -1,6 +1,7 @@
 import type { Mocked } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
+import { SameOriginGuard } from '../guards/same-origin.guard';
 import { QrCode } from '../../../domain/qr/qr-code';
 import { CreateLinkUseCase } from '../../../application/links/create-link.use-case';
 import { ListLinksUseCase } from '../../../application/links/list-links.use-case';
@@ -63,7 +64,10 @@ const makeController = async () => {
         useValue: { execute: vi.fn().mockResolvedValue({ entity: mockLink }) },
       },
     ],
-  }).compile();
+  })
+    .overrideGuard(SameOriginGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
   return {
     controller: module.get(LinksController),
     createUc: module.get<Mocked<CreateLinkUseCase>>(CreateLinkUseCase),
@@ -149,7 +153,10 @@ describe('LinksController', () => {
         },
         { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
       ],
-    }).compile();
+    })
+      .overrideGuard(SameOriginGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     const controller = module.get(LinksController);
     const dto = Object.assign(new SetExpirationDto(), {
       expiresAt: '2026-08-25',
@@ -182,7 +189,10 @@ describe('LinksController', () => {
         },
         { provide: 'SetExpirationUseCase', useValue: setExpirationUseCase },
       ],
-    }).compile();
+    })
+      .overrideGuard(SameOriginGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     const controller = module.get(LinksController);
     const dto = Object.assign(new SetExpirationDto(), { expiresAt: null });
     await controller.setExpiration('sl-1', dto, mockUser);

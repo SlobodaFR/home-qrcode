@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
+import { SameOriginGuard } from '../guards/same-origin.guard';
 import { QrCode } from '../../../domain/qr/qr-code';
 import { QrShare } from '../../../domain/qr/qr-share';
 import { QrRepository } from '../../../domain/qr/qr.repository';
@@ -141,7 +142,10 @@ const makeController = async () => {
         },
       },
     ],
-  }).compile();
+  })
+    .overrideGuard(SameOriginGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
   return {
     controller: module.get(QrController),
     useCase: module.get<Mocked<GenerateQrUseCase>>(GenerateQrUseCase),
@@ -502,7 +506,10 @@ describe('QrController', () => {
           useValue: { findAll: vi.fn().mockResolvedValue([]) },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(SameOriginGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     const controller = module.get(QrController);
     const dto = Object.assign(new SetExpirationDto(), {
       expiresAt: '2026-08-25',
@@ -555,7 +562,10 @@ describe('QrController', () => {
           useValue: { findAll: vi.fn().mockResolvedValue([]) },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(SameOriginGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     const controller = module.get(QrController);
     const dto = Object.assign(new SetExpirationDto(), { expiresAt: null });
     await controller.setExpiration('qr-1', dto, mockUser);

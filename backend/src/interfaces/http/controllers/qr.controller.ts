@@ -2,6 +2,7 @@ import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import {
   Body,
   Controller,
+  UseGuards,
   Delete,
   FileTypeValidator,
   Get,
@@ -39,6 +40,7 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '../decorators/current-user.decorator';
+import { SameOriginGuard } from '../guards/same-origin.guard';
 import { Public } from '../decorators/public.decorator';
 import { CreateQrDto } from '../dto/create-qr.dto';
 import { CreateShareDto } from '../dto/create-share.dto';
@@ -48,6 +50,8 @@ import { SetExpirationDto } from '../dto/set-expiration.dto';
 import { EXPENSIVE_ROUTE_THROTTLE } from '../throttling';
 import { parseExpiryDate } from '../utils/parse-expiry-date';
 
+// Cookie-authenticated mutations: refuse requests that do not come from this very origin.
+@UseGuards(SameOriginGuard)
 @Controller('qr')
 export class QrController {
   constructor(
