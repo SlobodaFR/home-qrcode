@@ -11,6 +11,7 @@ import { OAuthClient } from '../../domain/auth/oauth-client';
 import { UserRepository } from '../../domain/user/user.repository';
 import { AuthController } from './controllers/auth.controller';
 import { RedirectController } from './controllers/redirect.controller';
+import { QrController } from './controllers/qr.controller';
 import { THROTTLE_ERROR_MESSAGE, throttlerOptions } from './throttling';
 
 describe('Rate limiting (HTTP)', () => {
@@ -116,5 +117,36 @@ describe('Rate limiting (HTTP)', () => {
     }
 
     expect((await login('198.51.100.200')).status).toBe(429);
+  });
+
+  describe('routes exempt from the default budget', () => {
+    const isSkipped = (handler: object): boolean =>
+      Reflect.getMetadata('THROTTLER:SKIPdefault', handler) === true;
+
+    it.each(['getMeta', 'streamPng', 'streamSvg', 'streamLogo'] as const)(
+      'does not throttle the public read-only QR route %s',
+      (name) => {
+        expect(isSkipped(QrController.prototype[name])).toBe(true);
+      },
+    );
+
+    it('does not throttle the secret-gated home-auth webhook', () => {
+      expect(isSkipped(AuthController.prototype.disconnect)).toBe(true);
+    });
+
+    it('applies the stricter budget to QR creation and logo upload', () => {
+      expect(
+        Reflect.getMetadata(
+          'THROTTLER:LIMITdefault',
+          QrController.prototype.create,
+        ),
+      ).toBe(30);
+      expect(
+        Reflect.getMetadata(
+          'THROTTLER:LIMITdefault',
+          QrController.prototype.attachLogoEndpoint,
+        ),
+      ).toBe(30);
+    });
   });
 });

@@ -13,7 +13,10 @@ async function bootstrap() {
   // Number of reverse-proxy hops to trust for X-Forwarded-For (req.ip feeds the
   // rate limit). Production: 1 (Caddy, which drops client-sent X-Forwarded-For).
   // Unset in local dev, otherwise any client could spoof its IP.
-  const trustProxyHops = Number(process.env['TRUST_PROXY_HOPS'] ?? 0);
+  const trustProxyHops = Number(process.env['TRUST_PROXY_HOPS'] || 0);
+  if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0) {
+    throw new Error('TRUST_PROXY_HOPS must be a non-negative integer');
+  }
   if (trustProxyHops > 0) {
     app.set('trust proxy', trustProxyHops);
   }
