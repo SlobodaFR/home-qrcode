@@ -59,11 +59,15 @@ describe('RuntimeHealthMonitor', () => {
     expect(second.lag_max_ms).toBeLessThan(first.lag_max_ms / 2);
   });
 
-  it('stops measuring once stopped', () => {
+  it('can be stopped twice, and reports zero lag once stopped', async () => {
     monitor.stop();
-
     expect(() => {
       monitor.stop();
     }).not.toThrow();
+
+    blockEventLoop(200);
+    await tick(20);
+
+    expect(monitor.sample().lag_max_ms).toBe(0);
   });
 });
