@@ -148,7 +148,7 @@ describe('logger configuration', () => {
         err: Record<string, unknown>;
       };
 
-      expect(Object.keys(logged.err).sort()).toEqual([
+      expect(Object.keys(logged.err).toSorted()).toEqual([
         'code',
         'message',
         'stack',
