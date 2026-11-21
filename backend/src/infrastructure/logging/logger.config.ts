@@ -19,6 +19,9 @@ export const REDACT_PATHS = [
   '*.refreshToken',
   '*.client_secret',
   '*.refresh_token',
+  // TypeORM QueryFailedError carries the bound parameters (emails, names).
+  'err.parameters',
+  'err.query',
 ];
 
 const QUIET_PATHS = [/^\/assets\//];
