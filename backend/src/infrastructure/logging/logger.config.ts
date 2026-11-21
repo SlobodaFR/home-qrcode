@@ -19,12 +19,30 @@ export const REDACT_PATHS = [
   '*.refreshToken',
   '*.client_secret',
   '*.refresh_token',
-  // TypeORM QueryFailedError carries the bound parameters (emails, names).
-  'err.parameters',
-  'err.query',
 ];
 
 const QUIET_PATHS = [/^\/assets\//];
+
+/**
+ * Allow-list error serializer. Pino's default copies every enumerable property, and
+ * TypeORM's QueryFailedError carries `query`, `parameters` and `driverError` (emails, names),
+ * HTTP client errors carry `response`/`config`. Nest's exception filter logs any non-HTTP
+ * error as `{ err }`, so only these fields may reach the logs. Error messages must never
+ * interpolate personal data or raw response bodies.
+ */
+export function serializeError(error: unknown): Record<string, unknown> {
+  if (!(error instanceof Error)) {
+    return { type: typeof error };
+  }
+  const code = (error as { code?: unknown }).code;
+  return {
+    type: error.constructor.name,
+    message: error.message,
+    stack: error.stack,
+    code:
+      typeof code === 'string' || typeof code === 'number' ? code : undefined,
+  };
+}
 
 function pathOf(url: string | undefined): string {
   return (url ?? '').split('?')[0] ?? '';
@@ -46,6 +64,7 @@ export function loggerParams(
         }),
         // No headers: Location carries authorization codes, Set-Cookie the session token.
         res: (res: ServerResponse) => ({ statusCode: res.statusCode }),
+        err: serializeError,
       },
       // Evaluated when the response finishes, after the auth guard set req.user.
       customProps: (req: IncomingMessage & { user?: { id?: string } }) =>
