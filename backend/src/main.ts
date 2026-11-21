@@ -25,7 +25,7 @@ async function bootstrap() {
     app.set('trust proxy', trustProxyHops);
   }
 
-  app.setGlobalPrefix('api', { exclude: ['r/:id', 'q/:id'] });
+  app.setGlobalPrefix('api', { exclude: ['r/:id', 'q/:id', 'healthz'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.use(cookieParser());
 
