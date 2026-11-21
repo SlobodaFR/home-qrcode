@@ -1,3 +1,9 @@
+/** Used outside production only, so local runs and tests need no setup. Rejected in production. */
+export const DEV_PSEUDONYM_SECRET =
+  'dev-only-pseudonym-secret-not-for-production';
+
+const MIN_SECRET_BYTES = 32;
+
 const REQUIRED_IN_PRODUCTION = [
   'AUTH_BASE_URL',
   'FRONTEND_URL',
@@ -14,12 +20,16 @@ const REQUIRED_IN_PRODUCTION = [
 /**
  * Environment validation, run once at startup by ConfigModule. Throwing here stops the service
  * before it serves anything with an unsafe or incomplete configuration. Outside production
- * nothing is required, so local runs and tests need no setup.
+ * only a development pseudonym secret is filled in, so local runs and tests need no setup.
  */
 export function validateEnv(
   env: Record<string, unknown>,
 ): Record<string, unknown> {
-  if (env['NODE_ENV'] !== 'production') return env;
+  const secret =
+    typeof env['PSEUDONYM_SECRET'] === 'string' ? env['PSEUDONYM_SECRET'] : '';
+  if (env['NODE_ENV'] !== 'production') {
+    return { ...env, PSEUDONYM_SECRET: secret || DEV_PSEUDONYM_SECRET };
+  }
 
   for (const variable of REQUIRED_IN_PRODUCTION) {
     const value = env[variable];
@@ -30,6 +40,14 @@ export function validateEnv(
   // Public URLs: OAuth redirect, JWT issuer, short links and QR content.
   for (const variable of ['AUTH_BASE_URL', 'FRONTEND_URL']) {
     assertHttpsUrl(env[variable], variable);
+  }
+  if (
+    Buffer.byteLength(secret, 'utf8') < MIN_SECRET_BYTES ||
+    secret === DEV_PSEUDONYM_SECRET
+  ) {
+    throw new Error(
+      `PSEUDONYM_SECRET must be set in production to a random value of at least ${MIN_SECRET_BYTES.toString()} bytes (openssl rand -base64 48)`,
+    );
   }
   return env;
 }
