@@ -47,7 +47,7 @@ describe('AppModule', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api', { exclude: ['r/:id', 'q/:id'] });
+    app.setGlobalPrefix('api', { exclude: ['r/:id', 'q/:id', 'healthz'] });
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, transform: true }),
     );
@@ -65,6 +65,7 @@ describe('AppModule', () => {
       ) => {
         if (req.path.startsWith('/api')) return next();
         if (req.path.startsWith('/r/')) return next();
+        if (req.path === '/healthz') return next();
         res.sendFile(path.join(DIST_PATH, 'index.html'));
       },
     );
@@ -97,6 +98,12 @@ describe('AppModule', () => {
   it('should return 404 on GET /r/nonexistent (RedirectController owns the route, not SPA)', async () => {
     const res = await request(app.getHttpServer()).get('/r/nonexistent');
     expect(res.status).toBe(404);
+  });
+
+  it('should answer GET /healthz with JSON without auth (not the SPA, not under /api)', async () => {
+    const response = await request(app.getHttpServer()).get('/healthz');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ status: 'ok', runtime: null });
   });
 
   // Task 21 — /q/:id excluded from prefix
