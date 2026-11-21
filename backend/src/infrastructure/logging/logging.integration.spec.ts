@@ -5,6 +5,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { Logger, LoggerModule } from 'nestjs-pino';
 import { Writable } from 'stream';
 import request from 'supertest';
+import { QueryFailedError } from 'typeorm';
 import { pseudonymize } from '../../domain/shared/pseudonymize';
 import { loggerParams } from './logger.config';
 
@@ -15,6 +16,19 @@ class StubController {
   @Get('ping')
   ping(@Req() req: Request): string {
     return req.url;
+  }
+
+  @Get('db-failure')
+  dbFailure(): never {
+    const driverError = Object.assign(
+      new Error('SQLITE_BUSY: database is locked'),
+      { code: 'SQLITE_BUSY' },
+    );
+    throw new QueryFailedError(
+      'INSERT INTO users (email, name) VALUES (?, ?)',
+      ['alice@example.com', 'Alice Martin'],
+      driverError,
+    );
   }
 }
 
@@ -86,5 +100,28 @@ describe('HTTP request logs (end to end)', () => {
     ]) {
       expect(output).not.toContain(forbidden);
     }
+  });
+
+  it('logs an unhandled TypeORM error through Nest and pino-http without its query, parameters or driver error', async () => {
+    lines.length = 0;
+    await request(app.getHttpServer()).get('/db-failure').expect(500);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const output = lines.join('');
+    for (const forbidden of [
+      'alice@example.com',
+      'Alice Martin',
+      'INSERT INTO',
+      'driverError',
+      '"parameters"',
+    ]) {
+      expect(output).not.toContain(forbidden);
+    }
+    const errors = lines
+      .map((line) => JSON.parse(line) as { err?: Record<string, string> })
+      .filter((entry) => entry.err?.['type'] === 'QueryFailedError');
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]?.err?.['code']).toBe('SQLITE_BUSY');
+    expect(errors[0]?.err?.['stack']).toContain('QueryFailedError');
   });
 });

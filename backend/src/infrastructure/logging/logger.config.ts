@@ -30,7 +30,11 @@ const QUIET_PATHS = [/^\/assets\//];
  * error as `{ err }`, so only these fields may reach the logs. Error messages must never
  * interpolate personal data or raw response bodies.
  */
-export function serializeError(error: unknown): Record<string, unknown> {
+export function serializeError(input: unknown): Record<string, unknown> {
+  // pino-http wraps custom serializers: they receive pino's already-serialized plain object
+  // (cause chain folded into `message`), which exposes the original error as `raw`.
+  const raw = (input as { raw?: unknown } | null)?.raw;
+  const error = raw instanceof Error ? raw : input;
   if (!(error instanceof Error)) {
     return { type: typeof error };
   }
