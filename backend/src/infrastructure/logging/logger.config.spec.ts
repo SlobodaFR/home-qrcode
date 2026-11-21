@@ -1,6 +1,7 @@
 import { Writable } from 'stream';
 import pino from 'pino';
 import { pseudonymize } from '../../domain/shared/pseudonymize';
+import { QueryFailedError } from 'typeorm';
 import { loggerParams, REDACT_PATHS } from './logger.config';
 
 type Serializer = (value: unknown) => unknown;
@@ -81,5 +82,79 @@ describe('logger configuration', () => {
     expect(output).not.toContain('a@b.c');
     expect(output).not.toContain('t0k3n');
     expect(output).toContain('"code":"X"');
+  });
+
+  describe('error serializer (allow-list)', () => {
+    function logThroughPino(error: unknown): string {
+      const lines: string[] = [];
+      const stream = new Writable({
+        write(chunk: Buffer, _encoding, callback) {
+          lines.push(chunk.toString());
+          callback();
+        },
+      });
+      const { serializers } = options();
+      const logger = pino(
+        {
+          redact: REDACT_PATHS,
+          serializers: {
+            err: (serializers as Record<string, Serializer>)['err'],
+          },
+        },
+        stream,
+      );
+      // Same shape as nestjs-pino when Nest's exception filter logs an unhandled error.
+      logger.error({ err: error }, 'Unhandled error');
+      return lines.join('');
+    }
+
+    it('never logs the bound parameters, query or driver error of a failed TypeORM query', () => {
+      const driverError = Object.assign(
+        new Error('SQLITE_BUSY: database is locked'),
+        {
+          code: 'SQLITE_BUSY',
+        },
+      );
+      const error = new QueryFailedError(
+        'INSERT INTO users (email, name) VALUES (?, ?)',
+        ['alice@example.com', 'Alice Martin'],
+        driverError,
+      );
+
+      const output = logThroughPino(error);
+
+      for (const personal of [
+        'alice@example.com',
+        'Alice Martin',
+        'INSERT INTO',
+      ]) {
+        expect(output).not.toContain(personal);
+      }
+      expect(output).toContain('QueryFailedError');
+      expect(output).toContain('SQLITE_BUSY');
+      expect(output).not.toContain('driverError');
+      expect(output).not.toContain('"parameters"');
+    });
+
+    it('keeps only type, message, stack and code', () => {
+      const error = Object.assign(new Error('boom'), {
+        code: 'E_BOOM',
+        response: { body: 'sk-secret-token alice@example.com' },
+        config: { headers: { authorization: 'Bearer abc' } },
+        cause: new Error('alice@example.com'),
+      });
+
+      const logged = JSON.parse(logThroughPino(error)) as {
+        err: Record<string, unknown>;
+      };
+
+      expect(Object.keys(logged.err).sort()).toEqual([
+        'code',
+        'message',
+        'stack',
+        'type',
+      ]);
+      expect(logged.err['message']).toBe('boom');
+    });
   });
 });

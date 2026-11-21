@@ -32,4 +32,36 @@ describe('HttpOAuthClient', () => {
       client.exchangeCode('bad-code', 'https://app/callback'),
     ).rejects.toThrow('Token request failed');
   });
+
+  it('never puts the raw response body in error messages (status only)', async () => {
+    const body =
+      'alice@example.com invalid_grant sk-live-abc123 refresh_token=r3fr3sh';
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: () => Promise.resolve(body),
+      json: () => Promise.resolve({ error: body }),
+    });
+    const client = new HttpOAuthClient(makeConfig());
+
+    const failures = await Promise.allSettled([
+      client.exchangeCode('bad-code', 'https://app/callback'),
+      client.refresh('old'),
+      client.fetchUserInfo('token'),
+    ]);
+
+    for (const failure of failures) {
+      expect(failure.status).toBe('rejected');
+      const message = String((failure as PromiseRejectedResult).reason);
+      expect(message).toContain('400');
+      for (const leaked of [
+        'alice@example.com',
+        'sk-live',
+        'r3fr3sh',
+        'invalid_grant',
+      ]) {
+        expect(message).not.toContain(leaked);
+      }
+    }
+  });
 });
