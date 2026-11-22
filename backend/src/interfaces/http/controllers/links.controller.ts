@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  UseGuards,
   Delete,
   Get,
   HttpCode,
@@ -21,11 +22,14 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '../decorators/current-user.decorator';
+import { SameOriginGuard } from '../guards/same-origin.guard';
 import { CreateOrEditLinkDto } from '../dto/create-or-edit-link.dto';
 import { ListQrDto } from '../dto/list-qr.dto';
 import { SetExpirationDto } from '../dto/set-expiration.dto';
 import { parseExpiryDate } from '../utils/parse-expiry-date';
 
+// Cookie-authenticated mutations: refuse requests that do not come from this very origin.
+@UseGuards(SameOriginGuard)
 @Controller('links')
 export class LinksController {
   constructor(
