@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { validateEnv } from './infrastructure/config/validate-env';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
 import { MinioModule } from './infrastructure/minio/minio.module';
 import { AuthModule } from './interfaces/http/modules/auth.module';
@@ -12,7 +13,7 @@ import { UsersModule } from './interfaces/http/modules/users.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     DatabaseModule,
     MinioModule,
     AuthModule,
