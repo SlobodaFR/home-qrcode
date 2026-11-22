@@ -122,7 +122,10 @@ jobs:
           username: ${{ env.VPS_USER }}
           key: ${{ env.VPS_SSH_KEY }}
           envs: IMAGE,IMAGE_TAG,DEPLOY_DIR,GHCR_PAT,GHCR_USER
+          command_timeout: 30m
           script: |
+            exec 9>/tmp/home-deploy.lock
+            flock -w 900 9 || { echo "deploy lock timeout"; exit 1; }
             echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             chmod +x /opt/qrcode/deploy/scripts/update-vps.sh
             sh /opt/qrcode/deploy/scripts/update-vps.sh
