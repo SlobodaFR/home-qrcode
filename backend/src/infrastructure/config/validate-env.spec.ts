@@ -1,7 +1,8 @@
-import { validateEnv } from './validate-env';
+import { DEV_PSEUDONYM_SECRET, validateEnv } from './validate-env';
 
 const PROD = {
   NODE_ENV: 'production',
+  PSEUDONYM_SECRET: 'f'.repeat(64),
   AUTH_BASE_URL: 'https://auth.sloboda.fr',
   FRONTEND_URL: 'https://qrcode.sloboda.fr',
   AUTH_CLIENT_ID: 'client-id',
@@ -22,8 +23,24 @@ describe('validateEnv', () => {
   it('does not require anything outside production', () => {
     expect(validateEnv({ NODE_ENV: 'development' })).toEqual({
       NODE_ENV: 'development',
+      PSEUDONYM_SECRET: DEV_PSEUDONYM_SECRET,
     });
-    expect(validateEnv({})).toEqual({});
+    expect(validateEnv({}).PSEUDONYM_SECRET).toBe(DEV_PSEUDONYM_SECRET);
+  });
+
+  it('keeps a configured pseudonym secret outside production', () => {
+    expect(validateEnv({ PSEUDONYM_SECRET: 's' }).PSEUDONYM_SECRET).toBe('s');
+  });
+
+  it.each([
+    ['missing', undefined],
+    ['empty', ''],
+    ['shorter than 32 bytes', 'x'.repeat(31)],
+    ['the development fallback', DEV_PSEUDONYM_SECRET],
+  ])('rejects a production pseudonym secret that is %s', (_label, secret) => {
+    expect(() => validateEnv({ ...PROD, PSEUDONYM_SECRET: secret })).toThrow(
+      'PSEUDONYM_SECRET',
+    );
   });
 
   it.each([
