@@ -1,3 +1,6 @@
 qrcode.sloboda.fr {
+    # Interne : etat du service, lisible seulement depuis le VPS (curl 127.0.0.1:3004/healthz).
+    # /healthz* : un matcher de chemin Caddy est exact, /healthz/ passerait sinon (Express l'accepte).
+    respond /healthz* 404
     reverse_proxy localhost:3004
 }

@@ -10,6 +10,7 @@ import { loggerParams } from './infrastructure/logging/logger.config';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
 import { MinioModule } from './infrastructure/minio/minio.module';
 import { AuthModule } from './interfaces/http/modules/auth.module';
+import { HealthModule } from './interfaces/http/modules/health.module';
 import { LinksModule } from './interfaces/http/modules/links.module';
 import { QrModule } from './interfaces/http/modules/qr.module';
 import { RedirectModule } from './interfaces/http/modules/redirect.module';
@@ -34,6 +35,7 @@ import { throttlerOptions } from './interfaces/http/throttling';
     LinksModule,
     RedirectModule,
     UsersModule,
+    HealthModule,
     ThrottlerModule.forRoot(throttlerOptions),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'frontend', 'dist'),
