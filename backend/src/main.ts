@@ -9,6 +9,8 @@ import { applySecurityHeaders } from './interfaces/http/security-headers';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
+    // The webhook signature covers the exact bytes received (req.rawBody).
+    rawBody: true,
   });
   app.useLogger(app.get(Logger));
   // Lets providers clean up on SIGTERM (OpenFeature close, runtime health monitor timer, telemetry queue flush).

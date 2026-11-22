@@ -8,6 +8,7 @@ import { HandleOAuthCallbackUseCase } from '../../application/auth/handle-oauth-
 import { HandleSessionRevokedUseCase } from '../../application/auth/handle-session-revoked.use-case';
 import { RedirectUseCase } from '../../application/redirect/redirect.use-case';
 import { OAuthClient } from '../../domain/auth/oauth-client';
+import { FeatureFlags } from '../../domain/shared/feature-flags';
 import { UserRepository } from '../../domain/user/user.repository';
 import { AuthController } from './controllers/auth.controller';
 import { RedirectController } from './controllers/redirect.controller';
@@ -53,6 +54,7 @@ describe('Rate limiting (HTTP)', () => {
           },
         },
         { provide: UserRepository, useValue: {} },
+        { provide: FeatureFlags, useValue: {} },
       ],
     }).compile();
 
