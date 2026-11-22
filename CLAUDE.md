@@ -100,3 +100,7 @@ Flags booléens lus dans [home-features](https://features.sloboda.fr) via OFREP 
 - **Évaluation** : délai de 500 ms par requête ; résultat mémorisé 30 s par clé. Valeur définie → cette valeur ; pas de valeur (`DISABLED`) ou flag inconnu → défaut du code ; autre erreur (réseau, délai, 401, 429, 5xx) → dernière valeur connue, sinon défaut du code, mémorisé 30 s aussi, warn au plus toutes les 5 min par flag et code d'erreur. La dernière valeur connue est propre au processus : perdue au redémarrage.
 - **Pin d'urgence** : `FEATURES_PIN_<CLE_EN_MAJ_SNAKE>=true|false` (ex. `FEATURES_PIN_AUTH_VERIFY_TOKEN_CLAIMS=false`) l'emporte sur tout, y compris sans home-features. Toute autre valeur est ignorée (erreur loguée). Nécessite un redémarrage du conteneur. Tout caractère hors `[A-Za-z0-9]` devient `_`.
 - `OFREP_ENDPOINT`, `OFREP_HEADERS` et `OFREP_TIMEOUT_MS`, que le provider lirait sinon, sont ignorés et retirés de l'environnement au démarrage (warn).
+
+### Flags lus
+
+- `auth-verify-token-claims` (défaut du code : `false`) : active la vérification de l'audience (`AUTH_CLIENT_ID`), de l'émetteur (origine de `AUTH_BASE_URL`) et de l'algorithme (`RS256` seulement) des access tokens (`JwksAccessTokenVerifier`). Éteint : comportement historique (signature JWKS et expiration seulement). À activer dans home-features une fois home-auth B1 déployé depuis 15 min au moins (les tokens émis avant B1 n'ont pas d'`iss`) ; le pin d'urgence est `FEATURES_PIN_AUTH_VERIFY_TOKEN_CLAIMS=false`.
