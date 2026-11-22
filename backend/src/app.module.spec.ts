@@ -1,6 +1,8 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { QrCode } from './domain/qr/qr-code';
 import { QrRepository } from './domain/qr/qr.repository';
+import { FeatureFlags } from './domain/shared/feature-flags';
+import { OpenFeatureFeatureFlags } from './infrastructure/feature-flags/openfeature-feature-flags';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
@@ -85,6 +87,13 @@ describe('AppModule', () => {
   // Task 18 — ConfigModule loaded
   it('should boot with ConfigModule loaded', () => {
     expect(app.get(ConfigService)).toBeDefined();
+  });
+
+  it('should provide the feature flags port globally, answering code defaults without home-features', async () => {
+    const flags = app.get(FeatureFlags);
+    expect(flags).toBeInstanceOf(OpenFeatureFeatureFlags);
+    expect(await flags.isEnabled('some-flag', true)).toBe(true);
+    expect(await flags.isEnabled('some-flag', false)).toBe(false);
   });
 
   // Task 19 — global prefix /api applied

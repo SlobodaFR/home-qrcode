@@ -91,3 +91,12 @@ docker build -t home-qrcode .
 7. **SQLite only — no external database.** Litestream replication to MinIO is required for persistence across container restarts. MinIO health check at startup is mandatory.
 
 8. **Deleted QR codes return 404.** No tombstone page, no soft-delete visible to the public. Files are removed from MinIO on deletion.
+
+## Feature flags (home-features)
+
+Flags booléens lus dans [home-features](https://features.sloboda.fr) via OFREP (`@openfeature/server-sdk` + `@openfeature/ofrep-provider`), derrière le port `FeatureFlags.isEnabled(key, codeDefault)` (`backend/src/domain/shared/feature-flags.ts`). L'adaptateur (`backend/src/infrastructure/feature-flags/`) est recopié tel quel de home-auth (PR #86) : ne rien y mettre de propre à ce service. Le port est injectable partout (`FeatureFlagsModule` est global).
+
+- **Configuration** : `FEATURES_OFREP_URL` (base `https://features.sloboda.fr/api`, https obligatoire en production) et `FEATURES_API_KEY` (clé serveur liée à l'app et à l'environnement, `hf_` + 64 hex ; 1Password : `QRCODE_FEATURES_API_KEY`). Absentes : tous les flags valent le défaut du code (warning unique) ; invalides : idem, avec une erreur au démarrage. Le démarrage n'attend jamais home-features.
+- **Évaluation** : délai de 500 ms par requête ; résultat mémorisé 30 s par clé. Valeur définie → cette valeur ; pas de valeur (`DISABLED`) ou flag inconnu → défaut du code ; autre erreur (réseau, délai, 401, 429, 5xx) → dernière valeur connue, sinon défaut du code, mémorisé 30 s aussi, warn au plus toutes les 5 min par flag et code d'erreur. La dernière valeur connue est propre au processus : perdue au redémarrage.
+- **Pin d'urgence** : `FEATURES_PIN_<CLE_EN_MAJ_SNAKE>=true|false` (ex. `FEATURES_PIN_AUTH_VERIFY_TOKEN_CLAIMS=false`) l'emporte sur tout, y compris sans home-features. Toute autre valeur est ignorée (erreur loguée). Nécessite un redémarrage du conteneur. Tout caractère hors `[A-Za-z0-9]` devient `_`.
+- `OFREP_ENDPOINT`, `OFREP_HEADERS` et `OFREP_TIMEOUT_MS`, que le provider lirait sinon, sont ignorés et retirés de l'environnement au démarrage (warn).
