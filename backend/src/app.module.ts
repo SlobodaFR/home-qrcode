@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { join } from 'path';
 import { validateEnv } from './infrastructure/config/validate-env';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
@@ -10,6 +12,7 @@ import { LinksModule } from './interfaces/http/modules/links.module';
 import { QrModule } from './interfaces/http/modules/qr.module';
 import { RedirectModule } from './interfaces/http/modules/redirect.module';
 import { UsersModule } from './interfaces/http/modules/users.module';
+import { throttlerOptions } from './interfaces/http/throttling';
 
 @Module({
   imports: [
@@ -21,10 +24,12 @@ import { UsersModule } from './interfaces/http/modules/users.module';
     LinksModule,
     RedirectModule,
     UsersModule,
+    ThrottlerModule.forRoot(throttlerOptions),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'frontend', 'dist'),
       exclude: ['/api{*any}'],
     }),
   ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
