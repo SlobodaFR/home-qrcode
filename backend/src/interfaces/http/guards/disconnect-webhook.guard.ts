@@ -22,6 +22,7 @@ const REQUIRE_SIGNATURE_FLAG = 'auth-webhook-require-signature';
 type LegacyReason =
   | 'no-signature-headers'
   | 'missing-signing-secret'
+  | 'raw-body-unavailable'
   | 'format'
   | 'window'
   | 'hmac';
@@ -39,8 +40,10 @@ const LOG_INTERVAL_MS = 5 * 60_000;
  * - As soon as the id header is non-empty and that id was already accepted (replay), the request
  *   is refused (401), even with a valid `?secret=`; this check runs first. Ids are recorded only
  *   once a signature fully verifies.
+ * - Order: no signature header (legacy), replay (401), then missing signing secret, raw body
+ *   unavailable, format, window, hmac. A failing flag evaluation counts as not strict.
  * - Without any signature header, or with headers that are invalid (format, window, hmac) or
- *   cannot be checked (no AUTH_WEBHOOK_SIGNING_SECRET), the old `?secret=` is the fallback
+ *   cannot be checked (no AUTH_WEBHOOK_SIGNING_SECRET, raw body not captured), the old `?secret=` is the fallback
  *   outside strict mode. Strict mode without a signing secret fails closed (one error logged).
  */
 @Injectable()
@@ -59,7 +62,7 @@ export class DisconnectWebhookGuard implements CanActivate {
     const request = context
       .switchToHttp()
       .getRequest<RawBodyRequest<Request>>();
-    const strict = await this.flags.isEnabled(REQUIRE_SIGNATURE_FLAG, false);
+    const strict = await this.strictMode();
     const signingSecret = this.config.get<string>(
       'AUTH_WEBHOOK_SIGNING_SECRET',
     );
@@ -100,6 +103,15 @@ export class DisconnectWebhookGuard implements CanActivate {
     throw new UnauthorizedException();
   }
 
+  /** Never blocks nor fails the delivery: any problem reading the flag means the code default (off). */
+  private async strictMode(): Promise<boolean> {
+    try {
+      return await this.flags.isEnabled(REQUIRE_SIGNATURE_FLAG, false);
+    } catch {
+      return false;
+    }
+  }
+
   private checkSignature(
     request: RawBodyRequest<Request>,
     signingSecret: string,
@@ -107,6 +119,10 @@ export class DisconnectWebhookGuard implements CanActivate {
     const signature = headerValue(request, 'x-auth-webhook-signature');
     const id = headerValue(request, 'x-auth-webhook-id');
     const timestamp = headerValue(request, 'x-auth-webhook-timestamp');
+    // The signed bytes are the ones received: re-serializing the parsed body is not a proof.
+    if (!request.rawBody) {
+      return { valid: false, reason: 'raw-body-unavailable' };
+    }
     if (
       signature === undefined ||
       id === undefined ||
@@ -114,12 +130,7 @@ export class DisconnectWebhookGuard implements CanActivate {
     ) {
       return { valid: false, reason: 'format' };
     }
-    const rawBody =
-      request.rawBody?.toString('utf8') ??
-      // Documented fallback (contract PC7): the body home-auth signs is exactly this.
-      JSON.stringify({
-        userId: (request.body as { userId?: unknown } | undefined)?.userId,
-      });
+    const rawBody = request.rawBody.toString('utf8');
     const result = checkWebhookSignature({
       secret: signingSecret,
       id,

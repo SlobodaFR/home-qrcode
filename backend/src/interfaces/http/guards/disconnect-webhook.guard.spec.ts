@@ -27,6 +27,8 @@ const REQUIRE_FLAG = 'auth-webhook-require-signature';
 interface Setup {
   signingSecret?: string;
   requireSignature?: boolean;
+  /** The flag evaluation itself fails (provider error). */
+  flagThrows?: boolean;
 }
 
 describe('POST /auth/disconnect webhook authentication', () => {
@@ -34,7 +36,11 @@ describe('POST /auth/disconnect webhook authentication', () => {
   let revoke: ReturnType<typeof vi.fn>;
   let flagCalls: [string, boolean][];
 
-  async function start({ signingSecret, requireSignature = false }: Setup) {
+  async function start({
+    signingSecret,
+    requireSignature = false,
+    flagThrows = false,
+  }: Setup) {
     revoke = vi.fn().mockResolvedValue(undefined);
     flagCalls = [];
     const config = {
@@ -49,6 +55,9 @@ describe('POST /auth/disconnect webhook authentication', () => {
     const flags: FeatureFlags = {
       isEnabled: (key, codeDefault) => {
         flagCalls.push([key, codeDefault]);
+        if (flagThrows) {
+          return Promise.reject(new Error('flag provider down'));
+        }
         return Promise.resolve(
           key === REQUIRE_FLAG ? requireSignature : codeDefault,
         );
@@ -297,6 +306,25 @@ describe('POST /auth/disconnect webhook authentication', () => {
     });
   });
 
+  describe('a failing flag evaluation is treated as non-strict', () => {
+    beforeEach(() =>
+      start({ signingSecret: SIGNING_SECRET, flagThrows: true }),
+    );
+
+    it('still accepts the legacy ?secret= (no 500)', async () => {
+      await legacyOnly().expect(204);
+      expect(flagCalls).toContainEqual([REQUIRE_FLAG, false]);
+    });
+
+    it('still accepts a valid signature', async () => {
+      await deliver().expect(204);
+    });
+
+    it('still refuses a wrong legacy ?secret= (401, not 500)', async () => {
+      await legacyOnly('?secret=wrong').expect(401);
+    });
+  });
+
   describe('observability before the strict flip', () => {
     const FIVE_MINUTES = 5 * 60_000;
     let warn: MockInstance<Logger['warn']>;
@@ -388,6 +416,25 @@ describe('POST /auth/disconnect webhook authentication', () => {
       await deliver({ query: `?secret=${LEGACY_SECRET}` }).expect(204);
       expect(warnings()).toHaveLength(1);
       expect(warnings()[0]).toContain('reason=missing-signing-secret');
+    });
+
+    it('warns with reason=raw-body-unavailable when the raw body was not captured (no JSON.stringify fallback)', async () => {
+      await start({ signingSecret: SIGNING_SECRET });
+      const id = randomUUID();
+      const timestamp = String(nowSeconds());
+      const body = JSON.stringify({ userId: 'u1' });
+      await request(app.getHttpServer())
+        .post(`/auth/disconnect?secret=${LEGACY_SECRET}`)
+        .set('Content-Type', 'text/plain')
+        .set('X-Auth-Webhook-Id', id)
+        .set('X-Auth-Webhook-Timestamp', timestamp)
+        .set(
+          'X-Auth-Webhook-Signature',
+          `v1=${computeWebhookSignature(SIGNING_SECRET, id, timestamp, body)}`,
+        )
+        .send(body);
+      expect(warnings()).toHaveLength(1);
+      expect(warnings()[0]).toContain('reason=raw-body-unavailable');
     });
 
     it('throttles the signature info on its own key, independent of the warning reasons', async () => {
