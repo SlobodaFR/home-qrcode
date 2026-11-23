@@ -49,6 +49,8 @@ jobs:
           MINIO_REPLICA_PATH: op://TECH/thomassloboda_home_secrets/QRCODE_MINIO_REPLICA_PATH
           MINIO_ASSETS_PATH: op://TECH/thomassloboda_home_secrets/QRCODE_MINIO_ASSETS_PATH
           PSEUDONYM_SECRET: op://TECH/thomassloboda_home_secrets/QRCODE_PSEUDONYM_SECRET
+          FEATURES_OFREP_URL: op://TECH/thomassloboda_home_secrets/FEATURES_OFREP_URL
+          FEATURES_API_KEY: op://TECH/thomassloboda_home_secrets/QRCODE_FEATURES_API_KEY
 
       - name: Normalize VPS_SSH_KEY
         # The 1Password field stores only the base64 body (no BEGIN/END
@@ -82,7 +84,7 @@ jobs:
           host: ${{ env.VPS_HOST }}
           username: ${{ env.VPS_USER }}
           key: ${{ env.VPS_SSH_KEY }}
-          envs: AUTH_BASE_URL,AUTH_CLIENT_ID,AUTH_CLIENT_SECRET,AUTH_WEBHOOK_SECRET,FRONTEND_URL,DATABASE_PATH,MINIO_ENDPOINT,MINIO_BUCKET,MINIO_REGION,MINIO_ACCESS_KEY_ID,MINIO_SECRET_ACCESS_KEY,MINIO_REPLICA_PATH,MINIO_ASSETS_PATH,PSEUDONYM_SECRET
+          envs: AUTH_BASE_URL,AUTH_CLIENT_ID,AUTH_CLIENT_SECRET,AUTH_WEBHOOK_SECRET,FRONTEND_URL,DATABASE_PATH,MINIO_ENDPOINT,MINIO_BUCKET,MINIO_REGION,MINIO_ACCESS_KEY_ID,MINIO_SECRET_ACCESS_KEY,MINIO_REPLICA_PATH,MINIO_ASSETS_PATH,PSEUDONYM_SECRET,FEATURES_OFREP_URL,FEATURES_API_KEY
           script: |
             mkdir -p /opt/qrcode/deploy
             cat > /opt/qrcode/deploy/.env <<EOF
@@ -103,6 +105,8 @@ jobs:
             MINIO_REPLICA_PATH=$MINIO_REPLICA_PATH
             MINIO_ASSETS_PATH=$MINIO_ASSETS_PATH
             PSEUDONYM_SECRET=$PSEUDONYM_SECRET
+            FEATURES_OFREP_URL=$FEATURES_OFREP_URL
+            FEATURES_API_KEY=$FEATURES_API_KEY
             EOF
 
       - name: Sync deploy files

@@ -6,6 +6,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { join } from 'path';
 import { validateEnv } from './infrastructure/config/validate-env';
+import { FeatureFlagsModule } from './infrastructure/feature-flags/feature-flags.module';
 import { loggerParams } from './infrastructure/logging/logger.config';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
 import { MinioModule } from './infrastructure/minio/minio.module';
@@ -28,6 +29,7 @@ import { throttlerOptions } from './interfaces/http/throttling';
           config.getOrThrow<string>('PSEUDONYM_SECRET'),
         ),
     }),
+    FeatureFlagsModule,
     DatabaseModule,
     MinioModule,
     AuthModule,
