@@ -11,6 +11,8 @@ async function bootstrap() {
     bufferLogs: true,
   });
   app.useLogger(app.get(Logger));
+  // SIGTERM (every deploy) must run onApplicationShutdown: it flushes the telemetry queue.
+  app.enableShutdownHooks();
   // Lets providers clean up on SIGTERM (OpenFeature close, runtime health monitor timer).
   app.enableShutdownHooks();
   // First middleware: every response (API, QR images, SPA files) gets the security headers.

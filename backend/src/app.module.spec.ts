@@ -1,7 +1,9 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { QrCode } from './domain/qr/qr-code';
 import { QrRepository } from './domain/qr/qr.repository';
+import { FakeTelemetry } from './application/test/fake-telemetry';
 import { FeatureFlags } from './domain/shared/feature-flags';
+import { Telemetry } from './domain/shared/telemetry';
 import { OpenFeatureFeatureFlags } from './infrastructure/feature-flags/openfeature-feature-flags';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -29,6 +31,7 @@ function ensureDistFixture(): void {
 
 describe('AppModule', () => {
   let app: INestApplication;
+  let telemetry: FakeTelemetry;
 
   beforeAll(async () => {
     process.env['FRONTEND_URL'] = 'http://localhost:5173';
@@ -44,9 +47,13 @@ describe('AppModule', () => {
     process.env['MINIO_ASSETS_PATH'] = 'qr-test';
     ensureDistFixture();
 
+    telemetry = new FakeTelemetry();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(Telemetry)
+      .useValue(telemetry)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api', { exclude: ['r/:id', 'q/:id', 'healthz'] });
@@ -531,5 +538,53 @@ describe('AppModule', () => {
     const res = await request(app.getHttpServer()).get('/r/e2e-active-1');
     expect(res.status).toBe(302);
     expect(res.headers['location']).toBe('https://active-target.com');
+  });
+
+  describe('ops telemetry (http_request)', () => {
+    beforeEach(() => {
+      telemetry.captured.length = 0;
+    });
+
+    it('reports a Nest route with its template, under the global prefix', async () => {
+      await request(app.getHttpServer()).post('/api/auth/logout').expect(204);
+
+      expect(telemetry.captured).toEqual([
+        {
+          event: {
+            name: 'http_request',
+            properties: {
+              route: '/api/auth/logout',
+              method: 'POST',
+              status: 204,
+              duration_ms: expect.any(Number),
+            },
+          },
+        },
+      ]);
+    });
+
+    it.each([
+      '/healthz',
+      '/r/some-short-id',
+      '/api/qr/some-id/png',
+      '/api/qr/some-id/svg',
+      '/api/qr/some-id/meta',
+      '/api/qr/some-id/logo',
+    ])(
+      'does not report the probed or public high-volume route %s',
+      async (url) => {
+        await request(app.getHttpServer()).get(url);
+
+        expect(telemetry.captured).toEqual([]);
+      },
+    );
+
+    it('does not report SPA or static requests (served outside Nest routes)', async () => {
+      await request(app.getHttpServer()).get('/');
+      await request(app.getHttpServer()).get('/q/some-id');
+      await request(app.getHttpServer()).get('/some/unknown/path');
+
+      expect(telemetry.captured).toEqual([]);
+    });
   });
 });
