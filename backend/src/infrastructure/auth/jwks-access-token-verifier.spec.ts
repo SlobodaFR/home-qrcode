@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import * as jose from 'jose';
+import { FeatureFlags } from '../../domain/shared/feature-flags';
 import { JwksAccessTokenVerifier } from './jwks-access-token-verifier';
 
 vi.mock('jose');
@@ -7,6 +8,9 @@ vi.mock('jose');
 const mockJose = vi.mocked(jose);
 
 describe('JwksAccessTokenVerifier', () => {
+  const flags: FeatureFlags = {
+    isEnabled: (_key, codeDefault) => Promise.resolve(codeDefault),
+  };
   const makeConfig = () =>
     ({
       getOrThrow: vi.fn().mockReturnValue('https://auth.example.com'),
@@ -21,7 +25,7 @@ describe('JwksAccessTokenVerifier', () => {
   // Test 9 — TPP: constant
   it('should return null when jwtVerify throws', async () => {
     mockJose.jwtVerify.mockRejectedValue(new Error('invalid token'));
-    const verifier = new JwksAccessTokenVerifier(makeConfig());
+    const verifier = new JwksAccessTokenVerifier(makeConfig(), flags);
     const result = await verifier.verify('bad-token');
     expect(result).toBeNull();
   });
@@ -32,7 +36,7 @@ describe('JwksAccessTokenVerifier', () => {
       payload: { sub: 'u1' },
       protectedHeader: {},
     } as unknown as Awaited<ReturnType<typeof jose.jwtVerify>>);
-    const verifier = new JwksAccessTokenVerifier(makeConfig());
+    const verifier = new JwksAccessTokenVerifier(makeConfig(), flags);
     const result = await verifier.verify('token-missing-claims');
     expect(result).toBeNull();
   });
