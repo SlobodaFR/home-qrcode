@@ -7,6 +7,7 @@ import { HandleSessionRevokedUseCase } from '../../../application/auth/handle-se
 import { OAuthClient, TokenPair } from '../../../domain/auth/oauth-client';
 import { User } from '../../../domain/user/user';
 import { UserRepository } from '../../../domain/user/user.repository';
+import { DisconnectWebhookGuard } from '../guards/disconnect-webhook.guard';
 import { AuthController } from './auth.controller';
 
 const mockTokens: TokenPair = {
@@ -78,7 +79,11 @@ const makeController = async (userInDb: User | null = mockUser) => {
         },
       },
     ],
-  }).compile();
+  })
+    // Authentication of the webhook is covered by disconnect-webhook.guard.spec.ts.
+    .overrideGuard(DisconnectWebhookGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
   return {
     controller: module.get(AuthController),
     oauthClient: module.get<Mocked<OAuthClient>>(OAuthClient),
@@ -139,18 +144,18 @@ describe('AuthController', () => {
   });
 
   // Test 29 — TPP: conditional
-  it('should execute handleSessionRevoked and return 204 when disconnect secret matches', async () => {
+  it('should execute handleSessionRevoked on POST /auth/disconnect', async () => {
     const { controller, sessionRevokedUseCase } = await makeController();
-    await controller.disconnect({ userId: 'u1' }, 'secret-123');
+    await controller.disconnect({ userId: 'u1' });
     expect(sessionRevokedUseCase.execute).toHaveBeenCalledWith('u1');
   });
 
-  // Test 30 — TPP: conditional
-  it('should throw UnauthorizedException on POST /auth/disconnect when secret is wrong', async () => {
-    const { controller } = await makeController();
-    await expect(
-      controller.disconnect({ userId: 'u1' }, 'wrong'),
-    ).rejects.toThrow('Unauthorized');
+  it('should guard POST /auth/disconnect with DisconnectWebhookGuard', () => {
+    const guards = Reflect.getMetadata(
+      '__guards__',
+      AuthController.prototype.disconnect,
+    ) as unknown[];
+    expect(guards).toContain(DisconnectWebhookGuard);
   });
 
   // T27 — TPP: variable (internal-sharing: avatarUrl from DB)

@@ -6,7 +6,7 @@ import {
   Post,
   Query,
   Res,
-  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
@@ -22,6 +22,7 @@ import {
 } from '../decorators/current-user.decorator';
 import { Public } from '../decorators/public.decorator';
 import { SessionRevokedDto } from '../dto/session-revoked.dto';
+import { DisconnectWebhookGuard } from '../guards/disconnect-webhook.guard';
 import { EXPENSIVE_ROUTE_THROTTLE } from '../throttling';
 
 @Controller('auth')
@@ -73,19 +74,14 @@ export class AuthController {
     };
   }
 
-  // Server-to-server webhook from home-auth, already gated by a shared secret:
-  // a burst of session revocations must never be answered with 429.
+  // Server-to-server webhook from home-auth, authenticated by DisconnectWebhookGuard (signature
+  // or legacy ?secret=): a burst of session revocations must never be answered with 429.
   @Public()
   @SkipThrottle()
+  @UseGuards(DisconnectWebhookGuard)
   @Post('disconnect')
   @HttpCode(204)
-  async disconnect(
-    @Body() dto: SessionRevokedDto,
-    @Query('secret') secret?: string,
-  ): Promise<void> {
-    if (secret !== this.config.getOrThrow<string>('AUTH_WEBHOOK_SECRET')) {
-      throw new UnauthorizedException();
-    }
+  async disconnect(@Body() dto: SessionRevokedDto): Promise<void> {
     await this.handleSessionRevoked.execute(dto.userId);
   }
 

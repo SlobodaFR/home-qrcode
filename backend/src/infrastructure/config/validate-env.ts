@@ -25,6 +25,16 @@ const REQUIRED_IN_PRODUCTION = [
 export function validateEnv(
   env: Record<string, unknown>,
 ): Record<string, unknown> {
+  const signingSecret = env['AUTH_WEBHOOK_SIGNING_SECRET'];
+  if (
+    signingSecret !== undefined &&
+    signingSecret !== '' &&
+    !(typeof signingSecret === 'string' && /^[0-9a-f]{64}$/.test(signingSecret))
+  ) {
+    throw new Error(
+      'AUTH_WEBHOOK_SIGNING_SECRET must be 64 lowercase hexadecimal characters (or unset)',
+    );
+  }
   const secret =
     typeof env['PSEUDONYM_SECRET'] === 'string' ? env['PSEUDONYM_SECRET'] : '';
   if (env['NODE_ENV'] !== 'production') {
