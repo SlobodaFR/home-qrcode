@@ -18,6 +18,12 @@ import { routeOf } from './route-of';
  *   would be a cost amplifier.
  * - '/api/qr/:id/{meta,logo,png,svg}': public and unthrottled read routes, the dashboard and the
  *   public /q/:id page load one image per card on every view.
+ *
+ * Deliberately kept although public and unthrottled: POST '/api/auth/disconnect' (home-auth
+ * back-channel, secret-gated inside the handler): server-to-server and low volume, and its 401s
+ * reveal a webhook secret mismatch between home-auth and home-qrcode.
+ *
+ * Accepted blind spot: no 5xx visibility on the excluded routes (redirect, QR images from MinIO).
  */
 const UNREPORTED_ROUTES = new Set([
   '/healthz',

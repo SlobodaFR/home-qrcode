@@ -573,8 +573,11 @@ describe('AppModule', () => {
     ])(
       'does not report the probed or public high-volume route %s',
       async (url) => {
-        await request(app.getHttpServer()).get(url);
+        const res = await request(app.getHttpServer()).get(url);
 
+        // A handler answered (200, or its own NotFoundException): the route matched, so the
+        // silence comes from the exclusion, not from an unmatched route ("Cannot GET ...").
+        expect(JSON.stringify(res.body)).not.toContain('Cannot GET');
         expect(telemetry.captured).toEqual([]);
       },
     );

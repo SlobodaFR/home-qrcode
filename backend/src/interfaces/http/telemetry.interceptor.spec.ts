@@ -175,7 +175,9 @@ describe('HTTP telemetry', () => {
   it.each(['png', 'svg', 'meta', 'logo'])(
     'does not report the public unthrottled /api/qr/:id/%s route',
     async (suffix) => {
-      await request(app.getHttpServer()).get(`/api/qr/abc123/${suffix}`);
+      await request(app.getHttpServer())
+        .get(`/api/qr/abc123/${suffix}`)
+        .expect(200);
 
       expect(telemetry.captured).toEqual([]);
     },
