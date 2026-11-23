@@ -10,6 +10,7 @@ import { FeatureFlagsModule } from './infrastructure/feature-flags/feature-flags
 import { loggerParams } from './infrastructure/logging/logger.config';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
 import { MinioModule } from './infrastructure/minio/minio.module';
+import { TelemetryModule } from './infrastructure/telemetry/telemetry.module';
 import { AuthModule } from './interfaces/http/modules/auth.module';
 import { HealthModule } from './interfaces/http/modules/health.module';
 import { LinksModule } from './interfaces/http/modules/links.module';
@@ -30,6 +31,7 @@ import { throttlerOptions } from './interfaces/http/throttling';
         ),
     }),
     FeatureFlagsModule,
+    TelemetryModule,
     DatabaseModule,
     MinioModule,
     AuthModule,

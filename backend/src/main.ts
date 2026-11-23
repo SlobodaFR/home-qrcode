@@ -11,7 +11,7 @@ async function bootstrap() {
     bufferLogs: true,
   });
   app.useLogger(app.get(Logger));
-  // Lets providers clean up on SIGTERM (OpenFeature close, runtime health monitor timer).
+  // Lets providers clean up on SIGTERM (OpenFeature close, runtime health monitor timer, telemetry queue flush).
   app.enableShutdownHooks();
   // First middleware: every response (API, QR images, SPA files) gets the security headers.
   applySecurityHeaders(app, process.env['AUTH_BASE_URL']);
