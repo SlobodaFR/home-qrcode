@@ -11,7 +11,10 @@ export IMAGE_TAG
 
 docker compose pull
 docker compose down --remove-orphans
-docker compose up -d
+# Convention harnais deploy-wait-healthy : `docker compose up -d --wait` (repli : boucle docker inspect) ; un conteneur
+# qui n'est pas sain après 180 s fait échouer le déploiement (logs, sauvegarde et restauration affichées), sans retour arrière automatique.
+sh "$DEPLOY_DIR/deploy/scripts/compose-up-healthy.sh" --service qrcode \
+  --restore-args "--project qrcode --volume qrcode-data --mount /app/backend/data --db-path ${DATABASE_PATH:-/app/backend/data/qrcode.sqlite}"
 docker image prune -f
 
 if ! command -v caddy >/dev/null 2>&1; then
