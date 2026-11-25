@@ -11,6 +11,7 @@ import * as linksHooks from '../../application/hooks/useLinks';
 import * as currentUserHooks from '../../application/hooks/useCurrentUser';
 import * as sharedWithMeHooks from '../../application/hooks/useSharedWithMe';
 import * as usersClient from '../../infrastructure/api/users.client';
+import * as authClient from '../../infrastructure/api/qr-auth.client';
 import type { CreateQrPayload } from '../../infrastructure/api/qr-auth.client';
 import type { ShortLinkItem } from '../../infrastructure/api/links.client';
 
@@ -946,5 +947,53 @@ describe('internal-sharing UI (T50-T62)', () => {
     expect(
       within(section).queryByRole('button', { name: /supprimer/i }),
     ).toBeNull();
+  });
+});
+
+describe('logout (PC10)', () => {
+  const assign = vi.fn();
+  const replace = vi.fn();
+  const originalLocation = window.location;
+
+  beforeEach(() => {
+    assign.mockClear();
+    replace.mockClear();
+    Object.defineProperty(window, 'location', {
+      value: { assign, replace },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  it('navigates (top-level) to home-auth when the server returns redirect_to', async () => {
+    vi.spyOn(authClient, 'logout').mockResolvedValue({
+      redirectTo: 'https://auth.example/logout?state=s',
+    });
+    render(<DashboardPage />);
+    fireEvent.click(screen.getByLabelText('Se déconnecter'));
+    await waitFor(() =>
+      expect(assign).toHaveBeenCalledWith(
+        'https://auth.example/logout?state=s',
+      ),
+    );
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('local-only logout (redirectTo null): goes to /api/auth/login, no assign', async () => {
+    vi.spyOn(authClient, 'logout').mockResolvedValue({ redirectTo: null });
+    render(<DashboardPage />);
+    fireEvent.click(screen.getByLabelText('Se déconnecter'));
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith('/api/auth/login'),
+    );
+    expect(assign).not.toHaveBeenCalled();
   });
 });

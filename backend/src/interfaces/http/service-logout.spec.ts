@@ -229,11 +229,12 @@ describe('service-initiated logout (PC10): POST /auth/logout and GET /auth/logge
   it('refuses a cross-origin POST (no logout-CSRF) and has no side effect', async () => {
     const app = await boot({ flag: true, validTokens: ['a'] });
     try {
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .post('/api/auth/logout')
         .set('Sec-Fetch-Site', 'cross-site')
         .set('Cookie', ['access_token=a'])
         .expect(403);
+      expect(res.headers['set-cookie']).toBeUndefined();
     } finally {
       await app.close();
     }
