@@ -9,13 +9,19 @@ cd "$DEPLOY_DIR/deploy"
 export IMAGE
 export IMAGE_TAG
 
+# Convention harnais image-retention : AVANT le pull, fait de la place (garde 1 image du service en plus de celle en cours).
+sh "$DEPLOY_DIR/deploy/scripts/prune-service-images.sh" --phase pre \
+  --service qrcode --image ghcr.io/slobodafr/home-qrcode --tag "$IMAGE_TAG" --project qrcode
+
 docker compose pull
 docker compose down --remove-orphans
 # Convention harnais deploy-wait-healthy : `docker compose up -d --wait` (repli : boucle docker inspect) ; un conteneur
 # qui n'est pas sain après 180 s fait échouer le déploiement (logs, sauvegarde et restauration affichées), sans retour arrière automatique.
 sh "$DEPLOY_DIR/deploy/scripts/compose-up-healthy.sh" --service qrcode \
   --restore-args "--project qrcode --volume qrcode-data --mount /app/backend/data --db-path ${DATABASE_PATH:-/app/backend/data/qrcode.sqlite}"
-docker image prune -f
+# Convention harnais image-retention : APRÈS un déploiement sain uniquement (set -e), garde la courante + la précédente.
+sh "$DEPLOY_DIR/deploy/scripts/prune-service-images.sh" --phase post \
+  --service qrcode --image ghcr.io/slobodafr/home-qrcode --tag "$IMAGE_TAG" --project qrcode
 
 if ! command -v caddy >/dev/null 2>&1; then
   sudo apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl
