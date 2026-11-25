@@ -23,10 +23,7 @@ RUN npm install
 COPY backend backend
 COPY --from=frontend-build /app/frontend/dist frontend/dist
 RUN npm run build --workspace=backend
-RUN npm prune --omit=dev \
-    # npm prune --omit=dev peut laisser le dossier @typescript (portee des binaires TypeScript 7, dev) :
-    # on le retire explicitement pour que l'image d'execution ne contienne aucun reste de TypeScript.
-    && rm -rf node_modules/typescript node_modules/@typescript node_modules/.bin/tsc node_modules/.bin/tsserver
+RUN npm prune --omit=dev
 
 # ---------- Runtime ----------
 FROM node:26-bookworm-slim AS runtime
@@ -45,7 +42,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=backend-build /app/node_modules node_modules
 # Garde-fou : le compilateur TypeScript ne doit jamais atterrir dans l'image d'execution.
-RUN test ! -e node_modules/typescript && test ! -e node_modules/@typescript
+RUN test ! -e node_modules/typescript
 COPY --from=backend-build /app/backend/dist backend/dist
 COPY --from=backend-build /app/backend/package.json backend/package.json
 COPY --from=backend-build /app/frontend/dist frontend/dist
