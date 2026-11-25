@@ -23,7 +23,10 @@ RUN npm install
 COPY backend backend
 COPY --from=frontend-build /app/frontend/dist frontend/dist
 RUN npm run build --workspace=backend
-RUN npm prune --omit=dev
+RUN npm prune --omit=dev \
+    # L'override typescript de @nestjs/swagger 12 (peer optionnel, jamais utilise a l'execution :
+    # seul son plugin de compilation l'importe) fait compter typescript comme dependance de prod.
+    && rm -rf node_modules/typescript node_modules/@typescript node_modules/.bin/tsc node_modules/.bin/tsserver
 
 # ---------- Runtime ----------
 FROM node:26-bookworm-slim AS runtime
@@ -41,6 +44,8 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=backend-build /app/node_modules node_modules
+# Garde-fou : le compilateur TypeScript ne doit jamais atterrir dans l'image d'execution.
+RUN test ! -e node_modules/typescript && test ! -e node_modules/@typescript
 COPY --from=backend-build /app/backend/dist backend/dist
 COPY --from=backend-build /app/backend/package.json backend/package.json
 COPY --from=backend-build /app/frontend/dist frontend/dist
