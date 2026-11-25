@@ -24,8 +24,8 @@ COPY backend backend
 COPY --from=frontend-build /app/frontend/dist frontend/dist
 RUN npm run build --workspace=backend
 RUN npm prune --omit=dev \
-    # L'override typescript de @nestjs/swagger 12 (peer optionnel, jamais utilise a l'execution :
-    # seul son plugin de compilation l'importe) fait compter typescript comme dependance de prod.
+    # npm prune --omit=dev peut laisser le dossier @typescript (portee des binaires TypeScript 7, dev) :
+    # on le retire explicitement pour que l'image d'execution ne contienne aucun reste de TypeScript.
     && rm -rf node_modules/typescript node_modules/@typescript node_modules/.bin/tsc node_modules/.bin/tsserver
 
 # ---------- Runtime ----------

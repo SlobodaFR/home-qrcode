@@ -51,15 +51,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Lockfile guard (runtime packages must live in /app/node_modules)
+        run: sh .github/scripts/lockfile-runtime-check.sh --service home-qrcode --dockerfile Dockerfile --workspace backend
+
       - name: Build S3 stub (Litestream restore at boot needs a reachable bucket listing)
         run: |
           docker build -t s3-stub:ci-${{ github.run_id }}-${{ github.run_attempt }} - <<'EOF'
           FROM node:26-bookworm-slim
           CMD ["node","-e","require('http').createServer((q,r)=>{q.resume();r.setHeader('content-type','application/xml');r.end('<?xml version=\"1.0\" encoding=\"UTF-8\"?><ListBucketResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><Name>b</Name><KeyCount>0</KeyCount><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated></ListBucketResult>')}).listen(9000)"]
           EOF
-
-      - name: Lockfile guard (runtime packages must live in /app/node_modules)
-        run: sh .github/scripts/lockfile-runtime-check.sh --service home-qrcode --dockerfile Dockerfile --workspace backend
 
       - name: Build Docker image (loaded, no push)
         uses: docker/build-push-action@v6
