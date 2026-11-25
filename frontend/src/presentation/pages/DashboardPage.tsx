@@ -5,6 +5,7 @@ import { useSharedWithMe } from '../../application/hooks/useSharedWithMe';
 import { useLinks } from '../../application/hooks/useLinks';
 import {
   CreateQrPayload,
+  logout,
   QrItem,
 } from '../../infrastructure/api/qr-auth.client';
 import { SharedQrItem } from '../../infrastructure/api/sharing.client';
@@ -799,12 +800,18 @@ export function DashboardPage() {
   }, []);
 
   function handleLogout() {
-    void fetch('/api/auth/logout', {
-      method: 'POST',
-      credentials: 'include',
-    }).then(() => {
-      window.location.replace('/api/auth/login');
-    });
+    void logout()
+      .then(({ redirectTo }) => {
+        // Top-level navigation (never fetch): home-auth's logout needs its SSO cookie.
+        if (redirectTo) {
+          window.location.assign(redirectTo);
+        } else {
+          window.location.replace('/api/auth/login');
+        }
+      })
+      .catch(() => {
+        window.location.replace('/api/auth/login');
+      });
   }
 
   const userInitials = currentUser ? initials(currentUser.name) : '';

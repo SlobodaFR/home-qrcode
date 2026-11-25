@@ -10,6 +10,7 @@ import { OAuthClient } from '../../../domain/auth/oauth-client';
 import { computeWebhookSignature } from '../../../domain/auth/webhook-signature';
 import { FeatureFlags } from '../../../domain/shared/feature-flags';
 import { UserRepository } from '../../../domain/user/user.repository';
+import { InitiateServiceLogoutUseCase } from '../../../application/auth/initiate-service-logout.use-case';
 import { AuthController } from '../controllers/auth.controller';
 
 /**
@@ -72,6 +73,7 @@ describe('POST /auth/disconnect webhook authentication', () => {
         { provide: HandleOAuthCallbackUseCase, useValue: {} },
         { provide: HandleSessionRevokedUseCase, useValue: { execute: revoke } },
         { provide: UserRepository, useValue: {} },
+        { provide: InitiateServiceLogoutUseCase, useValue: {} },
       ],
     }).compile();
     app = module.createNestApplication({ rawBody: true });

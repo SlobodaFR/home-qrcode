@@ -24,6 +24,7 @@ const makeOAuthClient = (): Mocked<OAuthClient> => ({
   authorizeUrl: vi.fn(),
   exchangeCode: vi.fn().mockResolvedValue(mockTokens),
   refresh: vi.fn(),
+  logoutUrl: vi.fn(),
   fetchUserInfo: vi.fn().mockResolvedValue(mockProfile),
 });
 

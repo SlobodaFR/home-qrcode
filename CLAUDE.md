@@ -105,6 +105,14 @@ Flags booléens lus dans [home-features](https://features.sloboda.fr) via OFREP 
 
 - `auth-verify-token-claims` (défaut du code : `false`) : active la vérification de l'audience (`AUTH_CLIENT_ID`), de l'émetteur (origine de `AUTH_BASE_URL`) et de l'algorithme (`RS256` seulement) des access tokens (`JwksAccessTokenVerifier`). Éteint : comportement historique (signature JWKS et expiration seulement). À activer dans home-features une fois home-auth B1 déployé depuis 15 min au moins (les tokens émis avant B1 n'ont pas d'`iss`) ; le pin d'urgence est `FEATURES_PIN_AUTH_VERIFY_TOKEN_CLAIMS=false`.
 
+- `auth-rp-initiated-logout` (défaut du code : `false`, app `qrcode` dans home-features ; flag propre à ce service, distinct de celui de home-auth) : voir « Déconnexion initiée par le service (PC10) » ci-dessous.
+
+## Déconnexion initiée par le service (home-auth, contrat PC10)
+
+Derrière `auth-rp-initiated-logout`. `POST /api/auth/logout` (même origine, `SameOriginGuard`) efface toujours `access_token` et `refresh_token` (home-auth ne révoque rien), puis, flag actif, pose le cookie `logout_state` (httpOnly, `SameSite=Lax`, `Path=/api/auth`, 10 min, `Secure` en production) et renvoie `{ redirect_to }` = `GET <AUTH_BASE_URL>/logout?client_id&post_logout_redirect_uri&state[&access_token_hint]` (`redirect_to: null` flag éteint : déconnexion locale seule). Le hint est l'access token du cookie s'il est valide, sinon un access token obtenu par refresh (3 s max ; échec = pas de hint, donc écran de confirmation de home-auth, jamais un signal de déconnexion). Le `post_logout_redirect_uri` est `FRONTEND_URL/api/auth/logged-out` (même origine que la redirectUri enregistrée). `GET /api/auth/logged-out?state=` compare le `state` au cookie (absent, répété ou différent : `/login` sans bandeau), efface le cookie et redirige vers `/login?logged_out=1` (page publique `LoginPage` : bandeau « Vous avez été déconnecté. » et lien manuel « Se connecter », jamais d'`/authorize` automatique ; `AuthGate` ne s'applique qu'à `/`). Réponses en `Cache-Control: no-store`. La SPA ouvre `redirect_to` par `window.location.assign`.
+
+Ordre d'activation : activer d'abord le flag dans home-auth, puis celui de qrcode. Retour arrière : désactiver qrcode d'abord (ou `FEATURES_PIN_AUTH_RP_INITIATED_LOGOUT=false` + redémarrage). qrcode actif alors que home-auth est inactif : l'utilisateur est déconnecté de qrcode puis arrive sur un `404` JSON de home-auth.
+
 ## Webhook de déconnexion signé (home-auth, contrat PC7)
 
 `POST /api/auth/disconnect` (`DisconnectWebhookGuard`) accepte, en **double acceptation** : une signature valide **ou** l'ancien `?secret=` (comparé en `timingSafeEqual` sur des empreintes SHA-256), sauf rejeu d'un id déjà vu, toujours refusé.

@@ -8,6 +8,9 @@ vi.mock('./presentation/pages/DashboardPage', () => ({
 vi.mock('./presentation/pages/PublicQrPage', () => ({
   PublicQrPage: () => <div>PublicQrPage</div>,
 }));
+vi.mock('./presentation/pages/LoginPage', () => ({
+  LoginPage: () => <div>LoginPage</div>,
+}));
 vi.mock('./presentation/pages/NotFoundPage', () => ({
   NotFoundPage: () => <div>NotFoundPage</div>,
 }));
@@ -41,6 +44,19 @@ describe('AppRoutes', () => {
     await vi.waitFor(() =>
       expect(screen.getByText('DashboardPage')).toBeTruthy(),
     );
+  });
+
+  it('should render the public LoginPage at /login without any auth redirect (PC10 landing)', () => {
+    replaceMock.mockClear();
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401 });
+    render(
+      <MemoryRouter initialEntries={['/login?logged_out=1']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('LoginPage')).toBeTruthy();
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   // Test 24 — TPP: constant
