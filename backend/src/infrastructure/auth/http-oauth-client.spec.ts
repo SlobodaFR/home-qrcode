@@ -24,6 +24,28 @@ describe('HttpOAuthClient', () => {
     expect(url.searchParams.get('redirect_uri')).toBe('https://app/callback');
   });
 
+  it('should build a logoutUrl on /logout with client_id, return URI, state and optional hint', () => {
+    const client = new HttpOAuthClient(makeConfig());
+    const url = new URL(
+      client.logoutUrl({
+        postLogoutRedirectUri: 'https://app/api/auth/logged-out',
+        state: 's',
+        accessTokenHint: 'tok',
+      }),
+    );
+    expect(url.origin + url.pathname).toBe('https://auth.example.com/logout');
+    expect(url.searchParams.get('client_id')).toBe('client-id');
+    expect(url.searchParams.get('post_logout_redirect_uri')).toBe(
+      'https://app/api/auth/logged-out',
+    );
+    expect(url.searchParams.get('state')).toBe('s');
+    expect(url.searchParams.get('access_token_hint')).toBe('tok');
+    const bare = new URL(
+      client.logoutUrl({ postLogoutRedirectUri: 'https://app/x', state: 's' }),
+    );
+    expect(bare.searchParams.has('access_token_hint')).toBe(false);
+  });
+
   // Test 12 — TPP: conditional
   it('should throw when the token endpoint returns a non-2xx response', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 400 });

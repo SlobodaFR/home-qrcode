@@ -33,6 +33,7 @@ function makeUpstream(refresh: (rt: string) => Promise<TokenPair>) {
       (code: string, redirectUri: string) => Promise<TokenPair>
     >(async () => pair('exchanged')),
     refresh: vi.fn<(rt: string) => Promise<TokenPair>>(refresh),
+    logoutUrl: vi.fn<OAuthClient['logoutUrl']>(() => 'https://auth/logout'),
     fetchUserInfo: vi.fn<(accessToken: string) => Promise<UserProfile>>(
       async () => ({
         id: '1',

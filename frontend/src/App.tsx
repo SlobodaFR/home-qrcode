@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { DashboardPage } from './presentation/pages/DashboardPage';
+import { LoginPage } from './presentation/pages/LoginPage';
 import { NotFoundPage } from './presentation/pages/NotFoundPage';
 import { PublicQrPage } from './presentation/pages/PublicQrPage';
 
@@ -28,6 +29,7 @@ export function AppRoutes() {
           </AuthGate>
         }
       />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/q/:id" element={<PublicQrPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

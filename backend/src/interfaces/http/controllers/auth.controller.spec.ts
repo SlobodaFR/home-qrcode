@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { HandleOAuthCallbackUseCase } from '../../../application/auth/handle-oauth-callback.use-case';
+import { InitiateServiceLogoutUseCase } from '../../../application/auth/initiate-service-logout.use-case';
 import { HandleSessionRevokedUseCase } from '../../../application/auth/handle-session-revoked.use-case';
 import { OAuthClient, TokenPair } from '../../../domain/auth/oauth-client';
 import { User } from '../../../domain/user/user';
@@ -28,6 +29,7 @@ const makeRes = () =>
     redirect: vi.fn(),
     cookie: vi.fn(),
     clearCookie: vi.fn(),
+    setHeader: vi.fn(),
   }) as unknown as Response;
 
 const makeController = async (userInDb: User | null = mockUser) => {
@@ -53,6 +55,10 @@ const makeController = async (userInDb: User | null = mockUser) => {
         },
       },
       {
+        provide: InitiateServiceLogoutUseCase,
+        useValue: { execute: vi.fn().mockResolvedValue(null) },
+      },
+      {
         provide: HandleSessionRevokedUseCase,
         useValue: { execute: vi.fn().mockResolvedValue(undefined) },
       },
@@ -66,7 +72,9 @@ const makeController = async (userInDb: User | null = mockUser) => {
                 AUTH_WEBHOOK_SECRET: 'secret-123',
               })[k] ?? '',
           ),
-          get: vi.fn().mockReturnValue('test'),
+          get: vi.fn((k: string) =>
+            k === 'FRONTEND_URL' ? 'https://app.example.com' : 'test',
+          ),
         },
       },
       {
@@ -129,10 +137,11 @@ describe('AuthController', () => {
   });
 
   // Test 28 — TPP: constant
-  it('should clear auth cookies and return 204 on POST /auth/logout', async () => {
+  it('should clear auth cookies and return a null redirect_to on a local-only POST /auth/logout', async () => {
     const { controller } = await makeController();
     const res = makeRes();
-    controller.logout(res);
+    const body = await controller.logout({ cookies: {} } as never, res);
+    expect(body).toEqual({ redirect_to: null });
     const cookieOpts = {
       httpOnly: true,
       secure: false,

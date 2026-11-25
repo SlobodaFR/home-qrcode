@@ -3,9 +3,11 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HandleOAuthCallbackUseCase } from '../../../application/auth/handle-oauth-callback.use-case';
+import { InitiateServiceLogoutUseCase } from '../../../application/auth/initiate-service-logout.use-case';
 import { HandleSessionRevokedUseCase } from '../../../application/auth/handle-session-revoked.use-case';
 import { AccessTokenVerifier } from '../../../domain/auth/access-token-verifier';
 import { OAuthClient } from '../../../domain/auth/oauth-client';
+import { FeatureFlags } from '../../../domain/shared/feature-flags';
 import { RevokedSessionRepository } from '../../../domain/auth/revoked-session.repository';
 import { UserRepository } from '../../../domain/user/user.repository';
 import { HttpOAuthClient } from '../../../infrastructure/auth/http-oauth-client';
@@ -36,6 +38,15 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
     { provide: AccessTokenVerifier, useClass: JwksAccessTokenVerifier },
     HandleOAuthCallbackUseCase,
     HandleSessionRevokedUseCase,
+    {
+      provide: InitiateServiceLogoutUseCase,
+      inject: [FeatureFlags, AccessTokenVerifier, OAuthClient],
+      useFactory: (
+        flags: FeatureFlags,
+        verifier: AccessTokenVerifier,
+        oauthClient: OAuthClient,
+      ) => new InitiateServiceLogoutUseCase(flags, verifier, oauthClient),
+    },
     JwtAuthGuard,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],

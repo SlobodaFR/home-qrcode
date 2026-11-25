@@ -167,10 +167,20 @@ describe('AppModule', () => {
     expect(res.status).toBe(401);
   });
 
-  // Test 35 — logout returns 204
-  it('should return 204 on POST /api/auth/logout', async () => {
-    const res = await request(app.getHttpServer()).post('/api/auth/logout');
-    expect(res.status).toBe(204);
+  // Test 35 — logout: same-origin only, local-only (flag off) answer
+  it('should return 200 and a null redirect_to on a same-origin POST /api/auth/logout', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/auth/logout')
+      .set('Sec-Fetch-Site', 'same-origin');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ redirect_to: null });
+  });
+
+  it('should refuse a cross-site POST /api/auth/logout (403)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/auth/logout')
+      .set('Sec-Fetch-Site', 'cross-site');
+    expect(res.status).toBe(403);
   });
 
   // Test 40 — POST /api/qr without auth → 401
@@ -546,7 +556,10 @@ describe('AppModule', () => {
     });
 
     it('reports a Nest route with its template, under the global prefix', async () => {
-      await request(app.getHttpServer()).post('/api/auth/logout').expect(204);
+      await request(app.getHttpServer())
+        .post('/api/auth/logout')
+        .set('Sec-Fetch-Site', 'same-origin')
+        .expect(200);
 
       expect(telemetry.captured).toEqual([
         {
@@ -555,7 +568,7 @@ describe('AppModule', () => {
             properties: {
               route: '/api/auth/logout',
               method: 'POST',
-              status: 204,
+              status: 200,
               duration_ms: expect.any(Number),
             },
           },

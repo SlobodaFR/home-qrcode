@@ -5,6 +5,7 @@ import { Test } from '@nestjs/testing';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
 import { HandleOAuthCallbackUseCase } from '../../application/auth/handle-oauth-callback.use-case';
+import { InitiateServiceLogoutUseCase } from '../../application/auth/initiate-service-logout.use-case';
 import { HandleSessionRevokedUseCase } from '../../application/auth/handle-session-revoked.use-case';
 import { RedirectUseCase } from '../../application/redirect/redirect.use-case';
 import { OAuthClient } from '../../domain/auth/oauth-client';
@@ -55,6 +56,7 @@ describe('Rate limiting (HTTP)', () => {
         },
         { provide: UserRepository, useValue: {} },
         { provide: FeatureFlags, useValue: {} },
+        { provide: InitiateServiceLogoutUseCase, useValue: {} },
       ],
     }).compile();
 
