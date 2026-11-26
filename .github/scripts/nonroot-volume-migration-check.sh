@@ -30,17 +30,20 @@ V2="$ID-root"
 C1="$ID-ok"
 C2="$ID-root"
 ENVF=$(mktemp)
+NET="$ID-net"
+CS="$ID-s3stub"
 DATA=/app/backend/data
 
 cleanup() {
-  docker rm -f "$C1" "$C2" >/dev/null 2>&1 || true
+  docker rm -f "$C1" "$C2" "$CS" >/dev/null 2>&1 || true
+  docker network rm "$NET" >/dev/null 2>&1 || true
   docker volume rm -f "$V1" "$V2" >/dev/null 2>&1 || true
   rm -f "$ENVF"
 }
 trap cleanup EXIT
 fail() {
   echo "$P status=FAIL $*" >&2
-  for c in "$C1" "$C2"; do docker logs --tail 40 "$c" >&2 2>&1 || true; done
+  for c in "$C1" "$C2" "$CS"; do docker logs --tail 40 "$c" >&2 2>&1 || true; done
   exit 1
 }
 
@@ -50,7 +53,7 @@ NODE_ENV=production
 AUTH_BASE_URL=https://auth.example.test
 AUTH_CLIENT_ID=ci-dummy-client
 FRONTEND_URL=https://qrcode.example.test
-MINIO_ENDPOINT=http://127.0.0.1:9
+MINIO_ENDPOINT=http://minio:9000
 MINIO_BUCKET=ci-dummy
 MINIO_REGION=us-east-1
 MINIO_REPLICA_PATH=ci
@@ -86,10 +89,24 @@ seed() {
 }
 healthz() { docker exec "$1" node -e "fetch('http://127.0.0.1:3000/healthz').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))" >/dev/null 2>&1; }
 
+# Stub S3 : l'application parle a MinIO (assets) des le demarrage. On reutilise, sans le copier, le stub du boot check
+# (.github/scripts/docker-boot-check.sh, copie verbatim du harnais), joue par l'image testee sur un reseau jetable.
+eval "$(sed -n "/^S3_JS='/,/DBC_S3_STUB_READY\"));'\$/p" "$(dirname "$0")/docker-boot-check.sh")"
+[ -n "${S3_JS:-}" ] || { echo "$P status=FAIL stub S3 introuvable dans docker-boot-check.sh" >&2; exit 1; }
+docker network create "$NET" >/dev/null
+docker run -d --name "$CS" --network "$NET" --network-alias minio --no-healthcheck --entrypoint node -e NODE_OPTIONS= \
+  "$IMAGE" -e "$S3_JS" >/dev/null || fail "stub S3 non demarre"
+t=0
+until docker logs "$CS" 2>&1 | grep -q DBC_S3_STUB_READY; do
+  t=$((t + 1))
+  [ "$t" -lt 30 ] || fail "stub S3 non pret"
+  sleep 1
+done
+
 # --- 1. volume root, rendu a 1000:1000 : doit demarrer et garder ses donnees ---
 seed "$V1"
 docker run --rm --user 0 --network none --entrypoint chown -v "$V1:$DATA" "$IMAGE" -R 1000:1000 "$DATA" || fail "chown impossible"
-docker run -d --name "$C1" --env-file "$ENVF" -v "$V1:$DATA" "$IMAGE" >/dev/null || fail "demarrage impossible"
+docker run -d --name "$C1" --network "$NET" --env-file "$ENVF" -v "$V1:$DATA" "$IMAGE" >/dev/null || fail "demarrage impossible"
 t=0
 until healthz "$C1"; do
   t=$((t + 2))
@@ -108,7 +125,7 @@ docker rm -f "$C1" >/dev/null
 
 # --- 2. meme volume reste a root : echec bruyant attendu ---
 seed "$V2"
-docker run -d --name "$C2" --env-file "$ENVF" -v "$V2:$DATA" "$IMAGE" >/dev/null || fail "demarrage impossible"
+docker run -d --name "$C2" --network "$NET" --env-file "$ENVF" -v "$V2:$DATA" "$IMAGE" >/dev/null || fail "demarrage impossible"
 t=0
 while [ "$(docker inspect -f '{{.State.Running}}' "$C2")" = true ]; do
   if healthz "$C2"; then fail "l'image a demarre sur un volume reste a root (base en lecture seule ?)"; fi
