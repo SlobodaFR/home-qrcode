@@ -8,6 +8,7 @@ import { UserOrmEntity } from '../entities/user.orm-entity';
 import { RevokedSessionOrmEntity } from '../entities/revoked-session.orm-entity';
 import { TypeOrmQrShareRepository } from './typeorm-qr-share.repository';
 import { TypeOrmQrRepository } from './typeorm-qr.repository';
+import { serializedTypeOrmRoot } from '../../../test-support/serialized-typeorm';
 
 const makeQr = (id = 'qr-1', userId = 'user-1') =>
   QrCode.create({
@@ -45,7 +46,7 @@ describe('TypeOrmQrShareRepository', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           entities: [
