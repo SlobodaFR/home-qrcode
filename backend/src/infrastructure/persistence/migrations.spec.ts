@@ -173,13 +173,14 @@ describe('database migrations', () => {
           /@Entity\(\{ name: '(\w+)' \}\)/.exec(
             readFileSync(join(dir, file), 'utf8'),
           )?.[1],
-      );
+      ) as string[];
     const ds = dataSource(':memory:');
     await ds.initialize();
 
-    expect(ds.entityMetadatas.map((meta) => meta.tableName).sort()).toEqual(
-      declared.sort(),
-    );
+    const byName = (a: string, b: string) => a.localeCompare(b);
+    expect(
+      ds.entityMetadatas.map((meta) => meta.tableName).sort(byName),
+    ).toEqual(declared.sort(byName));
     await ds.destroy();
   });
 });
