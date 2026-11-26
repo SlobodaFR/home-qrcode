@@ -6,7 +6,7 @@
 # Usage : sh .github/scripts/nonroot-volume-migration-check.sh --image <image deja chargee> [--timeout 90]
 #   1. volume 1 : base SQLite en WAL (-wal/-shm laisses par un arret brutal) + metadonnees Litestream imbriquees, en root ;
 #      chown -R 1000:1000 (hors reseau, comme le script du harnais) ; demarrage de l'image avec MINIO_* (chemin Litestream) :
-#      /healthz repond 200, aucune restauration MinIO n'a eu lieu, la ligne deja presente est relue, rien ne reste a root ;
+#      /healthz repond 200, aucune restauration Litestream (restoring snapshot) n'a eu lieu, la ligne deja presente est relue, rien ne reste a root ;
 #   2. volume 2 : meme contenu, laisse a root : l'image doit ECHOUER bruyamment (sortie du conteneur), jamais demarrer
 #      sur une base en lecture seule ni restaurer par-dessus.
 # Jetons : `[nonroot-volume-migration] status=OK|FAIL ...`. Tout est nettoye (conteneurs, volumes, fichier d'environnement).
@@ -114,7 +114,7 @@ until healthz "$C1"; do
   [ "$t" -lt "$TIMEOUT" ] || fail "/healthz ne repond pas en ${TIMEOUT}s sur le volume migre"
   sleep 2
 done
-docker logs "$C1" 2>&1 | grep -q 'Restoring database from MinIO' && fail "restauration MinIO declenchee alors que la base existait"
+docker logs "$C1" 2>&1 | grep -qi 'restoring snapshot' && fail "restauration Litestream declenchee alors que la base existait"
 row=$(docker exec -w /app/backend "$C1" node -e "const D=require('better-sqlite3');const d=new D('$DATA/qrcode.sqlite',{readonly:true});console.log(d.prepare('SELECT v FROM ci_marker').get().v)" 2>&1) \
   || fail "relecture de la base impossible : $row"
 [ "$row" = pre-existing ] || fail "la ligne preexistante est absente de la base : $row"
@@ -135,6 +135,6 @@ while [ "$(docker inspect -f '{{.State.Running}}' "$C2")" = true ]; do
 done
 code=$(docker inspect -f '{{.State.ExitCode}}' "$C2")
 [ "$code" != 0 ] || fail "sortie 0 sur un volume reste a root"
-docker logs "$C2" 2>&1 | grep -q 'Restoring database from MinIO' && fail "restauration MinIO sur un volume reste a root"
+docker logs "$C2" 2>&1 | grep -qi 'restoring snapshot' && fail "restauration Litestream sur un volume reste a root"
 echo "$P root-owned-volume: container exited code=$code (loud failure, no restore)"
 echo "$P status=OK"
