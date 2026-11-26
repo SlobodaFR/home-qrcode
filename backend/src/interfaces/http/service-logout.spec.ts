@@ -2,7 +2,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { AccessTokenVerifier } from '../../domain/auth/access-token-verifier';
@@ -11,6 +10,7 @@ import { FeatureFlagsModule } from '../../infrastructure/feature-flags/feature-f
 import { UserOrmEntity } from '../../infrastructure/persistence/entities/user.orm-entity';
 import { RevokedSessionOrmEntity } from '../../infrastructure/persistence/entities/revoked-session.orm-entity';
 import { AuthModule } from './modules/auth.module';
+import { serializedTypeOrmRoot } from '../../test-support/serialized-typeorm';
 
 const FRONTEND = 'https://qrcode.example.test';
 const AUTH = 'https://auth.example.test';
@@ -50,7 +50,7 @@ describe('service-initiated logout (PC10): POST /auth/logout and GET /auth/logge
             }),
           ],
         }),
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           entities: [UserOrmEntity, RevokedSessionOrmEntity],

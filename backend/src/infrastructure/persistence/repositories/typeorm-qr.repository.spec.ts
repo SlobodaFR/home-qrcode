@@ -5,6 +5,7 @@ import { RevokedSessionOrmEntity } from '../entities/revoked-session.orm-entity'
 import { UserOrmEntity } from '../entities/user.orm-entity';
 import { QrCodeOrmEntity } from '../entities/qr-code.orm-entity';
 import { TypeOrmQrRepository } from './typeorm-qr.repository';
+import { serializedTypeOrmRoot } from '../../../test-support/serialized-typeorm';
 
 const makeQr = (overrides: Partial<{ id: string; userId: string }> = {}) =>
   QrCode.create({
@@ -25,7 +26,7 @@ describe('TypeOrmQrRepository', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           entities: [UserOrmEntity, RevokedSessionOrmEntity, QrCodeOrmEntity],

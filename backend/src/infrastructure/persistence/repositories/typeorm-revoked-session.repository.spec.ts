@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RevokedSessionOrmEntity } from '../entities/revoked-session.orm-entity';
 import { UserOrmEntity } from '../entities/user.orm-entity';
 import { TypeOrmRevokedSessionRepository } from './typeorm-revoked-session.repository';
+import { serializedTypeOrmRoot } from '../../../test-support/serialized-typeorm';
 
 describe('TypeOrmRevokedSessionRepository', () => {
   let repo: TypeOrmRevokedSessionRepository;
@@ -10,7 +11,7 @@ describe('TypeOrmRevokedSessionRepository', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           entities: [UserOrmEntity, RevokedSessionOrmEntity],

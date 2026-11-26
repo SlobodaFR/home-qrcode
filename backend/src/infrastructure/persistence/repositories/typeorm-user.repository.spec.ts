@@ -4,6 +4,7 @@ import { User } from '../../../domain/user/user';
 import { RevokedSessionOrmEntity } from '../entities/revoked-session.orm-entity';
 import { UserOrmEntity } from '../entities/user.orm-entity';
 import { TypeOrmUserRepository } from './typeorm-user.repository';
+import { serializedTypeOrmRoot } from '../../../test-support/serialized-typeorm';
 
 const makeUser = (
   overrides: Partial<{ id: string; email: string; name: string }> = {},
@@ -22,7 +23,7 @@ describe('TypeOrmUserRepository', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot({
+        serializedTypeOrmRoot({
           type: 'better-sqlite3',
           database: ':memory:',
           entities: [UserOrmEntity, RevokedSessionOrmEntity],
