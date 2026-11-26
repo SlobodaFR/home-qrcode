@@ -163,6 +163,29 @@ describe('database migrations', () => {
     await ds.destroy();
   });
 
+  it('refuse to revert the baseline and keep every row', async () => {
+    const file = tempFile('prod.sqlite');
+    const ds = dataSource(file);
+    await ds.initialize();
+    await ds.runMigrations();
+    for (const sql of SAMPLE_ROWS) await ds.query(sql);
+    const rowsBefore = await dumpRows(ds);
+
+    await expect(ds.undoLastMigration()).rejects.toThrow(
+      'baseline migration: revert not supported, restore a backup',
+    );
+    await expect(new InitialSchema1795600000000().down()).rejects.toThrow(
+      'baseline migration: revert not supported, restore a backup',
+    );
+
+    expect(await dumpRows(ds)).toEqual(rowsBefore);
+    expect(rowsBefore.users).toHaveLength(2);
+    expect(await ds.query('SELECT name FROM migrations')).toEqual([
+      { name: 'InitialSchema1795600000000' },
+    ]);
+    await ds.destroy();
+  });
+
   // forFeature() with an entity missing from ENTITIES would fail at boot with "No metadata".
   it('list every @Entity file of the entities folder in ENTITIES', async () => {
     const dir = join(__dirname, 'entities');

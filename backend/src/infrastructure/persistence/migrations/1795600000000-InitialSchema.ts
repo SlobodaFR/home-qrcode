@@ -10,7 +10,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * is byte-identical to a synchronize-built database.
  *
  * Only ever use the `queryRunner` passed in (never `dataSource.query`): migrations run on the
- * serialized connection. There is deliberately no CLI data source: `down()` drops the data.
+ * serialized connection. There is deliberately no CLI data source, and `down()` refuses to run: it would drop the data.
  */
 export class InitialSchema1795600000000 implements MigrationInterface {
   name = 'InitialSchema1795600000000';
@@ -36,10 +36,10 @@ export class InitialSchema1795600000000 implements MigrationInterface {
     );
   }
 
-  async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE IF EXISTS "qr_codes"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "qr_shares"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "revoked_sessions"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "users"`);
+  // Reverting the baseline would drop every table, and the data with them.
+  down(): Promise<void> {
+    return Promise.reject(
+      new Error('baseline migration: revert not supported, restore a backup'),
+    );
   }
 }
