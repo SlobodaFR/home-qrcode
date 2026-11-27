@@ -13,6 +13,8 @@ import { routeOf } from './route-of';
 /**
  * Never reported as http_request (route templates, as returned by routeOf):
  * - '/healthz': polled by the Docker healthcheck every 30 s.
+ * - '/version': public release identity, no auth: one event per call would be a cost amplifier
+ *   (convention harnais release-versioning).
  * - '/r/:id': public scan redirect, no auth and no rate limit (a printed QR code is scanned by
  *   anyone, and anyone can hammer random ids): volume is not ours to control, one event per call
  *   would be a cost amplifier.
@@ -27,6 +29,7 @@ import { routeOf } from './route-of';
  */
 const UNREPORTED_ROUTES = new Set([
   '/healthz',
+  '/version',
   '/r/:id',
   '/api/qr/:id/meta',
   '/api/qr/:id/logo',

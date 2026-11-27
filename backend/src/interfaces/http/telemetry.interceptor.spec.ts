@@ -79,6 +79,11 @@ class RedirectController {
 
 @Controller()
 class HealthController {
+  @Get('version')
+  version(): string {
+    return 'ok';
+  }
+
   @Get('healthz')
   healthz(): string {
     return 'ok';
@@ -111,7 +116,7 @@ describe('HTTP telemetry', () => {
         res: express.Response,
         next: express.NextFunction,
       ) => {
-        if (/^\/(api|r|healthz)(\/|$)/.test(req.path)) return next();
+        if (/^\/(api|r|healthz|version)(\/|$)/.test(req.path)) return next();
         res.sendFile(join(staticDir, 'index.html'));
       },
     );
@@ -162,6 +167,12 @@ describe('HTTP telemetry', () => {
 
   it('does not report /healthz (polled by Docker)', async () => {
     await request(app.getHttpServer()).get('/healthz').expect(200);
+
+    expect(telemetry.captured).toEqual([]);
+  });
+
+  it('does not report /version (public release identity, cost amplifier)', async () => {
+    await request(app.getHttpServer()).get('/version').expect(200);
 
     expect(telemetry.captured).toEqual([]);
   });

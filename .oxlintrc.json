@@ -12,7 +12,8 @@
     "**/dist/**",
     "**/coverage/**",
     "**/node_modules/**",
-    "frontend/public/**"
+    "frontend/public/**",
+    ".github/scripts/release-version.mjs"
   ],
   "rules": {
     "typescript/no-floating-promises": "error",

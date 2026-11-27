@@ -134,6 +134,7 @@ describe('PostHogTelemetry', () => {
         status: 200,
         duration_ms: 12,
         service: 'home-qrcode',
+        version: 'dev',
         $ip: null,
         $process_person_profile: false,
       },
@@ -151,6 +152,21 @@ describe('PostHogTelemetry', () => {
       ...HEALTH_EVENT.properties,
       service: 'home-qrcode',
     });
+  });
+
+  it('adds the release version (APP_VERSION) to every ops event', () => {
+    vi.stubEnv('APP_VERSION', '2.5.1');
+    const client = new FakeClient();
+    const telemetry = new PostHogTelemetry(client);
+
+    telemetry.capture(HEALTH_EVENT);
+    telemetry.capture(REQUEST_EVENT);
+
+    expect(client.captured.map((c) => c.properties['version'])).toEqual([
+      '2.5.1',
+      '2.5.1',
+    ]);
+    vi.unstubAllEnvs();
   });
 
   it('drops properties that look like personal data', () => {
