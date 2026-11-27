@@ -78,6 +78,8 @@ export class PostHogTelemetry
           ...sanitizeTelemetryProperties(event.properties),
           // The PostHog project is shared by several home services.
           service: 'home-qrcode',
+          // Release version baked into the image (APP_VERSION, 'dev' outside CI), on every event.
+          version: process.env['APP_VERSION'] || 'dev',
           // Belt and braces only: the enforceable control is the project setting "Discard client IP data".
           $ip: null,
           $process_person_profile: false,

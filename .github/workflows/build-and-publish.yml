@@ -1,10 +1,19 @@
+# Modèle de .github/workflows/build-and-publish.yml (convention `release-versioning`, v1.11). Pas une copie verbatim : adapter l'image, le contexte et
+# les étapes propres au service ; l'audit en vérifie la forme (trois jobs, build-args, tag X.Y.Z, un seul job qui écrit dans le repo).
+#
+# Ordre voulu : version -> build-and-push -> release.
+# - `version` calcule la version (aucune écriture) ; échoue s'il n'y a aucun tag v* (lancer scripts/backfill-versions.mjs --apply tags AVANT)
+#   ou si le tag calculé existe déjà ailleurs.
+# - `build-and-push` construit et pousse (sha-<7>, main, latest, X.Y.Z) ; un échec ne laisse aucun tag : la relance recalcule la même version.
+# - `release` : tag annoté vX.Y.Z + release GitHub, APRÈS la publication des images. Créés avec GITHUB_TOKEN : aucun autre workflow n'est déclenché.
+#   Un échec ici bloque le déploiement (deploy-vps.yml suit la conclusion de ce workflow) : relancer « Re-run failed jobs ». Relancer un run
+#   dépassé (un commit plus récent a déjà pris la version) échoue volontairement à ce job (le tag existe sur un autre commit).
+# Matrice d'images (plusieurs services dans un repo) : la matrice ne concerne que `build-and-push`, la version et la release restent uniques.
 name: Build & Publish
 
 on:
   push:
     branches: [main]
-  release:
-    types: [published]
 
 concurrency:
   group: build-${{ github.ref }}
@@ -15,15 +24,27 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Compute next version
+        id: next
+        run: node .github/scripts/release-version.mjs next
+
   build-and-push:
+    needs: version
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
-    outputs:
-      image-tag: ${{ steps.meta.outputs.version }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -45,7 +66,7 @@ jobs:
           tags: |
             type=sha,prefix=sha-
             type=ref,event=branch
-            type=semver,pattern={{version}}
+            type=raw,value=${{ needs.version.outputs.version }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push
@@ -55,5 +76,23 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_VERSION=${{ needs.version.outputs.version }}
+            APP_COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max,ignore-error=true
+
+  release:
+    needs: [version, build-and-push]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Tag and release
+        run: node .github/scripts/release-version.mjs publish "${{ needs.version.outputs.version }}"

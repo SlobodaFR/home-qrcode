@@ -51,6 +51,10 @@ COPY backend/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
     && mkdir -p /app/backend/data \
     && chown node:node /app/backend /app/backend/data
+# Release identity (convention harnais release-versioning), en fin d'étage final : le cache de build reste valide.
+ARG APP_VERSION=dev
+ARG APP_COMMIT=dev
+ENV APP_VERSION=$APP_VERSION APP_COMMIT=$APP_COMMIT
 VOLUME ["/app/backend/data"]
 WORKDIR /app/backend
 USER node

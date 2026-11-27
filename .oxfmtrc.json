@@ -11,6 +11,7 @@
     "backend/data",
     "*.sqlite",
     "*.tsbuildinfo",
-    "package-lock.json"
+    "package-lock.json",
+    ".github/scripts/release-version.mjs"
   ]
 }

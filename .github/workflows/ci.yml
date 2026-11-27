@@ -72,7 +72,7 @@ jobs:
         run: |
           sh .github/scripts/docker-boot-check.sh --service home-qrcode --image home-qrcode:ci-${{ github.run_id }}-${{ github.run_attempt }} --rm-image \
             --s3-stub minio \
-            --volume /app/backend/data --path /healthz --expect /healthz=200 --expect /api/links=401 --expect /api/inconnu=404 --forbid-ts \
+            --volume /app/backend/data --path /healthz --expect /healthz=200 --expect /version=200 --expect /api/links=401 --expect /api/inconnu=404 --forbid-ts \
             --env AUTH_BASE_URL=https://auth.example.test --env AUTH_CLIENT_ID=ci-dummy-client --env FRONTEND_URL=https://qrcode.example.test \
             --env MINIO_ENDPOINT=http://minio:9000 --env MINIO_BUCKET=ci-dummy --env MINIO_ACCESS_KEY_ID=ci-dummy-user \
             --env MINIO_SECRET_ACCESS_KEY=ci-dummy-password --env MINIO_REPLICA_PATH=ci --env MINIO_REGION=us-east-1 --env MINIO_ASSETS_PATH=ci-assets \

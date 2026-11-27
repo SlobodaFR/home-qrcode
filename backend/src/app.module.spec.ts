@@ -56,7 +56,9 @@ describe('AppModule', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api', { exclude: ['r/:id', 'q/:id', 'healthz'] });
+    app.setGlobalPrefix('api', {
+      exclude: ['r/:id', 'q/:id', 'healthz', 'version'],
+    });
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, transform: true }),
     );
@@ -74,7 +76,7 @@ describe('AppModule', () => {
       ) => {
         if (req.path.startsWith('/api')) return next();
         if (req.path.startsWith('/r/')) return next();
-        if (req.path === '/healthz') return next();
+        if (req.path === '/healthz' || req.path === '/version') return next();
         res.sendFile(path.join(DIST_PATH, 'index.html'));
       },
     );
@@ -119,7 +121,20 @@ describe('AppModule', () => {
   it('should answer GET /healthz with JSON without auth (not the SPA, not under /api)', async () => {
     const response = await request(app.getHttpServer()).get('/healthz');
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: 'ok', runtime: null });
+    expect(response.body).toEqual({
+      status: 'ok',
+      version: 'dev',
+      commit: 'dev',
+      runtime: null,
+    });
+  });
+
+  it('should answer GET /version with JSON without auth, never cached (not the SPA, not under /api)', async () => {
+    const response = await request(app.getHttpServer()).get('/version');
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toMatch(/json/);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.body).toEqual({ version: 'dev', commit: 'dev' });
   });
 
   // Task 21 — /q/:id excluded from prefix

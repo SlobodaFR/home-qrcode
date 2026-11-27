@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
+import { buildInfo } from './infrastructure/observability/build-info';
 import { AppModule } from './app.module';
 import { applySecurityHeaders } from './interfaces/http/security-headers';
 
@@ -29,11 +30,17 @@ async function bootstrap() {
     app.set('trust proxy', trustProxyHops);
   }
 
-  app.setGlobalPrefix('api', { exclude: ['r/:id', 'q/:id', 'healthz'] });
+  app.setGlobalPrefix('api', {
+    exclude: ['r/:id', 'q/:id', 'healthz', 'version'],
+  });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.use(cookieParser());
 
   await app.listen(process.env['PORT'] ?? 3000);
+  const { version, commit } = buildInfo();
+  app
+    .get(Logger)
+    .log(`home-qrcode started version=${version} commit=${commit}`);
 }
 
 void bootstrap();
